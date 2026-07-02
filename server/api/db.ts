@@ -1,9 +1,14 @@
 import { PrismaClient } from "../../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import dotenv from "dotenv";
 
-export const useMock =
-  process.env.USE_MOCK_DATABASE !== "false" || !process.env.DATABASE_URL;
+export const useMock = "";
+
+dotenv.config();
+if (!process.env.DATABASE_URL) {
+  console.error("❌ ERROR: process.env.DATABASE_URL no está definida en db.ts");
+}
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,16 +22,9 @@ const adapter = new PrismaPg(pool);
 let prisma: PrismaClient | null = null;
 
 export function getPrisma(): PrismaClient {
-  if (useMock) {
-    throw new Error(
-      "Base de datos en modo simulado (Mock). Configure USE_MOCK_DATABASE=false y DATABASE_URL.",
-    );
-  }
-
   if (prisma) {
     return prisma;
   }
-
   prisma = new PrismaClient({ adapter });
   return prisma;
 }
