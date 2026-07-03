@@ -18,6 +18,8 @@
       "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noEmit": true,
+    "typeRoots": ["./server/api/types", "./node_modules/@types"]
+  },
+  "include": ["server/**/*", "src/**/*"]
 }
