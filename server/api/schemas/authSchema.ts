@@ -8,7 +8,7 @@ const RoleEnum = z.enum([
   "STAFF_PICKER",
 ]); // Ajusta los nombres exactos de tus roles
 
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
 export const registerSchema = z.object({
   body: z.object({
@@ -50,11 +50,17 @@ export const registerSchema = z.object({
     password: z
       .string({ error: "La contraseña es requerida" })
       .trim()
-      .min(8, "La contraseña debe tener al menos 8 caracteres")
-      .regex(
-        strongPasswordRegex,
-        "La contraseña debe incluir al menos una mayúscula, una minúscula y un número",
-      ),
+      .min(8, { error: "La contraseña debe tener al menos 8 caracteres" })
+      .refine((v) => /[A-Z]/.test(v), {
+        error: "Debe incluir al   menos una mayúscula",
+      })
+      .refine((v) => /[a-z]/.test(v), {
+        error: "Debe incluir al   menos una minúscula",
+      })
+      .refine((v) => /\d/.test(v), {
+        error: "Debe incluir al menos un  número",
+      }),
+
     birthdate: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
       error:
         "El formato de la fecha de nacimiento no es válido (Debe ser YYYY-MM-DD)",
