@@ -66,8 +66,8 @@ export class AuthService {
     return {
       id: newUser.id,
       cedula: newUser.cedula,
-      FirtsName: newUser.firstName,
-      LastName: newUser.lastName,
+      firtsName: newUser.firstName,
+      lastName: newUser.lastName,
       email: newUser.email,
       role: newUser.role,
     };
