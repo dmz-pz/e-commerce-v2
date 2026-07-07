@@ -3,8 +3,8 @@ import { getPrisma } from "../db.ts";
 export class UserRepository {
   async create(data: {
     cedula: string;
-    FirtsName: string;
-    LastName: string;
+    firstName: string;
+    lastName: string;
     phone: string;
     email: string;
     passwordHash: string;

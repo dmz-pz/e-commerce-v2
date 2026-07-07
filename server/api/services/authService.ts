@@ -28,7 +28,7 @@ export class AuthService {
     return {
       token,
       user: {
-        name: user.FirtsName,
+        name: user.firstName,
         email: user.email,
         role: user.role,
       },
@@ -37,8 +37,8 @@ export class AuthService {
 
   async registerUser(userData: {
     cedula: string;
-    FirtsName: string;
-    LastName: string;
+    firtsName: string;
+    lastName: string;
     phone: string;
     email: string;
     password: string;
@@ -54,8 +54,8 @@ export class AuthService {
 
     const newUser = await userRepository.create({
       cedula: userData.cedula,
-      FirtsName: userData.FirtsName,
-      LastName: userData.LastName,
+      firstName: userData.firtsName,
+      lastName: userData.lastName,
       phone: userData.phone,
       email: userData.email,
       passwordHash: hashedPassword,
@@ -66,8 +66,8 @@ export class AuthService {
     return {
       id: newUser.id,
       cedula: newUser.cedula,
-      FirtsName: newUser.FirtsName,
-      LastName: newUser.LastName,
+      FirtsName: newUser.firstName,
+      LastName: newUser.lastName,
       email: newUser.email,
       role: newUser.role,
     };
