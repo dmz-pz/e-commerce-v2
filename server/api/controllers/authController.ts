@@ -6,12 +6,22 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
-      const result = await authService.authenticateUser(email, password);
+      const { token, user } = await authService.authenticateUser(
+        email,
+        password,
+      );
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 2 * 60 * 60 * 1000,
+      });
 
       res.status(200).json({
         status: "success",
         message: "Inicio de sesión exitoso",
-        ...result,
+        user,
       });
     } catch (error: any) {
       if (error.message === "Credenciales incorrectas") {
@@ -45,6 +55,19 @@ export class AuthController {
         message: `Error interno al registrar usuario: ${error.message}`,
       });
     }
+  }
+
+  async logout(req: Request, res: Response) {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Sesión cerrada correctamente",
+    });
   }
 }
 

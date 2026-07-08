@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { shutdownDatabase } from "./server/api/db.ts";
 
 import authRoutes from "./server/api/routes/authRoutes.ts";
@@ -18,6 +19,7 @@ async function startServer() {
   // Middlewares Globales:
   app.use(cors());
   app.use(express.json());
+  app.use(cookieParser());
 
   // API Layers
   app.use("/api/auth", authRoutes);
