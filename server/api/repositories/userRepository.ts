@@ -1,17 +1,13 @@
 import { getPrisma } from "../db.ts";
+import { RegisterUserInput } from "../schemas/authSchema";
+
+type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
+  passwordHash: string;
+  birthdate?: Date; // Sobreescribimos a tipo Date nativo para Prisma
+};
 
 export class UserRepository {
-  async create(data: {
-    cedula: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    email: string;
-    passwordHash: string;
-    birthdate?: Date;
-    role?: any;
-    deletedAt?: Date;
-  }) {
+  async create(data: UserCreateInput) {
     try {
       const prisma = getPrisma();
       const newUser = await prisma.user.create({

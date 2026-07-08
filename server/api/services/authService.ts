@@ -1,13 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { userRepository } from "../repositories/userRepository";
+import { userRepository } from "../repositories/userRepository"; 
+import type { RegisterUserInput } from "../schemas/authSchema";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "clave_secreta_super_segura_para_el_supermercado";
 
 export class AuthService {
   async authenticateUser(email: string, password: string) {
-    // 1. Buscar al usuario en el repositorio
     const user = await userRepository.getByEmail(email);
 
     if (!user) {
@@ -35,16 +35,7 @@ export class AuthService {
     };
   }
 
-  async registerUser(userData: {
-    cedula: string;
-    firtsName: string;
-    lastName: string;
-    phone: string;
-    email: string;
-    password: string;
-    birthdate?: string;
-    role?: any;
-  }) {
+  async registerUser(userData: RegisterUserInput) {
     const existingUser = await userRepository.getByEmail(userData.email);
     if (existingUser) {
       throw new Error("El correo electrónico ya está en uso");
@@ -54,7 +45,7 @@ export class AuthService {
 
     const newUser = await userRepository.create({
       cedula: userData.cedula,
-      firstName: userData.firtsName,
+      firstName: userData.firstName,
       lastName: userData.lastName,
       phone: userData.phone,
       email: userData.email,
@@ -63,7 +54,7 @@ export class AuthService {
       role: userData.role,
     });
 
-    return {
+    return {  
       id: newUser.id,
       cedula: newUser.cedula,
       firtsName: newUser.firstName,
