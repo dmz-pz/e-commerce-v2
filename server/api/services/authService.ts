@@ -21,13 +21,14 @@ export class AuthService {
     }
 
     // 3. Generar el JWT
-    const payload = { id: user.id, email: user.email, role: user.role };
+    const payload = { id: user.id, name: user.firstName, email: user.email, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
     // 4. Retornar solo los datos que el controlador necesita para responder
     return {
       token,
       user: {
+        id: user.id,
         name: user.firstName,
         email: user.email,
         role: user.role,

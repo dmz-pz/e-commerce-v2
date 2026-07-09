@@ -11,7 +11,7 @@ export class AuthController {
         password,
       );
 
-      res.cookie("token", token, {
+      res.cookie("access_token", token, {
         httpOnly: true,
         secure: false,
         sameSite: "lax",
@@ -58,7 +58,7 @@ export class AuthController {
   }
 
   async logout(req: Request, res: Response) {
-    res.clearCookie("token", {
+    res.clearCookie("access_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -68,6 +68,27 @@ export class AuthController {
       status: "success",
       message: "Sesión cerrada correctamente",
     });
+  }
+
+  async getMe(req: Request, res: Response) {
+    try {
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        res.status(401).json({ status: "fail", message: "No autenticado" });
+        return;
+      }
+
+      res.status(200).json({
+        status: "success",
+        user: currentUser,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        message: "Error al obtener la sesión del usuario",
+      });
+    }
   }
 }
 
