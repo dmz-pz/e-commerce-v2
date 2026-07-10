@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const emptyStringToUndefined = (schema: z.ZodTypeAny) =>
+const emptyStringToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((val) => (val === "" ? undefined : val), schema);
 
 export const createProductSchema = z.object({
@@ -12,6 +12,13 @@ export const createProductSchema = z.object({
   description: z
     .string({ message: "La descripción es obligatoria" })
     .min(10, "La descripción debe tener al menos 10 caracteres"),
+
+  barcode: emptyStringToUndefined(
+    z
+      .string()
+      .min(5, "El código de barras es demasiado corto")
+      .max(50, "El código de barras es demasiado largo"),
+  ).nullish(),
 
   price: z.coerce
     .number({ message: "El precio debe ser un número válido" })
@@ -64,3 +71,5 @@ export const createProductSchema = z.object({
       }
     }),
 });
+
+export type CreateProductInput = z.infer<typeof createProductSchema>;
