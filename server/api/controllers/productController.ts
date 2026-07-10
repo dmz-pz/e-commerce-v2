@@ -2,75 +2,116 @@ import { Request, Response } from "express";
 import { productService } from "../services/productService.ts";
 
 export class ProductController {
-  async getAll(req: Request, res: Response) {
+  /**
+   * Obtiene la lista de todos los productos del catálogo.
+   */
+  async getAll(req: Request, res: Response): Promise<void> {
     try {
       const includeInactive = req.query.includeInactive === "true";
       const products = await productService.getAllProducts(includeInactive);
+
       res.json(products);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch products" });
+      res
+        .status(500)
+        .json({
+          error: "Error interno al obtener los productos del catálogo.",
+        });
     }
   }
 
-  async getById(req: Request, res: Response) {
+  /**
+   * Obtiene un único producto mediante su identificador único (UUID).
+   */
+  async getById(req: Request, res: Response): Promise<void> {
     try {
-      const product = await productService.getProductById(req.params.id);
+      const { id } = req.params;
+      const product = await productService.getProductById(id);
+
       if (product) {
         res.json(product);
       } else {
-        res.status(404).json({ error: "Product not found" });
+        res
+          .status(404)
+          .json({ error: `El producto con el ID ${id} no fue encontrado.` });
       }
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch product" });
+      res
+        .status(500)
+        .json({ error: "Error interno al procesar la búsqueda del producto." });
     }
   }
 
-  async create(req: Request, res: Response) {
+  /**
+   * Coordina la creación de un nuevo producto asumiendo datos previamente validados.
+   */
+  async create(req: Request, res: Response): Promise<void> {
     try {
-      const { name, description, price, discountPrice, stock, category, subcategory, brand, imageUrl, unit, isActive, isRecommended } = req.body;
       const performedByUserId = (req.headers["x-user-id"] as string) || "admin";
 
-      if (!name || !price || !imageUrl) {
-        res.status(400).json({ error: "Campos requeridos faltantes: nombre, precio, e imagen son obligatorios." });
+      // Separamos la URL de la imagen del resto de los datos comerciales del producto
+      const { imageUrl, ...productData } = req.body;
+
+      // Validación complementaria obligatoria para asegurar el parámetro del servicio
+      if (!imageUrl || typeof imageUrl !== "string") {
+        res
+          .status(400)
+          .json({
+            error:
+              "La propiedad 'imageUrl' es obligatoria para registrar el producto.",
+          });
         return;
       }
 
-      const product = await productService.createProduct({
-        name,
-        description: description || "",
-        price: Number(price),
-        discountPrice: discountPrice ? Number(discountPrice) : undefined,
-        stock: stock !== undefined ? Number(stock) : 0,
-        category: category || "General",
-        subcategory: subcategory || "General",
-        brand,
+      // Enviamos los datos directamente al servicio sin re-validar con Zod
+      const product = await productService.createProduct(
+        productData,
         imageUrl,
-        unit: unit || "unid",
-        isActive: isActive !== false,
-        isRecommended: !!isRecommended,
-      }, performedByUserId);
+        performedByUserId,
+      );
 
       res.status(201).json(product);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      // Captura errores de lógica de negocio (ej: discountPrice >= price) lanzados por el servicio
+      res
+        .status(400)
+        .json({
+          error: error.message || "Error al intentar registrar el producto.",
+        });
     }
   }
 
-  async update(req: Request, res: Response) {
+  /**
+   * Gestiona la actualización parcial de un producto existente utilizando datos limpios.
+   */
+  async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const performedByUserId = (req.headers["x-user-id"] as string) || "admin";
-      
-      const product = await productService.updateProduct(id, req.body, performedByUserId);
-      if (product) {
-        res.json(product);
-      } else {
-        res.status(404).json({ error: "Product not found" });
-      }
+
+      // Transferimos los cambios directamente al servicio
+      const product = await productService.updateProduct(
+        id,
+        req.body,
+        performedByUserId,
+      );
+
+      res.json(product);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      // Si el servicio determina que el producto no existe, respondemos con 404 Not Found
+      if (error.message.includes("no existe")) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res
+        .status(400)
+        .json({
+          error: error.message || "Error al intentar actualizar el producto.",
+        });
     }
   }
 }
 
+// Exportamos la instancia única (Singleton) para su uso en las rutas
 export const productController = new ProductController();

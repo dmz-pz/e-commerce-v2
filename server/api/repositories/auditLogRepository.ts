@@ -42,8 +42,6 @@ export class AuditLogRepository {
         newState: input.newState
           ? (input.newState as Prisma.InputJsonValue)
           : Prisma.DbNull,
-
-        // 🚀 SE ELIMINÓ 'performedByName' ya que no existe en la base de datos
       },
     });
   }
