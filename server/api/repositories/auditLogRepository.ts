@@ -1,56 +1,51 @@
-import { AuditLog } from "../../../src/types/index.ts";
-import { useMock, getPrisma } from "../db.ts";
-import { auditLogs } from "../mocks/auditLogs.ts";
+// 📁 Archivo: server/api/repositories/auditLogRepository.ts
+
+import { getPrisma } from "../db.ts";
+import { Prisma } from "../../../generated/prisma/client.ts";
+
+/**
+ * Interfaz de entrada purificada. Ahora mapea de forma
+ * idéntica las columnas físicas de tu modelo de Prisma.
+ */
+export interface CreateAuditLogInput {
+  action: string;
+  performedById: string;
+  orderId?: string;
+  previousState?: any;
+  newState?: any;
+}
 
 export class AuditLogRepository {
-  async getAll(): Promise<AuditLog[]> {
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        const results = await prisma.auditLog.findMany({
-          orderBy: { timestamp: "desc" }
-        });
-        return results.map((r: any) => ({
-          id: r.id,
-          orderId: r.orderId || undefined,
-          action: r.action,
-          performedById: r.performedById,
-          performedByName: "Administrador",
-          previousState: typeof r.previousState === "string" ? JSON.parse(r.previousState) : r.previousState,
-          newState: typeof r.newState === "string" ? JSON.parse(r.newState) : r.newState,
-          timestamp: r.timestamp.getTime()
-        }));
-      } catch (err) {
-        console.error("Error consultando auditorías con Prisma, cayendo en Mock", err);
-      }
-    }
-    return auditLogs;
+  async getAll() {
+    const prisma = getPrisma();
+    return await prisma.auditLog.findMany({
+      orderBy: { timestamp: "desc" },
+    });
   }
 
-  async create(logData: Omit<AuditLog, 'id' | 'timestamp'>): Promise<AuditLog> {
-    const newLog: AuditLog = {
-      ...logData,
-      id: "log-" + Math.random().toString(36).substring(2, 9),
-      timestamp: Date.now()
-    };
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        await prisma.auditLog.create({
-          data: {
-            orderId: newLog.orderId || null,
-            action: newLog.action,
-            performedById: newLog.performedById,
-            previousState: newLog.previousState ? JSON.stringify(newLog.previousState) : null,
-            newState: newLog.newState ? JSON.stringify(newLog.newState) : null
-          }
-        });
-      } catch (err) {
-        console.error("Error persistiendo log de auditoría con Prisma, cayendo en Mock", err);
-      }
-    }
-    auditLogs.unshift(newLog); // Insert at first index
-    return newLog;
+  /**
+   * Inserta un log de auditoría respetando al 100% el modelo real AuditLog.
+   */
+  async create(input: CreateAuditLogInput): Promise<void> {
+    const prisma = getPrisma();
+
+    await prisma.auditLog.create({
+      data: {
+        action: input.action,
+        performedById: input.performedById,
+        orderId: input.orderId || null,
+
+        // Mapeo seguro de objetos complejos a campos JSONB nativos
+        previousState: input.previousState
+          ? (input.previousState as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+        newState: input.newState
+          ? (input.newState as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+
+        // 🚀 SE ELIMINÓ 'performedByName' ya que no existe en la base de datos
+      },
+    });
   }
 }
 
