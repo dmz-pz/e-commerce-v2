@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import * as z from "zod";
 
 export const validateResource =
-  (schema: z.ZodTypeAny) =>
+  (schema: z.ZodType) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const result = await schema.safeParseAsync({
       body: req.body,

@@ -1,3 +1,4 @@
+import { error } from "console";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
@@ -10,11 +11,14 @@ export function verifyToken(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || "clave_secreta_super_segura_para_el_supermercado";
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("SECRET no existe para la firma del jwt");
+    }
 
     // Verificamos el token firmado
     const decoded = jwt.verify(token, secret) as {
-      id: string
+      id: string;
       name: string;
       email: string;
       role: string;
@@ -33,4 +37,3 @@ export function verifyToken(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ error: "Token inválido o alterado." });
   }
 }
-
