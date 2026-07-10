@@ -73,3 +73,14 @@ export const createProductSchema = z.object({
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+
+export const createProductRequestSchema = z.object({
+  body: createProductSchema, // Anidamos el esquema puro aquí adentro
+});
+
+export const updateProductRequestSchema = z.object({
+  params: z.object({
+    id: z.string().uuid("El ID del producto debe ser un UUID válido"),
+  }),
+  body: createProductSchema.partial(), // Anidamos la versión parcial aquí
+});
