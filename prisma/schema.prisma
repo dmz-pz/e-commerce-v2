@@ -134,6 +134,7 @@
   id String @id @default(uuid())
   name String
   description String @db.Text
+  barcode  String? @unique
   price Decimal @db.Decimal(10, 2)
   discountPrice Decimal? @db.Decimal(10, 2)
   stock Int @default(0)
