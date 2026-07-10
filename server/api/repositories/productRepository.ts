@@ -1,172 +1,173 @@
-import { Product } from "../../../src/types/index.ts";
-import { useMock, getPrisma } from "../db.ts";
-import { products } from "../mocks/products.ts";
+import { getPrisma } from "../db.ts";
+import type { CreateProductInput } from "../schemas/productSchema.ts";
+import { Prisma } from "../../../generated/prisma/client.ts";
+
+export type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: {
+    images: true;
+    subcategory: {
+      include: {
+        category: true;
+      };
+    };
+  };
+}>;
 
 export class ProductRepository {
-  async getAll(includeInactive = false): Promise<Product[]> {
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        const results = await prisma.product.findMany({
-          where: includeInactive ? {} : { isActive: true },
-          orderBy: { createdAt: "desc" },
-        });
-        return results.map((r: any) => ({
-          ...r,
-          price: Number(r.price),
-          discountPrice: r.discountPrice ? Number(r.discountPrice) : undefined,
-          specifications:
-            typeof r.specifications === "string"
-              ? JSON.parse(r.specifications)
-              : r.specifications,
-        })) as any;
-      } catch (err) {
-        console.error("No se pudo consultar con Prisma, cayendo en Mock", err);
-      }
-    }
+  /**
+   * Obtiene los productos desde la BD con sus relaciones puras de Prisma.
+   */
+  async getAll(includeInactive = false): Promise<ProductWithRelations[]> {
+    const prisma = getPrisma();
 
-    // Default or Fallback to memory
-    return includeInactive
-      ? products
-      : products.filter((p) => p.isActive !== false);
+    return await prisma.product.findMany({
+      where: includeInactive ? {} : { isActive: true },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
-  async getById(id: string): Promise<Product | undefined> {
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        const r: any = await prisma.product.findUnique({
-          where: { id },
-        });
-        if (r) {
-          return {
-            ...r,
-            price: Number(r.price),
-            discountPrice: r.discountPrice
-              ? Number(r.discountPrice)
-              : undefined,
-            specifications:
-              typeof r.specifications === "string"
-                ? JSON.parse(r.specifications)
-                : r.specifications,
-          } as Product;
-        }
-        return undefined;
-      } catch (err) {
-        console.error("No se pudo consultar con Prisma, cayendo en Mock", err);
-      }
-    }
+  /**
+   * Busca un producto por ID único devolviendo el tipo relacional de Prisma o null.
+   */
+  async getById(id: string): Promise<ProductWithRelations | null> {
+    const prisma = getPrisma();
 
-    return products.find((p) => p.id === id);
+    return await prisma.product.findUnique({
+      where: { id },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
 
-  async create(productData: Omit<Product, "id">): Promise<Product> {
-    const newProduct: Product = {
-      ...productData,
-      id: Math.random().toString(36).substring(2, 9),
-      rating: 4.5,
-      reviewCount: 1,
-      salesCount: 0,
-      isActive: productData.isActive !== false,
-    };
+  /**
+   * Inserta un producto real y su imagen inicial utilizando la infraestructura de Prisma.
+   */
+  async create(
+    input: CreateProductInput,
+    imageUrl: string,
+  ): Promise<ProductWithRelations> {
+    const prisma = getPrisma();
 
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        const created: any = await prisma.product.create({
-          data: {
-            name: newProduct.name,
-            description: newProduct.description,
-            price: newProduct.price,
-            discountPrice: newProduct.discountPrice,
-            stock: newProduct.stock,
-            brand: newProduct.brand || null,
-            rating: newProduct.rating,
-            reviewCount: newProduct.reviewCount,
-            specifications: newProduct.specifications
-              ? JSON.stringify(newProduct.specifications)
-              : null,
-            imageUrl: newProduct.imageUrl,
-            unit: newProduct.unit,
-            isActive: newProduct.isActive,
-            isRecommended: newProduct.isRecommended || false,
-            salesCount: 0,
-            subcategory: {
-              connectOrCreate: {
-                where: {
-                  name_categoryId: {
-                    name: newProduct.subcategory || "General",
-                    categoryId: "1",
-                  },
-                },
-                create: {
-                  name: newProduct.subcategory || "General",
-                  category: {
-                    connectOrCreate: {
-                      where: { name: newProduct.category || "General" },
-                      create: { name: newProduct.category || "General" },
-                    },
-                  },
-                },
-              },
+    return await prisma.product.create({
+      data: {
+        name: input.name,
+        description: input.description,
+        price: new Prisma.Decimal(input.price),
+        discountPrice: input.discountPrice
+          ? new Prisma.Decimal(input.discountPrice)
+          : null,
+        stock: input.stock,
+        brand: input.brand || null,
+        unit: input.unit,
+        isRecommended: input.isRecommended,
+        isActive: input.isActive,
+        subcategoryId: input.subcategoryId,
+        barcode: input.barcode || null,
+        specifications: input.specifications as Prisma.InputJsonValue,
+
+        images: {
+          create: [
+            {
+              url: imageUrl,
+              order: 1,
             },
-          } as any,
-        });
-        return {
-          ...created,
-          price: Number(created.price),
-          discountPrice: created.discountPrice
-            ? Number(created.discountPrice)
-            : undefined,
-        } as Product;
-      } catch (err) {
-        console.error(
-          "No se pudo guardar la creación en Prisma, guardando en Mock en memoria",
-          err,
-        );
-      }
-    }
-
-    products.push(newProduct);
-    return newProduct;
+          ],
+        },
+      },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
 
+  /**
+   * Actualiza los datos crudos en PostgreSQL.
+   */
   async update(
     id: string,
-    updates: Partial<Product>,
-  ): Promise<Product | undefined> {
-    if (!useMock) {
-      const prisma = getPrisma();
-      try {
-        const updated: any = await prisma.product.update({
-          where: { id },
-          data: updates as any,
-        });
-        return {
-          ...updated,
-          price: Number(updated.price),
-          discountPrice: updated.discountPrice
-            ? Number(updated.discountPrice)
-            : undefined,
-        } as Product;
-      } catch (err) {
-        console.error(
-          "No se pudo actualizar con Prisma, actualizando en Mock",
-          err,
-        );
-      }
-    }
+    input: Partial<CreateProductInput>,
+  ): Promise<ProductWithRelations> {
+    const prisma = getPrisma();
 
-    const index = products.findIndex((p) => p.id === id);
-    if (index !== -1) {
-      products[index] = { ...products[index], ...updates };
-      return products[index];
-    }
-    return undefined;
+    return await prisma.product.update({
+      where: { id },
+      data: {
+        name: input.name,
+        description: input.description,
+        price: input.price ? new Prisma.Decimal(input.price) : undefined,
+        discountPrice: input.discountPrice
+          ? new Prisma.Decimal(input.discountPrice)
+          : undefined,
+        stock: input.stock,
+        brand: input.brand,
+        unit: input.unit,
+        isRecommended: input.isRecommended,
+        isActive: input.isActive,
+        subcategoryId: input.subcategoryId,
+        barcode: input.barcode,
+        specifications:
+          input.specifications !== undefined
+            ? (input.specifications as Prisma.InputJsonValue)
+            : undefined,
+      },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
 
+  /**
+   * Modifica exclusivamente el stock de un producto.
+   */
   async updateStock(id: string, newStock: number): Promise<void> {
-    await this.update(id, { stock: newStock });
+    const prisma = getPrisma();
+    await prisma.product.update({
+      where: { id },
+      data: { stock: newStock },
+    });
+  }
+
+  /**
+   * Aplica un borrado lógico (Soft Delete) cambiando el flag de estado.
+   */
+  async softDelete(id: string): Promise<ProductWithRelations> {
+    const prisma = getPrisma();
+    return await prisma.product.update({
+      where: { id },
+      data: { isActive: false },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
 }
 
