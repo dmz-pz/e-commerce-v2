@@ -80,7 +80,12 @@ export const createProductRequestSchema = z.object({
 
 export const updateProductRequestSchema = z.object({
   params: z.object({
-    id: z.string().uuid("El ID del producto debe ser un UUID válido"),
+    barcode: emptyStringToUndefined(
+      z
+        .string()
+        .min(5, "El código de barras es demasiado corto")
+        .max(50, "El código de barras es demasiado largo"),
+    ).nullish(),
   }),
   body: createProductSchema.partial(), // Anidamos la versión parcial aquí
 });

@@ -37,11 +37,11 @@ export class ProductRepository {
   /**
    * Busca un producto por ID único devolviendo el tipo relacional de Prisma o null.
    */
-  async getById(id: string): Promise<ProductWithRelations | null> {
+  async getByBarcode(barcode: string): Promise<ProductWithRelations | null> {
     const prisma = getPrisma();
 
     return await prisma.product.findUnique({
-      where: { id },
+      where: { barcode },
       include: {
         images: true,
         subcategory: {
@@ -103,13 +103,12 @@ export class ProductRepository {
    * Actualiza los datos crudos en PostgreSQL.
    */
   async update(
-    id: string,
+    barcode: string,
     input: Partial<CreateProductInput>,
   ): Promise<ProductWithRelations> {
     const prisma = getPrisma();
-
     return await prisma.product.update({
-      where: { id },
+      where: { barcode },
       data: {
         name: input.name,
         description: input.description,

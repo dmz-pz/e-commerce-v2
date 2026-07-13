@@ -12,28 +12,28 @@ export class ProductController {
 
       res.json(products);
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          error: "Error interno al obtener los productos del catálogo.",
-        });
+      res.status(500).json({
+        error: "Error interno al obtener los productos del catálogo.",
+      });
     }
   }
 
   /**
    * Obtiene un único producto mediante su identificador único (UUID).
    */
-  async getById(req: Request, res: Response): Promise<void> {
+  async getByBarcode(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const product = await productService.getProductById(id);
+      const { barcode } = req.params;
+      const product = await productService.getProductByBarcode(barcode);
 
       if (product) {
         res.json(product);
       } else {
         res
           .status(404)
-          .json({ error: `El producto con el ID ${id} no fue encontrado.` });
+          .json({
+            error: `El producto con el ID ${barcode} no fue encontrado.`,
+          });
       }
     } catch (error) {
       res
@@ -47,19 +47,17 @@ export class ProductController {
    */
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const performedByUserId = (req.headers["x-user-id"] as string) || "admin";
+      const performedByUserId = req.headers["x-user-id"] as string;
 
       // Separamos la URL de la imagen del resto de los datos comerciales del producto
       const { imageUrl, ...productData } = req.body;
 
       // Validación complementaria obligatoria para asegurar el parámetro del servicio
       if (!imageUrl || typeof imageUrl !== "string") {
-        res
-          .status(400)
-          .json({
-            error:
-              "La propiedad 'imageUrl' es obligatoria para registrar el producto.",
-          });
+        res.status(400).json({
+          error:
+            "La propiedad 'imageUrl' es obligatoria para registrar el producto.",
+        });
         return;
       }
 
@@ -73,11 +71,9 @@ export class ProductController {
       res.status(201).json(product);
     } catch (error: any) {
       // Captura errores de lógica de negocio (ej: discountPrice >= price) lanzados por el servicio
-      res
-        .status(400)
-        .json({
-          error: error.message || "Error al intentar registrar el producto.",
-        });
+      res.status(400).json({
+        error: error.message || "Error al intentar registrar el producto.",
+      });
     }
   }
 
@@ -86,12 +82,14 @@ export class ProductController {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const performedByUserId = (req.headers["x-user-id"] as string) || "admin";
+      const { barcode } = req.params;
+      const performedByUserId =
+        (req.headers["x-user-id"] as string) ||
+        "8341bc73-f2c7-4f96-a7df-a97003f18b74";
 
       // Transferimos los cambios directamente al servicio
       const product = await productService.updateProduct(
-        id,
+        barcode,
         req.body,
         performedByUserId,
       );
@@ -104,11 +102,9 @@ export class ProductController {
         return;
       }
 
-      res
-        .status(400)
-        .json({
-          error: error.message || "Error al intentar actualizar el producto.",
-        });
+      res.status(400).json({
+        error: error.message || "Error al intentar actualizar el producto.",
+      });
     }
   }
 }
