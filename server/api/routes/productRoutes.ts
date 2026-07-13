@@ -2,26 +2,13 @@ import { Router } from "express";
 import { productController } from "../controllers/productController.ts";
 import { uploadImage } from "../middlewares/upload.middleware.ts";
 import { validateResource } from "../middlewares/validate.middleware.ts";
+import { validateBody } from "../middlewares/validateUpload.middleware.ts";
 import {
-  createProductRequestSchema,
+  createProductSchema,
   updateProductRequestSchema,
 } from "../schemas/productSchema.ts";
 
 const router = Router();
-
-/**
- * 🛠️ MIDDLEWARE 1: Validador exclusivo para el archivo físico.
- * Aligera la carga asegurando que req.file exista antes de pasar a Zod.
- */
-const requireProductImage = (req: any, res: any, next: any) => {
-  if (!req.file) {
-    return res.status(400).json({
-      status: "fail",
-      message: "La imagen del producto es obligatoria.",
-    });
-  }
-  next();
-};
 
 /**
  * 🛠️ MIDDLEWARE 2: Mapeador de la ruta de imagen.
@@ -42,8 +29,7 @@ router.get("/:id", productController.getById);
 router.post(
   "/",
   uploadImage.single("image"), // 1. Lee el formulario multipart y monta req.file
-  requireProductImage, // 2. Valida la existencia física del archivo binario
-  validateResource(createProductRequestSchema), // 3. Filtra y valida el req.body estructuralmente con Zod
+  validateBody(createProductSchema), // 2. Valida la existencia física del archivo binario
   parseRouteImage, // 4. Adjunta de forma segura la imageUrl al body limpio
   productController.create, // 5. Envía el control al método de tu servicio
 );
