@@ -2,6 +2,7 @@ import { productRepository } from "../repositories/productRepository.ts";
 import type { ProductWithRelations } from "../repositories/productRepository.ts";
 import type { CreateProductInput } from "../schemas/productSchema.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
+import { AppError } from "../utils/appErrors.ts";
 
 export class ProductService {
   /**
@@ -18,10 +19,15 @@ export class ProductService {
    * Busca un producto específico por su ID único.
    * Devuelve el objeto con sus relaciones o null si no es encontrado.
    */
-  async getProductByBarcode(
-    barcode: string,
-  ): Promise<ProductWithRelations | null> {
-    return await productRepository.getByBarcode(barcode);
+  async getProductByBarcode(barcode: string): Promise<ProductWithRelations> {
+    const product = await productRepository.getByBarcode(barcode);
+    if (!product) {
+      throw new AppError(
+        `El producto con el codigo de barras ${barcode} no existe`,
+        404,
+      );
+    }
+    return product;
   }
 
   /**
@@ -32,28 +38,44 @@ export class ProductService {
     imageUrl: string,
     performedByUserId: string,
   ): Promise<ProductWithRelations> {
-    // Regla de negocio: Validación de consistencia lógica entre precio y descuento
     if (
       input.discountPrice &&
       Number(input.discountPrice) >= Number(input.price)
     ) {
-      throw new Error(
+      throw new AppError(
         "El precio de descuento no puede ser mayor o igual al precio original del producto",
+        400,
       );
     }
+    try {
+      if (!input.barcode) {
+        throw new AppError(
+          "El código de barras es requerido para registrar el producto",
+          400,
+        );
+      }
 
-    console.log(performedByUserId);
-    // Persistencia atómica en la base de datos a través del repositorio
-    const product = await productRepository.create(input, imageUrl);
+      const existingProduct = await productRepository.getByBarcode(
+        input.barcode,
+      );
+      if (existingProduct) {
+        throw new AppError(
+          `Conflict: Ya existe un producto registrado con el código de barras '${input.barcode}'`,
+          409,
+        );
+      }
+      const product = await productRepository.create(input, imageUrl);
 
-    // Registro de la acción en la bitácora de auditoría
-    await auditLogRepository.create({
-      action: `Creación de producto: ${product.name}`,
-      performedById: performedByUserId,
-      newState: product,
-    });
+      await auditLogRepository.create({
+        action: `Creación de producto: ${product.name}`,
+        performedById: performedByUserId,
+        newState: product,
+      });
 
-    return product;
+      return product;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   /**
@@ -64,12 +86,7 @@ export class ProductService {
     updates: Partial<CreateProductInput>,
     performedByUserId: string,
   ): Promise<ProductWithRelations> {
-    const previousState = await productRepository.getByBarcode(barcode);
-    if (!previousState) {
-      throw new Error(
-        `No se puede actualizar: El producto con codigo de barra ${barcode} no existe`,
-      );
-    }
+    const previousState = await this.getProductByBarcode(barcode);
 
     // Regla de negocio: Validar precios combinando los cambios nuevos con el estado previo
     const finalPrice = updates.price ?? Number(previousState.price);
@@ -79,8 +96,9 @@ export class ProductService {
         : previousState.discountPrice;
 
     if (finalDiscount && Number(finalDiscount) >= Number(finalPrice)) {
-      throw new Error(
+      throw new AppError(
         "El precio de descuento no puede ser mayor o igual al precio original del producto",
+        400,
       );
     }
 

@@ -1,51 +1,42 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { productService } from "../services/productService.ts";
 
 export class ProductController {
   /**
    * Obtiene la lista de todos los productos del catálogo.
    */
-  async getAll(req: Request, res: Response): Promise<void> {
+  async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const includeInactive = req.query.includeInactive === "true";
       const products = await productService.getAllProducts(includeInactive);
 
       res.json(products);
     } catch (error) {
-      res.status(500).json({
-        error: "Error interno al obtener los productos del catálogo.",
-      });
+      next(error);
     }
   }
 
   /**
    * Obtiene un único producto mediante su identificador único (UUID).
    */
-  async getByBarcode(req: Request, res: Response): Promise<void> {
+  async getByBarcode(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const { barcode } = req.params;
       const product = await productService.getProductByBarcode(barcode);
-
-      if (product) {
-        res.json(product);
-      } else {
-        res
-          .status(404)
-          .json({
-            error: `El producto con el ID ${barcode} no fue encontrado.`,
-          });
-      }
+      res.json(product);
     } catch (error) {
-      res
-        .status(500)
-        .json({ error: "Error interno al procesar la búsqueda del producto." });
+      next(error);
     }
   }
 
   /**
    * Coordina la creación de un nuevo producto asumiendo datos previamente validados.
    */
-  async create(req: Request, res: Response): Promise<void> {
+  async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const performedByUserId = req.headers["x-user-id"] as string;
 
@@ -70,17 +61,14 @@ export class ProductController {
 
       res.status(201).json(product);
     } catch (error: any) {
-      // Captura errores de lógica de negocio (ej: discountPrice >= price) lanzados por el servicio
-      res.status(400).json({
-        error: error.message || "Error al intentar registrar el producto.",
-      });
+      next(error);
     }
   }
 
   /**
    * Gestiona la actualización parcial de un producto existente utilizando datos limpios.
    */
-  async update(req: Request, res: Response): Promise<void> {
+  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { barcode } = req.params;
       const performedByUserId =
@@ -96,15 +84,7 @@ export class ProductController {
 
       res.json(product);
     } catch (error: any) {
-      // Si el servicio determina que el producto no existe, respondemos con 404 Not Found
-      if (error.message.includes("no existe")) {
-        res.status(404).json({ error: error.message });
-        return;
-      }
-
-      res.status(400).json({
-        error: error.message || "Error al intentar actualizar el producto.",
-      });
+      next(error);
     }
   }
 }

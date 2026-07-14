@@ -12,6 +12,8 @@ import inventoryRoutes from "./server/api/routes/inventoryRoutes.ts";
 import deliveryRoutes from "./server/api/routes/deliveryRoutes.ts";
 import adminRoutes from "./server/api/routes/adminRoutes.ts";
 
+import { globalErrorHandler } from "./server/api/middlewares/errorMiddleware.ts";
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -48,6 +50,7 @@ async function startServer() {
     });
   }
 
+  app.use(globalErrorHandler);
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
