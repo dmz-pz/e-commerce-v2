@@ -19,14 +19,14 @@ export class ProductController {
   /**
    * Obtiene un único producto mediante su identificador único (UUID).
    */
-  async getByBarcode(
+  async getById(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { barcode } = req.params;
-      const product = await productService.getProductByBarcode(barcode);
+      const { id } = req.params;
+      const product = await productService.getProductById(id);
       res.json(product);
     } catch (error) {
       next(error);

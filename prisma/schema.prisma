@@ -40,7 +40,7 @@
   SUBSTITUTED
   CANCELED
   }
-
+ 
   enum FulfillmentMethod {
   DELIVERY
   PICK_UP
@@ -249,7 +249,7 @@ model ProductImage {
   amount Decimal @db.Decimal(10, 2)
   method PaymentMethod  
   status PaymentStatus @default(PENDING)
-  reference String? // Removido el @unique para evitar colisiones con nulos/vacíos en base de datos.
+  reference String? // Removido el @unique para evitar colisiones con nulos/v acíos en base de datos.
   receiptUrl String? // URL de captura subida por el cliente
   reviewedById String? // Operador/Admin que concilió el pago en físico
   createdAt DateTime @default(now())

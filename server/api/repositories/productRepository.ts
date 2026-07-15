@@ -17,10 +17,9 @@ export class ProductRepository {
   /**
    * Obtiene los productos desde la BD con sus relaciones puras de Prisma.
    */
+  private prisma = getPrisma();
   async getAll(includeInactive = false): Promise<ProductWithRelations[]> {
-    const prisma = getPrisma();
-
-    return await prisma.product.findMany({
+    return await this.prisma.product.findMany({
       where: includeInactive ? {} : { isActive: true },
       include: {
         images: true,
@@ -37,11 +36,9 @@ export class ProductRepository {
   /**
    * Busca un producto por ID único devolviendo el tipo relacional de Prisma o null.
    */
-  async getByBarcode(barcode: string): Promise<ProductWithRelations | null> {
-    const prisma = getPrisma();
-
-    return await prisma.product.findUnique({
-      where: { barcode },
+  async getById(id: string): Promise<ProductWithRelations | null> {
+    return await this.prisma.product.findUnique({
+      where: { id },
       include: {
         images: true,
         subcategory: {
@@ -60,9 +57,7 @@ export class ProductRepository {
     input: CreateProductInput,
     imageUrl: string,
   ): Promise<ProductWithRelations> {
-    const prisma = getPrisma();
-
-    return await prisma.product.create({
+    return await this.prisma.product.create({
       data: {
         name: input.name,
         description: input.description,
@@ -103,12 +98,11 @@ export class ProductRepository {
    * Actualiza los datos crudos en PostgreSQL.
    */
   async update(
-    barcode: string,
+    id: string,
     input: Partial<CreateProductInput>,
   ): Promise<ProductWithRelations> {
-    const prisma = getPrisma();
-    return await prisma.product.update({
-      where: { barcode },
+    return await this.prisma.product.update({
+      where: { id },
       data: {
         name: input.name,
         description: input.description,
@@ -143,8 +137,7 @@ export class ProductRepository {
    * Modifica exclusivamente el stock de un producto.
    */
   async updateStock(id: string, newStock: number): Promise<void> {
-    const prisma = getPrisma();
-    await prisma.product.update({
+    await this.prisma.product.update({
       where: { id },
       data: { stock: newStock },
     });
@@ -165,6 +158,17 @@ export class ProductRepository {
             category: true,
           },
         },
+      },
+    });
+  }
+
+  async getByIds(ids: string[], includeInactive = false) {
+    const prisma = getPrisma(); // Alineado con tu inicializador
+
+    return await prisma.product.findMany({
+      where: {
+        id: { in: ids },
+        ...(includeInactive ? {} : { isActive: true }), // Respeta tu flag de borrado lógico
       },
     });
   }

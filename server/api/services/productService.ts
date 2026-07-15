@@ -19,11 +19,11 @@ export class ProductService {
    * Busca un producto específico por su ID único.
    * Devuelve el objeto con sus relaciones o null si no es encontrado.
    */
-  async getProductByBarcode(barcode: string): Promise<ProductWithRelations> {
-    const product = await productRepository.getByBarcode(barcode);
+  async getProductById(id: string): Promise<ProductWithRelations> {
+    const product = await productRepository.getById(id);
     if (!product) {
       throw new AppError(
-        `El producto con el codigo de barras ${barcode} no existe`,
+        `El producto con el codigo de barras ${id} no existe`,
         404,
       );
     }
@@ -48,22 +48,6 @@ export class ProductService {
       );
     }
     try {
-      if (!input.barcode) {
-        throw new AppError(
-          "El código de barras es requerido para registrar el producto",
-          400,
-        );
-      }
-
-      const existingProduct = await productRepository.getByBarcode(
-        input.barcode,
-      );
-      if (existingProduct) {
-        throw new AppError(
-          `Conflict: Ya existe un producto registrado con el código de barras '${input.barcode}'`,
-          409,
-        );
-      }
       const product = await productRepository.create(input, imageUrl);
 
       await auditLogRepository.create({
@@ -82,11 +66,11 @@ export class ProductService {
    * Actualiza las propiedades de un producto existente y registra los cambios de estado.
    */
   async updateProduct(
-    barcode: string,
+    id: string,
     updates: Partial<CreateProductInput>,
     performedByUserId: string,
   ): Promise<ProductWithRelations> {
-    const previousState = await this.getProductByBarcode(barcode);
+    const previousState = await this.getProductById(id);
 
     // Regla de negocio: Validar precios combinando los cambios nuevos con el estado previo
     const finalPrice = updates.price ?? Number(previousState.price);
@@ -103,7 +87,7 @@ export class ProductService {
     }
 
     // Ejecución de la actualización en la base de datos
-    const updated = await productRepository.update(barcode, updates);
+    const updated = await productRepository.update(id, updates);
 
     // Determinamos el nombre de la acción basándonos en el cambio de visibilidad
     let actionName = `Actualización de producto: ${updated.name}`;
@@ -131,10 +115,10 @@ export class ProductService {
    * Verifica la disponibilidad de inventario y disminuye el stock si es suficiente.
    */
   async validateAndReserveStock(
-    barcode: string,
+    id: string,
     quantity: number,
   ): Promise<boolean> {
-    const product = await productRepository.getByBarcode(barcode);
+    const product = await productRepository.getById(id);
 
     // Si el producto no existe o el stock actual es menor a lo solicitado, deniega la reserva
     if (!product || product.stock < quantity) {
@@ -142,17 +126,17 @@ export class ProductService {
     }
 
     // Actualiza disminuyendo la cantidad solicitada
-    await productRepository.updateStock(barcode, product.stock - quantity);
+    await productRepository.updateStock(id, product.stock - quantity);
     return true;
   }
 
   /**
    * Restaura o incrementa el inventario de un producto (ej. en caso de devoluciones o cancelaciones).
    */
-  async restoreStock(barcode: string, quantity: number): Promise<void> {
-    const product = await productRepository.getByBarcode(barcode);
+  async restoreStock(id: string, quantity: number): Promise<void> {
+    const product = await productRepository.getById(id);
     if (product) {
-      await productRepository.updateStock(barcode, product.stock + quantity);
+      await productRepository.updateStock(id, product.stock + quantity);
     }
   }
 }
