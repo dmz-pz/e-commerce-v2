@@ -7,10 +7,10 @@ type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
 };
 
 export class UserRepository {
+  private prisma = getPrisma()
   async create(data: UserCreateInput) {
     try {
-      const prisma = getPrisma();
-      const newUser = await prisma.user.create({
+      const newUser = await this.prisma.user.create({
         data,
       });
       return newUser;
@@ -23,9 +23,8 @@ export class UserRepository {
 
   async getByEmail(email: string) {
     try {
-      const prisma = getPrisma();
 
-      const user = await prisma.user.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { email },
       });
       return user;
@@ -35,6 +34,16 @@ export class UserRepository {
       }
 
       throw new Error("Error inesperado al buscar usuario por email");
+    }
+  }
+
+  async getById(id: string) {
+    try { // Alineado con tu inicializador[cite: 5]
+      return await this.prisma.user.findUnique({
+        where: { id },
+      });
+    } catch (error: any) {
+      throw new Error(`Error al buscar usuario por ID: ${error.message}`);
     }
   }
 }
