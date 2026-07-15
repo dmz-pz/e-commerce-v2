@@ -10,8 +10,10 @@ class ApiClient {
   ): Promise<T> {
     const url = endpoint.startsWith('/') ? endpoint : `/api/${endpoint}`;
     
+    const token = localStorage.getItem('token');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...((options.headers as Record<string, string>) || {}),
     };
 
@@ -19,7 +21,8 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Error HTTP: status ${response.status}`);
+      const errMsg = errorData.message || errorData.error || `Error HTTP: status ${response.status}`;
+      throw new Error(errMsg);
     }
 
     // Algunos endpoints pueden retornar vacío o no JSON

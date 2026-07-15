@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiClient } from '../services/apiClient.ts';
 
 interface Address {
   id: string;
@@ -21,7 +22,15 @@ interface User {
 interface UserContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (data: {
+    cedula: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    password: string;
+    birthdate?: string;
+  }) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   addAddress: (address: Omit<Address, 'id'>) => Promise<void>;
@@ -34,106 +43,130 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  // Simulate persistent login 
+  // Validar sesión inicial con el backend
   useEffect(() => {
-    const savedUser = localStorage.getItem('demo_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const fetchMe = async () => {
+      const savedToken = localStorage.getItem('token');
+      if (savedToken) {
+        try {
+          const res = await apiClient.get<{
+            user: {
+              id: string;
+              name: string;
+              email: string;
+              phone?: string;
+              role?: string;
+            };
+          }>('auth/me');
+          
+          if (res && res.user) {
+            const userObj: User = {
+              id: res.user.id,
+              name: res.user.name,
+              email: res.user.email,
+              phone: res.user.phone,
+              addresses: [],
+              role: (res.user.role?.toLowerCase() as any) || 'client'
+            };
+            setUser(userObj);
+            localStorage.setItem('demo_user', JSON.stringify(userObj));
+          }
+        } catch (err) {
+          console.error("Error al validar sesión con backend, limpiando credenciales:", err);
+          logout();
+        }
+      } else {
+        const savedUser = localStorage.getItem('demo_user');
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
+        }
+      }
+    };
+
+    fetchMe();
   }, []);
 
-  const login = async (email: string, _password: string) => {
-    // Simulate API call
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        const demoAccounts: User[] = [
-          {
-            id: 'admin-1',
-            name: 'Administrador de Sede',
-            email: 'admin@supermercado.com',
-            addresses: [],
-            role: 'admin'
-          },
-          {
-            id: 'staff-1',
-            name: 'Carlos Picker',
-            email: 'staff@supermercado.com',
-            addresses: [],
-            role: 'picker'
-          },
-          {
-            id: 'del-1',
-            name: 'Carlos Pérez',
-            email: 'delivery@supermercado.com',
-            addresses: [],
-            role: 'delivery'
-          },
-          {
-            id: 'client-1',
-            name: 'Mateo Sanchez',
-            email: 'cliente@gmail.com',
-            addresses: [],
-            role: 'client'
-          }
-        ];
+  const login = async (email: string, password: string) => {
+    const res = await apiClient.post<{
+      status: string;
+      token: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+        phone?: string;
+        role?: string;
+      };
+    }>('auth/login', { email, password });
 
-        const targetEmail = email.toLowerCase().trim();
-        const demoFound = demoAccounts.find(u => u.email === targetEmail);
-
-        if (demoFound) {
-          setUser(demoFound);
-          localStorage.setItem('demo_user', JSON.stringify(demoFound));
-          resolve();
-          return;
-        }
-
-        // Simple demo logic: check local storage or use mock
-        const savedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        const found = savedUsers.find((u: any) => u.email.toLowerCase().trim() === targetEmail);
-        
-        if (found) {
-          const userObj = { ...found, id: found.id || '1', role: found.role || 'client' };
-          setUser(userObj);
-          localStorage.setItem('demo_user', JSON.stringify(userObj));
-          resolve();
-        } else {
-          reject(new Error('Credenciales inválidas. Prueba con: admin@supermercado.com, staff@supermercado.com o cliente@gmail.com'));
-        }
-      }, 800);
-    });
+    if (res && res.token) {
+      localStorage.setItem('token', res.token);
+      const userObj: User = {
+        id: res.user.id,
+        name: res.user.name,
+        email: res.user.email,
+        phone: res.user.phone,
+        addresses: [],
+        role: (res.user.role?.toLowerCase() as any) || 'client'
+      };
+      setUser(userObj);
+      localStorage.setItem('demo_user', JSON.stringify(userObj));
+    } else {
+      throw new Error('No se recibió el token de autenticación');
+    }
   };
 
-  const register = async (name: string, email: string, _password: string) => {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const newUser: User = {
-          id: Math.random().toString(36).substr(2, 9),
-          name,
-          email,
-          addresses: [],
-          role: 'client'
-        };
-        
-        const savedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        localStorage.setItem('registered_users', JSON.stringify([...savedUsers, newUser]));
-        
-        setUser(newUser);
-        localStorage.setItem('demo_user', JSON.stringify(newUser));
-        resolve();
-      }, 800);
-    });
+  const register = async (data: {
+    cedula: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    password: string;
+    birthdate?: string;
+  }) => {
+    // 1. Llamar a la API del backend para registrarse de forma segura
+    await apiClient.post<{ status: string; user: any }>('auth/register', data);
+    // 2. Loguearse automáticamente usando las credenciales recién creadas
+    await login(data.email, data.password);
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('demo_user');
+    localStorage.removeItem('token');
   };
 
   const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
-    const updatedUser = { ...user, ...data };
-    setUser(updatedUser);
-    localStorage.setItem('demo_user', JSON.stringify(updatedUser));
+    try {
+      const res = await apiClient.patch<{
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          phone?: string;
+          role?: string;
+        };
+      }>('auth/profile', data);
+      
+      if (res && res.user) {
+        const updatedUser = { 
+          ...user, 
+          name: res.user.name,
+          email: res.user.email,
+          phone: res.user.phone,
+          role: (res.user.role?.toLowerCase() as any) || 'client'
+        };
+        setUser(updatedUser);
+        localStorage.setItem('demo_user', JSON.stringify(updatedUser));
+      }
+    } catch (err: any) {
+      console.warn("Falla al actualizar perfil en servidor, actualizando localmente:", err);
+      const updatedUser = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem('demo_user', JSON.stringify(updatedUser));
+    }
   };
 
   const addAddress = async (address: Omit<Address, 'id'>) => {
