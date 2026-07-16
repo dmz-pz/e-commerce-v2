@@ -1,4 +1,3 @@
-import { getPrisma } from "../db.ts";
 import { orderRepository } from "../repositories/orderRepository.ts";
 import { userRepository } from "../repositories/userRepository.ts";
 import { productRepository } from "../repositories/productRepository.ts";
@@ -9,7 +8,6 @@ import { AppError } from "../utils/appErrors.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
 
 export class OrderService {
-  private prisma = getPrisma();
   /**
    * 1. Obtiene todas las órdenes del repositorio real de la base de datos.
    */
@@ -309,7 +307,7 @@ export class OrderService {
     // 3. Recalcular totales financieros basándose en la verdad del catálogo real
     // Recopilar todos los IDs de productos que generarán cargos financieros
     const finalProductIds = pickingItems
-      .filter((item) => item.status !== ItemStatus.CANCELED) // Omitimos los cancelados
+      .filter((item) => item.status !== ItemStatus.CANCELLED) // Omitimos los cancelados
       .map((item) =>
         item.status === ItemStatus.SUBSTITUTED && item.substitutedWithId
           ? item.substitutedWithId
@@ -324,7 +322,7 @@ export class OrderService {
 
     for (const pickingItem of pickingItems) {
       // Si el ítem fue cancelado por el picker, su costo en esta orden pasa a ser 0
-      if (pickingItem.status === ItemStatus.CANCELED) {
+      if (pickingItem.status === ItemStatus.CANCELLED) {
         continue;
       }
 
