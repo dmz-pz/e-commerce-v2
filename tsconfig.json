@@ -21,5 +21,5 @@
     "noEmit": true,
     "typeRoots": ["./server/api/types", "./node_modules/@types"]
   },
-  "include": ["server/**/*", "src/**/*"]
+  "include": ["server/**/*", "src/**/*", "prisma/seed.ts"]
 }

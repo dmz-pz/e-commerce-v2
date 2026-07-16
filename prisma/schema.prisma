@@ -38,7 +38,7 @@
   COMPLETED
   PARTIAL
   SUBSTITUTED
-  CANCELED
+  CANCELLED
   }
  
   enum FulfillmentMethod {
