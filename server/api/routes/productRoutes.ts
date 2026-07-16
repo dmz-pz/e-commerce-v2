@@ -30,7 +30,7 @@ const parseRouteImage = (req: any, res: any, next: any) => {
 
 // 🔍 RUTAS DE LECTURA (PÚBLICAS)
 router.get("/", productController.getAll);
-router.get("/:id", productController.getByBarcode);
+router.get("/:id", productController.getById);
 
 // 🚀 RUTAS DE ESCRITURA (CON CADENA DE MIDDLEWARES CORREGIDA)
 router.post(
