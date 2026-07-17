@@ -19,7 +19,7 @@ export class OrderController {
       if (!order) {
         throw new AppError("La orden solicitada no fue encontrada", 404);
       }
-      res.json(orderId);
+      res.json(order);
     } catch (error: any) {
       next(error);
     }
@@ -27,7 +27,7 @@ export class OrderController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id || req.body.userId;
+      const userId = (req as any).user?.id;
       if (!userId) {
         throw new AppError(
           "Operación no autorizada. Falta la identidad del usuario.",
@@ -44,10 +44,10 @@ export class OrderController {
   }
 
   async updateStatus(req: Request, res: Response, next: NextFunction) {
-    const { id } = req.params;
+    const { orderId } = req.params;
     const { status, pickerId } = req.body;
     try {
-      const order = await orderService.updateStatus(id, status, pickerId);
+      const order = await orderService.updateStatus(orderId, status, pickerId);
       if (order) {
         res.json(order);
       } else {
