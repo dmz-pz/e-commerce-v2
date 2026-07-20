@@ -11,6 +11,7 @@ import orderRoutes from "./server/api/routes/orderRoutes.ts";
 import inventoryRoutes from "./server/api/routes/inventoryRoutes.ts";
 import deliveryRoutes from "./server/api/routes/deliveryRoutes.ts";
 import adminRoutes from "./server/api/routes/adminRoutes.ts";
+import categoryRoutes from "./server/api/routes/categoryRoutes.ts";
 
 import { globalErrorHandler } from "./server/api/middlewares/errorMiddleware.ts";
 
@@ -30,6 +31,7 @@ async function startServer() {
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/delivery", deliveryRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/categories", categoryRoutes);
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", message: "SuperMercado Express API is running" });
