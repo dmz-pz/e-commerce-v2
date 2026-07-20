@@ -15,12 +15,17 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   const [inventorySearch, setInventorySearch] = useState('');
 
   // Filter Inventory
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(inventorySearch.toLowerCase()) || 
-    p.category.toLowerCase().includes(inventorySearch.toLowerCase()) ||
-    p.subcategory.toLowerCase().includes(inventorySearch.toLowerCase()) ||
-    (p.brand && p.brand.toLowerCase().includes(inventorySearch.toLowerCase()))
-  );
+  const filteredProducts = products.filter(p => {
+    const search = inventorySearch.toLowerCase();
+    const categoryName = p.subcategory?.category?.name?.toLowerCase() ?? '';
+    const subcategoryName = p.subcategory?.name?.toLowerCase() ?? '';
+    return (
+      p.name.toLowerCase().includes(search) ||
+      categoryName.includes(search) ||
+      subcategoryName.includes(search) ||
+      (p.brand && p.brand.toLowerCase().includes(search))
+    );
+  });
 
   return (
     <motion.div
@@ -77,7 +82,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
                       <img 
-                        src={p.imageUrl} 
+                        src={p.images?.[0]?.url} 
                         alt={p.name}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover" 
@@ -93,8 +98,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                   </div>
                 </td>
                 <td className="py-4.5 px-6">
-                  <span className="text-xs font-bold text-slate-700 block">{p.category}</span>
-                  <span className="text-[10px] font-bold text-brand uppercase tracking-wider">{p.subcategory}</span>
+                  <span className="text-xs font-bold text-slate-700 block">{p.subcategory?.category?.name ?? '—'}</span>
+                  <span className="text-[10px] font-bold text-brand uppercase tracking-wider">{p.subcategory?.name ?? '—'}</span>
                 </td>
                 <td className="py-4.5 px-6">
                   <div className="flex flex-col">
@@ -155,7 +160,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
                   <img 
-                    src={p.imageUrl} 
+                    src={p.images?.[0]?.url} 
                     alt={p.name}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover" 
@@ -168,8 +173,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                   <h4 className="font-bold text-slate-800 text-sm truncate leading-snug">{p.name}</h4>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{p.brand || 'Genérico'}</p>
                   <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                    <span className="text-[9px] font-black text-brand bg-brand/5 px-2 py-0.5 rounded uppercase tracking-wide">{p.category}</span>
-                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded text-center">{p.subcategory}</span>
+                    <span className="text-[9px] font-black text-brand bg-brand/5 px-2 py-0.5 rounded uppercase tracking-wide">{p.subcategory?.category?.name ?? '—'}</span>
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded text-center">{p.subcategory?.name ?? '—'}</span>
                   </div>
                 </div>
               </div>
