@@ -3,27 +3,54 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { apiClient } from './apiClient.ts';
-import { Product } from '../types/index.ts';
+import { apiClient } from "./apiClient.ts";
+import { Product } from "../types/index.ts";
+
+export interface GetProductsParams {
+  includeInactive?: boolean;
+  subcategoryId?: string;
+  search?: string;
+}
 
 export const productService = {
-  /**
-   * Obtiene la lista de productos del catálogo.
-   * @param includeInactive - Si es verdadero, incluye los productos inactivos (para administradores).
-   */
-  getProducts: async (includeInactive = false): Promise<Product[]> => {
-    const endpoint = includeInactive ? '/api/products?includeInactive=true' : '/api/products';
+  getProducts: async (params: GetProductsParams = {}): Promise<Product[]> => {
+    const queryParams = new URLSearchParams();
+
+    if (params.includeInactive) queryParams.append("includeInactive", "true");
+    if (params.subcategoryId)
+      queryParams.append("subcategoryId", params.subcategoryId);
+    if (params.search) queryParams.append("search", params.search);
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/products${queryString ? `?${queryString}` : ""}`;
+
     return apiClient.get<Product[]>(endpoint);
   },
 
-  /**
-   * Crea un nuevo producto en el catálogo.
-   * @param productData - Los datos del nuevo producto sin el ID.
-   * @param userId - ID del usuario que realiza la acción para propósitos de auditoría.
-   */
-  createProduct: async (productData: Omit<Product, 'id'>, userId = 'admin-dashboard'): Promise<Product> => {
-    return apiClient.post<Product>('/api/products', productData, {
-      headers: { 'x-user-id': userId }
+  getProductById: async (id: string): Promise<Product> => {
+    return apiClient.get<Product>(`/api/products/${id}`);
+  },
+
+  getProductByBarcode: async (barcode: string): Promise<Product> => {
+    return apiClient.get<Product>(`/api/products/barcode/${barcode}`);
+  },
+
+  createProduct: async (
+    formData: FormData,
+    userId = "admin-dashboard",
+  ): Promise<Product> => {
+    return apiClient.post<Product>("/api/products", formData, {
+      headers: { "x-user-id": userId },
+    });
+  },
+
+  updateProduct: async (
+    id: string,
+    formData: FormData,
+    userId = "admin-dashboard",
+  ): Promise<Product> => {
+    return apiClient.patch<Product>(`/api/products/${id}`, formData, {
+      headers: { "x-user-id": userId },
     });
   },
 
@@ -33,9 +60,16 @@ export const productService = {
    * @param isActive - El nuevo estado de activación.
    * @param userId - ID del usuario que realiza la acción para propósitos de auditoría.
    */
-  updateProductActivity: async (id: string, isActive: boolean, userId = 'admin-dashboard'): Promise<void> => {
-    return apiClient.patch<void>(`/api/products/${id}`, { isActive }, {
-      headers: { 'x-user-id': userId }
+  updateProductActivity: async (
+    id: string,
+    isActive: boolean,
+    userId = "admin-dashboard",
+  ): Promise<Product> => {
+    const formData = new FormData();
+    formData.append("isActive", String(isActive));
+
+    return apiClient.patch<Product>(`/api/products/${id}`, formData, {
+      headers: { "x-user-id": userId },
     });
-  }
+  },
 };

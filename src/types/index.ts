@@ -3,80 +3,198 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// ==========================================
+// ENUMS (Sincronizados con Prisma)
+// ==========================================
+
+export enum Role {
+  CLIENTE = "CLIENTE",
+  ADMINISTRADOR = "ADMINISTRADOR",
+  STAFF_PICKER = "STAFF_PICKER",
+  DELIVERY = "DELIVERY",
+}
+
 export enum OrderStatus {
-  PENDING = 'pending',
-  PICKING = 'picking',
-  READY = 'ready',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled'
+  PENDING = "PENDING",
+  PICKING = "PICKING",
+  READY_TO_PAY = "READY_TO_PAY",
+  PAID = "PAID",
+  DELIVERED = "DELIVERED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum ItemStatus {
+  COMPLETED = "COMPLETED",
+  PARTIAL = "PARTIAL",
+  SUBSTITUTED = "SUBSTITUTED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum FulfillmentMethod {
+  DELIVERY = "DELIVERY",
+  PICK_UP = "PICK_UP",
+}
+
+export enum PaymentMethod {
+  PAGO_MOVIL = "PAGO_MOVIL",
+  ZELLE = "ZELLE",
+  BINANCE = "BINANCE",
+  EFECTIVO_DELIVERY = "EFECTIVO_DELIVERY",
+  PUNTO_DELIVERY = "PUNTO_DELIVERY",
+}
+
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
+export enum UnitType {
+  UNID = "UNID",
+  KG = "KG",
+  GR = "GR",
+}
+
+// ==========================================
+// MÓDULO 1: USUARIOS, ROLES Y DIRECCIONES
+// ==========================================
+
+export interface Address {
+  id: string;
+  alias: string;
+  line1: string;
+  line2?: string;
+  userId: string;
+}
+
+export interface User {
+  id: string;
+  cedula: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  birthdate?: string; // Fechas vienen como ISO string desde la API JSON
+  role: Role;
+  addresses?: Address[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+// ==========================================
+// MÓDULO 2: CATÁLOGO DE PRODUCTOS (PIM)
+// ==========================================
+
+export interface Category {
+  id: string;
+  name: string;
+  subcategories?: Subcategory[];
+}
+
+export interface Subcategory {
+  id: string;
+  name: string;
+  categoryId: string;
+  category?: Category;
+}
+
+export interface ProductImage {
+  id: string;
+  productId: string;
+  url: string;
+  order?: number;
 }
 
 export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
+  barcode?: string;
+  price: number; // En JSON los Decimales de Prisma se mapean como number o string
   discountPrice?: number;
   stock: number;
-  category: string;
-  subcategory: string;
   brand?: string;
   rating?: number;
   reviewCount?: number;
-  specifications?: Record<string, string>;
-  imageUrl: string;
-  unit: string; // e.g., 'kg', 'unit', 'pack'
+  specifications?: Record<string, any>;
+  unit: UnitType;
   isRecommended?: boolean;
   salesCount?: number;
   isActive?: boolean;
+  subcategoryId: string;
+  subcategory?: Subcategory;
+  images?: ProductImage[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface CartItem {
+// ==========================================
+// MÓDULO 3: TRANSACCIONES Y PICKING
+// ==========================================
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
   productId: string;
-  quantity: number;
+  product?: Product;
+  name: string; // Nombre congelado en el momento de la compra
   price: number;
-  name: string;
+  requestedQuantity: number;
+  pickedQuantity: number;
+  status: ItemStatus;
+  substitutedWithId?: string;
+  substitutedWith?: Product;
 }
 
 export interface Order {
   id: string;
+  customerId: string;
+  customer?: User;
+  fulfillmentMethod: FulfillmentMethod;
+  deliveryAddress?: string;
   customerName: string;
-  customerID: string; // Cedula
+  cedula: string;
   customerPhone: string;
-  paymentMethod: string;
-  items: CartItem[];
+  subtotal: number;
+  shippingCost: number;
   total: number;
   status: OrderStatus;
-  createdAt: number;
-  updatedAt: number;
-  pickerId?: string; // ID of the staff member picking the order
-  deliveryPersonId?: string; // ID of the assigned motorizado
+  items: OrderItem[];
+  payment?: Payment;
+  pickerId?: string;
+  picker?: User;
+  deliveryPersonId?: string;
+  deliveryPerson?: User;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface DeliveryPerson {
-  id: string;
-  name: string;
-  status: 'available' | 'busy' | 'offline';
-  vehicle: string;
-}
-
-export interface InventoryLog {
-  id: string;
+// Estrutura auxiliar para el estado local del carrito antes de checkout.
+// Contiene únicamente los campos mínimos necesarios para renderizar el carrito
+// y construir la orden. El precio se congela en el momento de agregar el ítem.
+export interface CartItem {
   productId: string;
-  change: number;
-  reason: string;
-  timestamp: number;
+  name: string;
+  price: number;
+  quantity: number;
 }
+
+// ==========================================
+// MÓDULO 4: CONTROL FINANCIERO Y AUDITORÍA
+// ==========================================
 
 export interface Payment {
   id: string;
   orderId: string;
   amount: number;
-  method: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reference: string;
-  receiptUrl?: string; // Captura de depósito simulada
-  createdAt: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  reference?: string;
+  receiptUrl?: string;
+  reviewedById?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuditLog {
@@ -84,9 +202,8 @@ export interface AuditLog {
   orderId?: string;
   action: string;
   performedById: string;
-  performedByName: string;
-  previousState?: any;
-  newState?: any;
-  timestamp: number;
+  performedBy?: User;
+  previousState?: Record<string, any>;
+  newState?: Record<string, any>;
+  timestamp: string;
 }
-
