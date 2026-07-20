@@ -172,6 +172,23 @@ export class ProductRepository {
       },
     });
   }
+
+  /**
+   * Busca un producto específicamente por su código de barras (Lector industrial).
+   */
+  async getByBarcode(barcode: string): Promise<ProductWithRelations | null> {
+    return await this.prisma.product.findUnique({
+      where: { barcode },
+      include: {
+        images: true,
+        subcategory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+  }
 }
 
 export const productRepository = new ProductRepository();

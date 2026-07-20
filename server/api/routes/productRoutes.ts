@@ -31,6 +31,7 @@ const parseRouteImage = (req: any, res: any, next: any) => {
 // 🔍 RUTAS DE LECTURA (PÚBLICAS)
 router.get("/", productController.getAll);
 router.get("/:id", productController.getById);
+router.get("/barcode/:barcode", productController.getByBarcode);
 
 // 🚀 RUTAS DE ESCRITURA (CON CADENA DE MIDDLEWARES CORREGIDA)
 router.post(
@@ -44,7 +45,7 @@ router.post(
 );
 
 router.patch(
-  "/:barcode",
+  "/:id",
   uploadImage.single("image"),
   validateResource(updateProductRequestSchema),
   parseRouteImage,

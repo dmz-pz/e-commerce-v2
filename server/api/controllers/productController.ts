@@ -70,14 +70,14 @@ export class ProductController {
    */
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { barcode } = req.params;
+      const { id } = req.params;
       const performedByUserId =
         (req.headers["x-user-id"] as string) ||
         "8341bc73-f2c7-4f96-a7df-a97003f18b74";
 
       // Transferimos los cambios directamente al servicio
       const product = await productService.updateProduct(
-        barcode,
+        id,
         req.body,
         performedByUserId,
       );
@@ -87,7 +87,23 @@ export class ProductController {
       next(error);
     }
   }
-}
 
+  /**
+   * Obtiene un producto utilizando el código de barras escaneado.
+   */
+  async getByBarcode(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { barcode } = req.params;
+      const product = await productService.getProductByBarcode(barcode);
+      res.json(product);
+    } catch (error) {
+      next(error);
+    }
+  }
+}
 // Exportamos la instancia única (Singleton) para su uso en las rutas
 export const productController = new ProductController();

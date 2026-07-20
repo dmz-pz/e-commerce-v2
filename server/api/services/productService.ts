@@ -139,6 +139,20 @@ export class ProductService {
       await productRepository.updateStock(id, product.stock + quantity);
     }
   }
+
+  /**
+   * Busca un producto por su código de barras registrado.
+   */
+  async getProductByBarcode(barcode: string): Promise<ProductWithRelations> {
+    const product = await productRepository.getByBarcode(barcode);
+    if (!product) {
+      throw new AppError(
+        `No se encontró ningún producto con el código de barras: ${barcode}`,
+        404,
+      );
+    }
+    return product;
+  }
 }
 
 export const productService = new ProductService();
