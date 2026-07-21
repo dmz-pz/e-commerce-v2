@@ -8,9 +8,41 @@ export class ProductController {
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const includeInactive = req.query.includeInactive === "true";
-      const products = await productService.getAllProducts(includeInactive);
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const subcategoryId = req.query.subcategoryId as string | undefined;
+      const categoryId = req.query.categoryId as string | undefined;
+      const search = req.query.search as string | undefined;
+      const sortBy = req.query.sortBy as any;
+      const isRecommended = req.query.isRecommended === "true";
+      const hasDiscount = req.query.hasDiscount === "true";
 
-      res.json(products);
+      // Si se especifican parámetros de paginación o filtros, usamos getPaginatedProducts
+      if (page || limit || subcategoryId || categoryId || search || sortBy || isRecommended || hasDiscount) {
+        const paginatedResult = await productService.getPaginatedProducts({
+          page,
+          limit,
+          subcategoryId,
+          categoryId,
+          search,
+          sortBy,
+          isRecommended,
+          hasDiscount,
+          includeInactive,
+        });
+        res.json(paginatedResult);
+        return;
+      }
+
+      // Si no hay parámetros de paginación, devolver objeto paginado por defecto con limit=12 o todos
+      if (req.query.all === "true") {
+        const products = await productService.getAllProducts(includeInactive);
+        res.json(products);
+        return;
+      }
+
+      const paginatedResult = await productService.getPaginatedProducts({ includeInactive });
+      res.json(paginatedResult);
     } catch (error) {
       next(error);
     }

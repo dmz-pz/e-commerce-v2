@@ -6,25 +6,56 @@
 import { apiClient } from "./apiClient.ts";
 import { Product } from "../types/index.ts";
 
+export interface PaginatedProductsResponse {
+  items: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface GetProductsParams {
   includeInactive?: boolean;
   subcategoryId?: string;
+  categoryId?: string;
   search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: "relevance" | "price_asc" | "price_desc" | "name_asc";
+  isRecommended?: boolean;
+  hasDiscount?: boolean;
+  all?: boolean;
 }
 
 export const productService = {
-  getProducts: async (params: GetProductsParams = {}): Promise<Product[]> => {
+  getProducts: async (params: GetProductsParams = {}): Promise<PaginatedProductsResponse> => {
     const queryParams = new URLSearchParams();
 
     if (params.includeInactive) queryParams.append("includeInactive", "true");
-    if (params.subcategoryId)
-      queryParams.append("subcategoryId", params.subcategoryId);
+    if (params.subcategoryId) queryParams.append("subcategoryId", params.subcategoryId);
+    if (params.categoryId) queryParams.append("categoryId", params.categoryId);
     if (params.search) queryParams.append("search", params.search);
+    if (params.page) queryParams.append("page", String(params.page));
+    if (params.limit) queryParams.append("limit", String(params.limit));
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.isRecommended) queryParams.append("isRecommended", "true");
+    if (params.hasDiscount) queryParams.append("hasDiscount", "true");
+    if (params.all) queryParams.append("all", "true");
 
     const queryString = queryParams.toString();
     const endpoint = `/api/products${queryString ? `?${queryString}` : ""}`;
 
-    return apiClient.get<Product[]>(endpoint);
+    const res = await apiClient.get<PaginatedProductsResponse | Product[]>(endpoint);
+    if (Array.isArray(res)) {
+      return {
+        items: res,
+        total: res.length,
+        page: 1,
+        limit: res.length || 12,
+        totalPages: 1,
+      };
+    }
+    return res;
   },
 
   getProductById: async (id: string): Promise<Product> => {

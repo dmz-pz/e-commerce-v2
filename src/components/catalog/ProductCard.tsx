@@ -14,7 +14,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [imageError, setImageError] = React.useState(false);
   const { items, addItem, updateQuantity } = useCart();
   const imageUrl = product.images?.[0]?.url;
-  const cartItem = items.find((item) => item.product.id === product.id);
+  const cartItem = items.find((item) => item.productId === product.id);
   const currentQuantity = cartItem?.quantity || 0;
 
   return (

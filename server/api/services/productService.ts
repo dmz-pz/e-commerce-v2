@@ -15,6 +15,10 @@ export class ProductService {
     return await productRepository.getAll(includeInactive);
   }
 
+  async getPaginatedProducts(options: any) {
+    return await productRepository.getPaginated(options);
+  }
+
   /**
    * Busca un producto específico por su ID único.
    * Devuelve el objeto con sus relaciones o null si no es encontrado.

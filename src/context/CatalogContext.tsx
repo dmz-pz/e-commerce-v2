@@ -36,6 +36,15 @@ interface CatalogContextType {
   setShowCategoriesModal: (show: boolean) => void;
   checkoutLoading: boolean;
   handleCheckout: () => Promise<void>;
+  // Server-side pagination states & controls
+  page: number;
+  setPage: (page: number) => void;
+  limit: number;
+  setLimit: (limit: number) => void;
+  sortBy: "relevance" | "price_asc" | "price_desc" | "name_asc";
+  setSortBy: (sort: "relevance" | "price_asc" | "price_desc" | "name_asc") => void;
+  totalProducts: number;
+  totalPages: number;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -54,41 +63,101 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
+  // Estados de paginación server-side
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [sortBy, setSortBy] = useState<"relevance" | "price_asc" | "price_desc" | "name_asc">("relevance");
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Estados para secciones destacadas de la portada (limitadas a 10 productos por sección)
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [discountedProducts, setDiscountedProducts] = useState<Product[]>([]);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+
   const { items, clearCart } = useCart();
   const { user } = useUser();
 
-  // 1. CARGA INICIAL: PRODUCTOS Y CATEGORÍAS EN PARALELO
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [productsData, categoriesData] = await Promise.all([
-        productService.getProducts({ includeInactive: false }),
-        categoryService.getCategories(),
-      ]);
-      setProducts(productsData);
-      setCategories(categoriesData);
-    } catch (err) {
-      console.error("Error fetching catalog data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Resetear a página 1 al cambiar filtros principales
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    setPage(1);
+  }, [selectedCategory, selectedSubcategory, searchQuery, limit, sortBy]);
 
   // Resetear la subcategoría seleccionada al cambiar de categoría principal
   useEffect(() => {
     setSelectedSubcategory("all");
   }, [selectedCategory]);
 
-  // 2. BÚSQUEDA RÁPIDA POR ESCÁNER INDUSTRIAL
+  // 1. CARGA DE CATEGORÍAS Y PRODUCTOS DESTACADOS PARA LA PORTADA (MÁX 10 POR SECCIÓN)
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [categoriesData, recRes, discRes] = await Promise.all([
+          categoryService.getCategories(),
+          productService.getProducts({ isRecommended: true, limit: 10 }),
+          productService.getProducts({ hasDiscount: true, limit: 10 }),
+        ]);
+        setCategories(categoriesData);
+        setRecommendedProducts(recRes.items || []);
+        setDiscountedProducts(discRes.items || []);
+        setBestSellers((recRes.items || []).slice(0, 8));
+      } catch (err) {
+        console.error("Error al cargar categorías y destacados de portada:", err);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // 2. CARGA PAGINADA SERVER-SIDE DE PRODUCTOS SEGÚN FILTROS Y NAVEGACIÓN
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Determinar ID real de categoría o subcategoría si no es 'all'
+      let catId: string | undefined;
+      if (selectedCategory !== "all") {
+        const foundCat = categories.find(
+          (c) => c.id === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase()
+        );
+        catId = foundCat?.id || selectedCategory;
+      }
+
+      let subCatId: string | undefined;
+      if (selectedSubcategory !== "all") {
+        const foundSub = categories
+          .flatMap((c) => c.subcategories || [])
+          .find((s) => s.id === selectedSubcategory || s.name.toLowerCase() === selectedSubcategory.toLowerCase());
+        subCatId = foundSub?.id || selectedSubcategory;
+      }
+
+      const res = await productService.getProducts({
+        page,
+        limit,
+        categoryId: catId,
+        subcategoryId: subCatId,
+        search: searchQuery.trim() || undefined,
+        sortBy,
+      });
+
+      setProducts(res.items || []);
+      setTotalProducts(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+    } catch (err) {
+      console.error("Error al obtener catálogo paginado:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, selectedCategory, selectedSubcategory, searchQuery, sortBy, categories]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // 3. BÚSQUEDA RÁPIDA POR ESCÁNER INDUSTRIAL (Código de barras)
   useEffect(() => {
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return;
 
-    // Detecta patrón de código de barras (8 a 14 dígitos)
     const isBarcode = /^\d{8,14}$/.test(cleanQuery);
     if (isBarcode) {
       productService
@@ -96,81 +165,24 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         .then((product) => {
           if (product) {
             setProducts([product]);
+            setTotalProducts(1);
+            setTotalPages(1);
           }
         })
-        .catch(() => {
-          // Si no existe coincidencia exacta por código de barras, mantiene la lista general
-        });
+        .catch(() => {});
     }
   }, [searchQuery]);
 
-  // 3. SUBCATEGORÍAS DINÁMICAS BASADAS EN LA CATEGORÍA SELECCIONADA
+  // 4. SUBCATEGORÍAS DINÁMICAS BASADAS EN LA CATEGORÍA SELECCIONADA
   const subcategories = useMemo(() => {
     if (selectedCategory === "all") return [];
-
-    // Busca por ID o por Nombre la categoría activa
     const activeCategory = categories.find(
-      (c) =>
-        c.id === selectedCategory ||
-        c.name.toLowerCase() === selectedCategory.toLowerCase(),
+      (c) => c.id === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase()
     );
-
     return activeCategory?.subcategories || [];
   }, [categories, selectedCategory]);
 
-  // 4. FILTRADO MEMOIZADO DE PRODUCTOS
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const query = searchQuery.toLowerCase().trim();
-
-      // Coincidencia por categoría
-      const matchesCategory =
-        selectedCategory === "all" ||
-        p.subcategory?.categoryId === selectedCategory ||
-        p.subcategory?.category?.name.toLowerCase() ===
-          selectedCategory.toLowerCase();
-
-      // Coincidencia por subcategoría
-      const matchesSubcategory =
-        selectedSubcategory === "all" ||
-        p.subcategoryId === selectedSubcategory ||
-        p.subcategory?.name.toLowerCase() === selectedSubcategory.toLowerCase();
-
-      // Coincidencia por término de búsqueda (Nombre, Marca, Código de Barras o Pasillos)
-      const matchesSearch =
-        !query ||
-        p.name.toLowerCase().includes(query) ||
-        (p.brand && p.brand.toLowerCase().includes(query)) ||
-        (p.barcode && p.barcode.includes(query)) ||
-        (p.subcategory?.name &&
-          p.subcategory.name.toLowerCase().includes(query)) ||
-        (p.subcategory?.category?.name &&
-          p.subcategory.category.name.toLowerCase().includes(query));
-
-      return matchesCategory && matchesSubcategory && matchesSearch;
-    });
-  }, [products, selectedCategory, selectedSubcategory, searchQuery]);
-
-  // 5. SECCIONES DESTACADAS
-  const recommendedProducts = useMemo(
-    () => products.filter((p) => p.isRecommended),
-    [products],
-  );
-
-  const discountedProducts = useMemo(
-    () => products.filter((p) => p.discountPrice && p.discountPrice < p.price),
-    [products],
-  );
-
-  const bestSellers = useMemo(
-    () =>
-      [...products]
-        .sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0))
-        .slice(0, 8),
-    [products],
-  );
-
-  // 6. PROCESAMIENTO DEL CHECKOUT
+  // 5. PROCESAMIENTO DEL CHECKOUT
   const handleCheckout = async () => {
     if (items.length === 0) return;
     if (!user) {
@@ -193,7 +205,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       clearCart();
       setShowCart(false);
-      fetchData(); // Recarga stock actualizado
+      fetchProducts();
     } catch (e: any) {
       alert(e.message || "Error al procesar el pedido");
     } finally {
@@ -214,7 +226,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         setSearchQuery,
         loading,
         subcategories,
-        filteredProducts,
+        filteredProducts: products, // En servidor, los productos devueltos son los ya filtrados
         recommendedProducts,
         discountedProducts,
         bestSellers,
@@ -226,6 +238,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         setShowCategoriesModal,
         checkoutLoading,
         handleCheckout,
+        page,
+        setPage,
+        limit,
+        setLimit,
+        sortBy,
+        setSortBy,
+        totalProducts,
+        totalPages,
       }}
     >
       {children}

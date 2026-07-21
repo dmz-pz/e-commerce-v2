@@ -45,8 +45,8 @@ export const AdminDashboard: React.FC = () => {
   // Consulta de servicios desde la API
   const fetchInventory = async () => {
     try {
-      const data = await productService.getProducts({ includeInactive: true });
-      setProducts(data);
+      const data = await productService.getProducts({ includeInactive: true, all: true });
+      setProducts(data.items || []);
     } catch (err) {
       console.error("Error al obtener catálogo administrador:", err);
     }

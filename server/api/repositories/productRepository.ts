@@ -13,11 +13,24 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
   };
 }>;
 
+export interface ProductQueryOptions {
+  page?: number;
+  limit?: number;
+  subcategoryId?: string;
+  categoryId?: string;
+  search?: string;
+  sortBy?: "relevance" | "price_asc" | "price_desc" | "name_asc";
+  isRecommended?: boolean;
+  hasDiscount?: boolean;
+  includeInactive?: boolean;
+}
+
 export class ProductRepository {
   /**
    * Obtiene los productos desde la BD con sus relaciones puras de Prisma.
    */
   private prisma = getPrisma();
+
   async getAll(includeInactive = false): Promise<ProductWithRelations[]> {
     return await this.prisma.product.findMany({
       where: includeInactive ? {} : { isActive: true },
@@ -31,6 +44,64 @@ export class ProductRepository {
       },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  async getPaginated(options: ProductQueryOptions = {}) {
+    const page = Math.max(1, options.page || 1);
+    const limit = Math.max(1, options.limit || 12);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {
+      ...(options.includeInactive ? {} : { isActive: true }),
+      ...(options.subcategoryId ? { subcategoryId: options.subcategoryId } : {}),
+      ...(options.categoryId ? { subcategory: { categoryId: options.categoryId } } : {}),
+      ...(options.isRecommended ? { isRecommended: true } : {}),
+      ...(options.hasDiscount ? { discountPrice: { not: null } } : {}),
+    };
+
+    if (options.search && options.search.trim()) {
+      const query = options.search.trim();
+      where.OR = [
+        { name: { contains: query, mode: "insensitive" } },
+        { brand: { contains: query, mode: "insensitive" } },
+        { barcode: { contains: query } },
+      ];
+    }
+
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: "desc" };
+    if (options.sortBy === "price_asc") {
+      orderBy = { price: "asc" };
+    } else if (options.sortBy === "price_desc") {
+      orderBy = { price: "desc" };
+    } else if (options.sortBy === "name_asc") {
+      orderBy = { name: "asc" };
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        take: limit,
+        skip,
+        orderBy,
+        include: {
+          images: true,
+          subcategory: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
   }
 
   /**

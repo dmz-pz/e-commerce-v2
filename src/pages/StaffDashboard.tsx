@@ -42,8 +42,8 @@ export const StaffDashboard: React.FC = () => {
   };
 
   const fetchProducts = () => {
-    productService.getProducts()
-      .then(data => setCatalogProducts(data))
+    productService.getProducts({ all: true })
+      .then(data => setCatalogProducts(data.items || []))
       .catch(err => console.error("Error fetching products:", err));
   };
 
