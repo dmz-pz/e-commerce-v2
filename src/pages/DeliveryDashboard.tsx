@@ -9,35 +9,15 @@ import { useUser } from '../context/UserContext.tsx';
 import { orderService } from '../services/orderService.ts';
 import { Logo } from '../components/Logo.tsx';
 
-// Direcciones simuladas fijas por ID de Orden para realismo absoluto
-const MOCK_ADDRESSES: Record<string, string> = {
-  'ord-8421': 'Av. Principal de Las Mercedes, Edif. Parque, Torre B, Apto 4A. Punto de referencia: Al lado de la Plaza.',
-  'ord-1255': 'Calle París con Monterrey, Residencias Altamira, Piso 10, Apto 10-C, Las Mercedes.',
-  'default_1': 'Av. Francisco de Miranda, Edificio торре provincial, Piso 4, Oficina 4-B, Chacao.',
-  'default_2': 'Urb. La Castellana, Av. Principal, Res. El Bosque, Casa Nro 12, Chacao.',
-  'default_3': 'Tercera transversal de Altamira, entre avenidas San Juan Bosco y Luis Roche, Res. Altamira, Apto 5B.',
-};
-
-const getSimulatedAddress = (orderId: string): string => {
-  if (MOCK_ADDRESSES[orderId]) return MOCK_ADDRESSES[orderId];
-  // Generar dinámica pero determinista
-  const sum = orderId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const defaults = [MOCK_ADDRESSES.default_1, MOCK_ADDRESSES.default_2, MOCK_ADDRESSES.default_3];
-  return defaults[sum % defaults.length];
-};
-
 export const DeliveryDashboard: React.FC = () => {
   const { user } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverStatus, setDriverStatus] = useState<'available' | 'busy' | 'offline'>('available');
   const [activeTab, setActiveTab] = useState<'assigned' | 'ready' | 'history'>('assigned');
-  
-  // Guardaremos compras terminadas localmente para aislar el historial por sesión de delivery
-  const [completedOrderIds, setCompletedOrderIds] = useState<string[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Carga inicial de datos
+  // Carga inicial de datos desde el backend
   const loadOrders = async () => {
     try {
       const allOrders = await orderService.getOrders();
@@ -51,36 +31,22 @@ export const DeliveryDashboard: React.FC = () => {
 
   useEffect(() => {
     loadOrders();
-    // Leer entregas completadas desde localStorage
-    const savedCompleted = localStorage.getItem('completed_deliveries_session');
-    if (savedCompleted) {
-      setCompletedOrderIds(JSON.parse(savedCompleted));
-    }
 
-    // Polling cada 12s
+    // Polling cada 10s para actualizar las órdenes en ruta
     const interval = setInterval(() => {
       loadOrders();
-    }, 12000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Guardar en localStorage
-  const saveCompletedOrders = (updatedList: string[]) => {
-    setCompletedOrderIds(updatedList);
-    localStorage.setItem('completed_deliveries_session', JSON.stringify(updatedList));
-  };
-
-  // Auto-asignación de pedido
+  // Auto-asignación de pedido al repartidor en sesión
   const handleTakeOrder = async (orderId: string) => {
     if (!user) return;
     try {
       setActionError(null);
-      // Asigna el repartidor (esto cambia estado a DELIVERED en el backend mock)
       await orderService.assignDeliveryPerson(orderId, user.id);
       await loadOrders();
       setActiveTab('assigned');
-      
-      // Opcional: Cambiar estado a ocupado si toma un pedido
       setDriverStatus('busy');
     } catch (err: any) {
       console.error("Error al tomar orden:", err);
@@ -88,32 +54,31 @@ export const DeliveryDashboard: React.FC = () => {
     }
   };
 
-  // Finalizar entrega en destino
-  const handleCompleteDelivery = (orderId: string) => {
-    // Agregamos al listado de completados local
-    const updated = [...completedOrderIds, orderId];
-    saveCompletedOrders(updated);
-    
-    // Si no quedan pedidos activos, volver a disponible
-    const stillActive = orders.some(o => 
-      o.deliveryPersonId === user?.id && 
-      o.status === OrderStatus.DELIVERED && 
-      !updated.includes(o.id)
-    );
-    if (!stillActive) {
-      setDriverStatus('available');
+  // Finalizar entrega en destino (Transición a DELIVERED en DB)
+  const handleCompleteDelivery = async (orderId: string) => {
+    try {
+      setActionError(null);
+      await orderService.updateOrderStatus(orderId, OrderStatus.DELIVERED);
+      await loadOrders();
+      
+      const activeCount = orders.filter(o => o.deliveryPersonId === user?.id && o.status !== OrderStatus.DELIVERED).length;
+      if (activeCount <= 1) {
+        setDriverStatus('available');
+      }
+    } catch (err: any) {
+      console.error("Error al completar entrega:", err);
+      setActionError("No se pudo marcar la entrega como completada.");
     }
   };
 
-  // Cancelar o regresar pedido
+  // Cancelar o reportar pedido en ruta (Retornar a READY_TO_PAY)
   const handleCancelDelivery = async (orderId: string) => {
-    const reason = window.prompt("Por favor, ingresa el motivo del reporte/devolución (ej. Cliente no responde, Dirección incorrecta):");
-    if (reason === null) return; // Cancelado por el usuario
+    const reason = window.prompt("Ingresa el motivo del reporte/devolución:");
+    if (reason === null) return;
     
     try {
       setActionError(null);
-      // Regresamos el pedido al picker como READY (listo para reasociar repartidor) o CANCELLED
-      await orderService.updateOrderStatus(orderId, OrderStatus.READY);
+      await orderService.updateOrderStatus(orderId, OrderStatus.READY_TO_PAY);
       await loadOrders();
     } catch (err) {
       console.error("Error al retornar entrega:", err);
@@ -121,23 +86,24 @@ export const DeliveryDashboard: React.FC = () => {
     }
   };
 
-  // Filtrar Pedidos
-  // 1. Asignados En Ruta (Asociados a este motorizado, no marcados como completados localmente)
+  // Filtrado dinámico de pedidos según la Base de Datos
+  // 1. Asignados En Ruta (Asociados a este motorizado, no entregados aún)
   const assignedOrders = orders.filter(o => 
     o.deliveryPersonId === user?.id && 
-    o.status === OrderStatus.DELIVERED &&
-    !completedOrderIds.includes(o.id)
+    o.status !== OrderStatus.DELIVERED &&
+    o.status !== OrderStatus.CANCELLED
   );
 
   // 2. Listos para despacho global (disponibles para auto-asignarse)
   const readyOrders = orders.filter(o => 
-    o.status === OrderStatus.READY && 
-    (!o.deliveryPersonId)
+    (o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID) && 
+    !o.deliveryPersonId
   );
 
-  // 3. Historial de entregas concluidas
+  // 3. Historial de entregas concluidas en DB
   const historyOrders = orders.filter(o => 
-    completedOrderIds.includes(o.id)
+    o.deliveryPersonId === user?.id &&
+    o.status === OrderStatus.DELIVERED
   );
 
   if (loading) {
@@ -286,7 +252,8 @@ export const DeliveryDashboard: React.FC = () => {
                 </div>
               ) : (
                 assignedOrders.map((order) => {
-                  const clientAddress = getSimulatedAddress(order.id);
+                  const clientAddress = order.deliveryAddress || 'Dirección de envío del cliente';
+                  const paymentDisplay = order.payment?.method || (order as any).paymentMethod || 'Efectivo / En Entrega';
                   return (
                     <motion.div
                       layout
@@ -334,9 +301,9 @@ export const DeliveryDashboard: React.FC = () => {
                           {order.items.map((it, idx) => (
                             <div key={idx} className="flex justify-between text-[11px] font-bold text-slate-700">
                               <span className="truncate max-w-[200px]">
-                                <span className="text-brand mr-1 font-black">{it.quantity}x</span> {it.name}
+                                <span className="text-brand mr-1 font-black">{it.requestedQuantity ?? (it as any).quantity ?? 1}x</span> {it.name}
                               </span>
-                              <span className="text-slate-400 font-mono text-[10px]">${it.price.toFixed(2)}</span>
+                              <span className="text-slate-400 font-mono text-[10px]">${Number(it.price).toFixed(2)}</span>
                             </div>
                           ))}
                         </div>
@@ -350,12 +317,12 @@ export const DeliveryDashboard: React.FC = () => {
                             <span className="text-[8px] font-black text-brand uppercase tracking-widest block leading-none mb-1">Cobro en Destino</span>
                             <div className="flex items-center gap-1.5 text-slate-700">
                               <CreditCard className="w-3.5 h-3.5 text-brand" />
-                              <span className="text-[10px] font-black uppercase">{order.paymentMethod}</span>
+                              <span className="text-[10px] font-black uppercase">{paymentDisplay}</span>
                             </div>
                           </div>
                           <div className="text-right">
                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Monto Total</span>
-                            <span className="text-xl font-black text-brand font-mono">${order.total.toFixed(2)}</span>
+                            <span className="text-xl font-black text-brand font-mono">${Number(order.total).toFixed(2)}</span>
                           </div>
                         </div>
 
@@ -462,11 +429,11 @@ export const DeliveryDashboard: React.FC = () => {
                       <div className="flex items-center justify-between py-3 px-1 border-t border-b border-slate-100 mb-6">
                         <div>
                           <span className="text-[8px] text-slate-400 font-bold uppercase block">Método</span>
-                          <span className="text-[11px] font-black text-brand uppercase">{order.paymentMethod}</span>
+                          <span className="text-[11px] font-black text-brand uppercase">{order.payment?.method || (order as any).paymentMethod || 'Efectivo'}</span>
                         </div>
                         <div className="text-right">
                           <span className="text-[8px] text-slate-400 font-bold uppercase block">Monto a Cobrar</span>
-                          <span className="text-sm font-black text-slate-800 font-mono">${order.total.toFixed(2)}</span>
+                          <span className="text-sm font-black text-slate-800 font-mono">${Number(order.total).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -517,11 +484,11 @@ export const DeliveryDashboard: React.FC = () => {
                     <div className="bg-green-50/45 border border-green-100/50 p-3 rounded-xl flex justify-between items-center text-[10px] font-bold text-slate-600">
                       <div>
                         <span className="text-[8px] text-green-700/60 font-black uppercase tracking-widest block">Liquidado</span>
-                        <span className="font-black text-brand uppercase">{order.paymentMethod}</span>
+                        <span className="font-black text-brand uppercase">{order.payment?.method || (order as any).paymentMethod || 'Efectivo'}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[8px] text-green-700/60 font-black uppercase tracking-widest block">Monto Entregado</span>
-                        <span className="font-mono font-black text-brand text-xs">${order.total.toFixed(2)}</span>
+                        <span className="font-mono font-black text-brand text-xs">${Number(order.total).toFixed(2)}</span>
                       </div>
                     </div>
                   </motion.div>

@@ -51,7 +51,7 @@ export const StaffDashboard: React.FC = () => {
     fetchOrders();
     fetchMotorizados();
     fetchProducts();
-    
+
     // Polling cada 10 segundos para emular actualizaciones en ruta
     const interval = setInterval(() => {
       fetchOrders();
@@ -69,13 +69,14 @@ export const StaffDashboard: React.FC = () => {
 
       const updatedItems = order.items.map(item => {
         if (item.productId === productId) {
-          const newQty = item.quantity + delta;
-          return { ...item, quantity: newQty < 1 ? 1 : newQty };
+          const currentQty = item.requestedQuantity ?? (item as any).quantity ?? 1;
+          const newQty = currentQty + delta;
+          return { ...item, requestedQuantity: newQty < 1 ? 1 : newQty, quantity: newQty < 1 ? 1 : newQty };
         }
         return item;
       });
 
-      await orderService.updateOrderItems(orderId, updatedItems);
+      await orderService.updateOrderItems(orderId, updatedItems as any);
       fetchOrders();
     } catch (err: any) {
       console.error("Error updating quantity:", err);
@@ -95,7 +96,7 @@ export const StaffDashboard: React.FC = () => {
       if (!order) return;
 
       const updatedItems = order.items.filter(item => item.productId !== productId);
-      await orderService.updateOrderItems(orderId, updatedItems);
+      await orderService.updateOrderItems(orderId, updatedItems as any);
       fetchOrders();
     } catch (err: any) {
       console.error("Error removing item:", err);
@@ -109,7 +110,7 @@ export const StaffDashboard: React.FC = () => {
   const handlePerformSubstitution = async (replacementProduct: Product) => {
     if (!substitutingItem) return;
     const { orderId, productId: oldProductId } = substitutingItem;
-    
+
     setModifyingOrderId(orderId);
     setErrorMessage(null);
     try {
@@ -117,29 +118,29 @@ export const StaffDashboard: React.FC = () => {
       if (!order) return;
 
       const oldItem = order.items.find(i => i.productId === oldProductId);
-      const qty = oldItem ? oldItem.quantity : 1;
+      const qty = oldItem ? (oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
 
-      // Filtrar el anterior e insertar el nuevo sustituto coherente
-      let updatedItems = order.items.filter(item => item.productId !== oldProductId);
-      
-      const existingInOrder = updatedItems.find(item => item.productId === replacementProduct.id);
+      // 1. Filtrar el producto anterior y transformar los items al formato del payload del backend { productId, requestedQuantity }
+      const payload = order.items
+        .filter(item => item.productId !== oldProductId)
+        .map(item => ({
+          productId: item.productId,
+          requestedQuantity: item.requestedQuantity ?? (item as any).quantity ?? 1,
+        }));
+
+      // 2. Si el producto sustituto ya existe en la orden, incrementar la cantidad
+      const existingInOrder = payload.find(item => item.productId === replacementProduct.id);
       if (existingInOrder) {
-        updatedItems = updatedItems.map(item => {
-          if (item.productId === replacementProduct.id) {
-            return { ...item, quantity: item.quantity + qty };
-          }
-          return item;
-        });
+        existingInOrder.requestedQuantity += qty;
       } else {
-        updatedItems.push({
+        // 3. Si no existe, agregar el nuevo producto sustituto
+        payload.push({
           productId: replacementProduct.id,
-          name: replacementProduct.name,
-          price: replacementProduct.discountPrice || replacementProduct.price,
-          quantity: qty
+          requestedQuantity: qty
         });
       }
 
-      await orderService.updateOrderItems(orderId, updatedItems);
+      await orderService.updateOrderItems(orderId, payload);
       setSubstitutingItem(null);
       fetchOrders();
     } catch (err: any) {
@@ -151,7 +152,7 @@ export const StaffDashboard: React.FC = () => {
   };
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
-    if (status === OrderStatus.READY) {
+    if (status === OrderStatus.READY_TO_PAY) {
       setAssigningId(orderId);
       return;
     }
@@ -174,8 +175,8 @@ export const StaffDashboard: React.FC = () => {
     }
   };
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
+  const filteredOrders = filter === 'all'
+    ? orders
     : orders.filter(o => o.status === filter);
 
   if (loading) {
@@ -189,7 +190,7 @@ export const StaffDashboard: React.FC = () => {
   return (
     <main className="bg-slate-50 min-h-screen">
       <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-6 md:py-12">
-        
+
         {/* Modular Header */}
         <StaffHeader filter={filter} setFilter={setFilter} />
 
@@ -205,7 +206,7 @@ export const StaffDashboard: React.FC = () => {
               </div>
             ) : (
               filteredOrders.map((order) => (
-                <OrderCard 
+                <OrderCard
                   key={order.id}
                   order={order}
                   availableMotorizados={availableMotorizados}
@@ -226,7 +227,7 @@ export const StaffDashboard: React.FC = () => {
       </div>
 
       {/* Modular Substitution Popup Overlay */}
-      <SubstitutionModal 
+      <SubstitutionModal
         substitutingItem={substitutingItem}
         onClose={() => { setSubstitutingItem(null); setErrorMessage(null); }}
         catalogProducts={catalogProducts}

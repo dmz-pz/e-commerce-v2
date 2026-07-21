@@ -54,12 +54,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
           order.status === OrderStatus.PENDING ? 'bg-orange-50 text-orange-600 border-orange-100' :
           order.status === OrderStatus.PICKING ? 'bg-brand/5 text-brand border-brand/10' :
-          order.status === OrderStatus.READY ? 'bg-accent/5 text-accent-dark border-accent/20' :
+          order.status === OrderStatus.READY_TO_PAY ? 'bg-purple-50 text-purple-600 border-purple-100' :
+          order.status === OrderStatus.PAID ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
           'bg-green-50 text-green-600 border-green-100'
         }`}>
-          {order.status === 'pending' ? 'Pendiente' : 
-           order.status === 'picking' ? 'En Curso' : 
-           order.status === 'ready' ? 'Listo' : 'Enviado'}
+          {order.status === OrderStatus.PENDING ? 'Pendiente' : 
+           order.status === OrderStatus.PICKING ? 'En Preparación' : 
+           order.status === OrderStatus.READY_TO_PAY ? 'Listo p/ Pagar' : 
+           order.status === OrderStatus.PAID ? 'Pagado' : 'Enviado'}
         </div>
       </div>
 
@@ -67,7 +69,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       <div className="grid grid-cols-2 gap-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
         <div className="flex items-center gap-2">
           <IdCard className="w-3 h-3 text-slate-400" />
-          <span className="text-[10px] font-bold text-slate-600 uppercase">{order.customerID || 'N/A'}</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase">{order.cedula || order.customerId || 'N/A'}</span>
         </div>
         <div className="flex items-center gap-2">
           <Smartphone className="w-3 h-3 text-slate-400" />
@@ -76,7 +78,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <div className="col-span-2 flex items-center gap-2 pt-1 border-t border-slate-200/50">
           <CreditCard className="w-3 h-3 text-slate-400" />
           <span className="text-[10px] font-black text-brand uppercase tracking-wider">
-            {order.paymentMethod || 'Método no especificado'}
+            {order.payment?.method || (order as any).paymentMethod || 'Efectivo / En Entrega'}
           </span>
         </div>
       </div>
@@ -118,12 +120,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               <div className="flex justify-between items-start gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 bg-brand/5 text-brand rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">
-                    {item.quantity}
+                    {item.requestedQuantity ?? (item as any).quantity ?? 1}
                   </div>
                   <span className="text-slate-700 font-bold text-xs tracking-tight leading-snug">{item.name}</span>
                 </div>
                 <span className="text-slate-500 font-mono font-medium text-xs shrink-0">
-                  ${item.price.toFixed(2)}
+                  ${Number(item.price).toFixed(2)}
                 </span>
               </div>
               
@@ -141,7 +143,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="text-[11px] font-bold text-slate-600 w-4 text-center">{item.quantity}</span>
+                    <span className="text-[11px] font-bold text-slate-600 w-4 text-center">
+                      {item.requestedQuantity ?? (item as any).quantity ?? 1}
+                    </span>
                     <button
                       type="button"
                       onClick={() => onUpdateItemQuantity(order.id, item.productId, 1)}
@@ -183,7 +187,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
         <div className="pt-6 border-t border-slate-100 flex justify-between items-center px-2">
           <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Total Facturado</span>
-          <span className="text-2xl font-black text-brand font-mono leading-none">${order.total.toFixed(2)}</span>
+          <span className="text-2xl font-black text-brand font-mono leading-none">${Number(order.total).toFixed(2)}</span>
         </div>
       </div>
 
@@ -203,15 +207,15 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         {order.status === OrderStatus.PICKING && (
           <button 
             type="button"
-            onClick={() => onUpdateStatus(order.id, OrderStatus.READY)}
+            onClick={() => onUpdateStatus(order.id, OrderStatus.READY_TO_PAY)}
             className="w-full bg-accent text-brand py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent-dark transition-all flex items-center justify-center gap-3 shadow-lg shadow-accent/20 active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Terminar y Marcar Listo
+            Terminar y Marcar Listo p/ Pagar
           </button>
         )}
 
-        {order.status === OrderStatus.READY && !assigningId && (
+        {(order.status === OrderStatus.READY_TO_PAY || order.status === OrderStatus.PAID) && !assigningId && (
           <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex flex-col gap-3">
             <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2">
               <Bike className="w-3 h-3" /> Requiere Asignación de Motorizado
