@@ -18,7 +18,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
   onRefreshLogs,
 }) => {
   const [salesSearch, setSalesSearch] = useState('');
-  const [salesFilter, setSalesFilter] = useState<'ALL' | 'pending' | 'picking' | 'ready' | 'delivered' | 'cancelled'>('ALL');
+  const [salesFilter, setSalesFilter] = useState<'ALL' | OrderStatus>('ALL');
 
   // Filter orders according to status and query
   const filteredOrders = orders
@@ -26,7 +26,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
     .filter(o => {
       const query = salesSearch.toLowerCase();
       return o.customerName.toLowerCase().includes(query) ||
-             o.customerID.toLowerCase().includes(query) ||
+             (o.cedula && o.cedula.toLowerCase().includes(query)) ||
              o.id.toLowerCase().includes(query) ||
              (o.customerPhone && o.customerPhone.includes(query));
     });
@@ -209,7 +209,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
             {(() => {
               const payMethods: Record<string, number> = {};
               orders.forEach(o => {
-                const method = o.paymentMethod || 'No especificado';
+                const method = o.payment?.method || 'No especificado';
                 payMethods[method] = (payMethods[method] || 0) + 1;
               });
 
@@ -242,7 +242,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
         <div className="p-6 md:p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col xl:flex-row items-center justify-between gap-4">
           {/* Selector de Filtros de Estado */}
           <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1 shrink-0">
-            {(['ALL', 'pending', 'picking', 'ready', 'delivered', 'cancelled'] as const).map((status) => (
+            {(['ALL', OrderStatus.PENDING, OrderStatus.PICKING, OrderStatus.READY_TO_PAY, OrderStatus.DELIVERED, OrderStatus.CANCELLED] as const).map((status) => (
               <button
                 key={status}
                 type="button"
@@ -254,10 +254,10 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                 }`}
               >
                 {status === 'ALL' ? 'Todos' :
-                 status === 'pending' ? 'Recibidos' :
-                 status === 'picking' ? 'Preparando' :
-                 status === 'ready' ? 'Listos' :
-                 status === 'delivered' ? 'Entregados' :
+                 status === OrderStatus.PENDING ? 'Recibidos' :
+                 status === OrderStatus.PICKING ? 'Preparando' :
+                 status === OrderStatus.READY_TO_PAY ? 'Listos' :
+                 status === OrderStatus.DELIVERED ? 'Entregados' :
                  'Cancelados'}
               </button>
             ))}
@@ -287,13 +287,13 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                       order.status === OrderStatus.PENDING ? 'bg-orange-50 text-orange-600 border-orange-100' :
                       order.status === OrderStatus.PICKING ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
-                      order.status === OrderStatus.READY ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                      order.status === OrderStatus.READY_TO_PAY ? 'bg-blue-50 text-blue-600 border-blue-100' :
                       order.status === OrderStatus.DELIVERED ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                       'bg-rose-50 text-rose-500 border-rose-100'
                     }`}>
                       {order.status === OrderStatus.PENDING ? 'Pendiente / Recibido' :
                        order.status === OrderStatus.PICKING ? 'En Preparación' :
-                       order.status === OrderStatus.READY ? 'Listo para entrega' :
+                       order.status === OrderStatus.READY_TO_PAY ? 'Listo para entrega' :
                        order.status === OrderStatus.DELIVERED ? 'Entregado' :
                        'Cancelado / Anulado'}
                     </span>
@@ -301,7 +301,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
 
                   <h4 className="text-base font-black text-slate-900 tracking-tight">{order.customerName}</h4>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                    <span>Cédula: <span className="text-slate-600 font-mono font-medium">{order.customerID}</span></span>
+                    <span>Cédula: <span className="text-slate-600 font-mono font-medium">{order.cedula}</span></span>
                     {order.customerPhone && (
                       <>
                         <span className="text-slate-300">•</span>
@@ -313,7 +313,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
 
                 <div className="flex flex-col items-start lg:items-end shrink-0 bg-slate-50 border border-slate-100 rounded-2xl p-3">
                   <span className="text-xl font-black text-brand font-mono">${order.total.toFixed(2)}</span>
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{order.paymentMethod}</span>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{order.payment?.method || 'PAGO_MOVIL'}</span>
                   <span className="text-[9px] font-mono font-bold text-slate-400 mt-0.5">
                     {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}
                   </span>
@@ -328,7 +328,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                     <div key={idx} className="flex justify-between items-center text-xs bg-white p-3 rounded-xl border border-slate-150 shadow-sm">
                       <span className="font-bold text-slate-700 max-w-[170px] truncate">{item.name}</span>
                       <span className="font-mono font-bold text-brand bg-brand/5 px-2 py-0.5 rounded text-[10px] shrink-0">
-                        {item.quantity} x ${item.price.toFixed(2)}
+                        {item.requestedQuantity} x ${item.price.toFixed(2)}
                       </span>
                     </div>
                   ))}

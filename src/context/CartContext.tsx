@@ -13,15 +13,32 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('cart_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cart_items', JSON.stringify(items));
+    } catch (err) {
+      console.error('Error al guardar carrito en localStorage:', err);
+    }
+  }, [items]);
 
   const addItem = (product: Product, quantity: number) => {
+    const effectivePrice = Number(product.discountPrice || product.price);
+
     setItems(current => {
       const existing = current.find(item => item.productId === product.id);
       if (existing) {
         return current.map(item => 
           item.productId === product.id 
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: item.quantity + quantity, price: effectivePrice }
             : item
         ).filter(item => item.quantity > 0);
       }
@@ -29,7 +46,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return [...current, { 
         productId: product.id, 
         name: product.name, 
-        price: product.price, 
+        price: effectivePrice, 
         quantity 
       }];
     });
@@ -52,9 +69,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(current => current.filter(item => item.productId !== productId));
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    setItems([]);
+    localStorage.removeItem('cart_items');
+  };
 
-  const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const total = items.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
 
   return (
     <CartContext.Provider value={{ items, addItem, updateQuantity, removeItem, clearCart, total }}>

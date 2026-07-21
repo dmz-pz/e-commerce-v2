@@ -1,7 +1,13 @@
 import { Router } from "express";
 import { productService } from "../services/productService.ts";
+import { verifyToken } from "../middlewares/auth.middleware.ts";
+import { authorizeRoles } from "../middlewares/role.middleware.ts";
+import { Role } from "../../../generated/prisma/enums.ts";
 
 const router = Router();
+
+router.use(verifyToken);
+router.use(authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER));
 
 // Route to check global inventory status
 router.get("/status", async (req, res) => {
@@ -24,7 +30,7 @@ router.post("/sync", async (req, res) => {
   const { updates } = req.body; // Array of { productId, newStock }
   try {
     // Logic to sync with external ERP
-    res.json({ message: "Inventory synced successfully", received: updates.length });
+    res.json({ message: "Inventory synced successfully", received: updates ? updates.length : 0 });
   } catch (error) {
     res.status(500).json({ error: "Failed to sync inventory" });
   }

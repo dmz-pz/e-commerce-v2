@@ -44,7 +44,7 @@ async function main() {
       cedula: "12345678", // 8 dígitos exactos
       firstName: "Admin",
       lastName: "Supermercado",
-      phone: "+584121234567",
+      phone: "04121234567",
       email: "admin@supermercado.com",
       password: "Password123", // Cumple: Mayúscula, Minúscula, Número y min 8 caracteres
       birthdate: "1988-10-12", // Formato fecha válido
@@ -54,7 +54,7 @@ async function main() {
       cedula: "87654321",
       firstName: "Juan",
       lastName: "Cliente",
-      phone: "0412099",
+      phone: "04128765432",
       email: "cliente@gmail.com",
       password: "Password123",
       birthdate: "1995-04-20",
@@ -64,11 +64,21 @@ async function main() {
       cedula: "15984263",
       firstName: "Pedro",
       lastName: "Picker",
-      phone: "+584141234567",
+      phone: "04141598426",
       email: "picker@supermercado.com",
       password: "Password123",
       birthdate: "1992-07-15",
       role: "STAFF_PICKER",
+    },
+    {
+      cedula: "36925814",
+      firstName: "Carlos",
+      lastName: "Delivery",
+      phone: "04163692581",
+      email: "delivery@supermercado.com",
+      password: "Password123",
+      birthdate: "1994-11-05",
+      role: "DELIVERY",
     },
   ];
 

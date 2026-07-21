@@ -3,10 +3,11 @@ import { Navigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Role } from '../types/index.ts';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Array<'client' | 'staff' | 'picker' | 'admin'>;
+  allowedRoles?: Array<Role>;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {

@@ -2,6 +2,10 @@ import { Router } from "express";
 import { productController } from "../controllers/productController.ts";
 import { uploadImage } from "../middlewares/upload.middleware.ts";
 import { validateResource } from "../middlewares/validate.middleware.ts";
+import { verifyToken } from "../middlewares/auth.middleware.ts";
+import { authorizeRoles } from "../middlewares/role.middleware.ts";
+import { Role } from "../../../generated/prisma/enums.ts";
+
 import {
   createProductRequestSchema,
   updateProductRequestSchema,
@@ -33,10 +37,11 @@ router.get("/", productController.getAll);
 router.get("/barcode/:barcode", productController.getByBarcode);
 router.get("/:id", productController.getById);
 
-// 🚀 RUTAS DE ESCRITURA (CON CADENA DE MIDDLEWARES CORREGIDA)
+// 🚀 RUTAS DE ESCRITURA (CON CADENA DE MIDDLEWARES CORREGIDA Y RBAC)
 router.post(
   "/",
-
+  verifyToken,
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
   uploadImage.single("image"), // 1. Lee el formulario multipart y monta req.file
   requireProductImage,
   validateResource(createProductRequestSchema), // 2. Valida la existencia física del archivo binario
@@ -46,6 +51,8 @@ router.post(
 
 router.patch(
   "/:id",
+  verifyToken,
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
   uploadImage.single("image"),
   validateResource(updateProductRequestSchema),
   parseRouteImage,

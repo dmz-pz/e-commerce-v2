@@ -21,7 +21,7 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter }) =
       </div>
       
       <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1 self-start md:self-auto shrink-0">
-        {(['all', OrderStatus.PENDING, OrderStatus.PICKING, OrderStatus.READY, OrderStatus.DELIVERED] as const).map((s) => (
+        {(['all', OrderStatus.PENDING, OrderStatus.PICKING, OrderStatus.READY_TO_PAY, OrderStatus.DELIVERED] as const).map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
@@ -33,11 +33,11 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter }) =
           >
             {s === 'all'
               ? 'Todas'
-              : s === 'pending'
+              : s === OrderStatus.PENDING
               ? 'Pendientes'
-              : s === 'picking'
+              : s === OrderStatus.PICKING
               ? 'En Curso'
-              : s === 'ready'
+              : s === OrderStatus.READY_TO_PAY
               ? 'Listas'
               : 'Enviadas'}
           </button>

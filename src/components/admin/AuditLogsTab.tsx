@@ -50,7 +50,7 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({ auditLogs }) => {
                 <div className="flex items-center gap-2 mt-2">
                   <User className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-xs font-bold text-slate-500">Ejecutado por: </span>
-                  <span className="text-xs font-black text-slate-700">{log.performedByName} (ID: {log.performedById})</span>
+                  <span className="text-xs font-black text-slate-700">{log.performedBy ? `${log.performedBy.firstName} ${log.performedBy.lastName}` : log.performedById}</span>
                 </div>
 
                 {log.orderId && (

@@ -45,7 +45,7 @@ export class AdminController {
         if (order) {
           if (status === "APPROVED") {
             // Once payment is approved, the order becomes ready/paid
-            await orderRepository.updateStatus(updated.orderId, OrderStatus.READY);
+            await orderRepository.updateStatus(updated.orderId, OrderStatus.READY_TO_PAY);
           } else if (status === "REJECTED") {
             // Cancel the order if payment was invalid/rejected
             await orderRepository.updateStatus(updated.orderId, OrderStatus.CANCELLED);
@@ -57,7 +57,6 @@ export class AdminController {
           orderId: updated.orderId,
           action: `Verificación manual de Depósito/Pago: Referencia ${updated.reference} marcada como ${status}`,
           performedById,
-          performedByName: "Administrador",
           previousState: { status: currentPay.status },
           newState: { status: updated.status }
         });

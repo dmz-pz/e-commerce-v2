@@ -15,7 +15,7 @@ import { Logo } from "./Logo.tsx";
 import { useCart } from "../context/CartContext.tsx";
 import { useGlobalCatalog } from "../context/CatalogContext.tsx";
 import { useUser } from "../context/UserContext.tsx";
-import { Category } from "../types/index.ts";
+import { Role, Category } from "../types/index.ts";
 
 export const Navbar: React.FC = () => {
   const { items } = useCart();
@@ -65,10 +65,9 @@ export const Navbar: React.FC = () => {
 
   const isStaffOrAdmin =
     user &&
-    (user.role === "staff" ||
-      user.role === "picker" ||
-      user.role === "admin" ||
-      user.role === "delivery");
+    (user.role === Role.STAFF_PICKER ||
+      user.role === Role.ADMINISTRADOR ||
+      user.role === Role.DELIVERY);
 
   if (isStaffOrAdmin) {
     return (
@@ -92,12 +91,12 @@ export const Navbar: React.FC = () => {
 
               {/* Badge indicativo central de rol / módulo */}
               <div className="hidden md:flex items-center gap-2">
-                {user.role === "admin" ? (
+                {user.role === Role.ADMINISTRADOR ? (
                   <span className="px-4 py-1.5 rounded-full bg-red-50 md:bg-red-500/10 text-red-600 md:text-red-700 font-extrabold uppercase tracking-widest text-[9px] md:text-[10px] border border-red-200/50 flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
                     Panel de Administración
                   </span>
-                ) : user.role === "delivery" ? (
+                ) : user.role === Role.DELIVERY ? (
                   <span className="px-4 py-1.5 rounded-full bg-blue-50 md:bg-blue-500/10 text-blue-600 md:text-blue-700 font-extrabold uppercase tracking-widest text-[9px] md:text-[10px] border border-blue-200/50 flex items-center gap-1.5">
                     <Bike className="w-3.5 h-3.5 text-blue-600" />
                     Módulo de Delivery (Motorizado)
@@ -112,7 +111,7 @@ export const Navbar: React.FC = () => {
 
               {/* Acciones derecha */}
               <div className="flex items-center gap-3">
-                {user.role === "admin" && (
+                {user.role === Role.ADMINISTRADOR && (
                   <div className="flex items-center gap-2">
                     <Link
                       to="/admin"
@@ -147,12 +146,12 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
 
-                {user.role === "delivery" && (
+                {user.role === Role.DELIVERY && (
                   <Link
                     to="/delivery"
                     className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-white/20 text-white md:bg-brand/10 md:text-brand border border-white/10 md:border-brand/10 transition-colors`}
                   >
-                    Repartos Activos (Carlos)
+                    Repartos Activos
                   </Link>
                 )}
 
@@ -222,9 +221,8 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center gap-2 md:gap-4 shrink-0">
                 <div className="hidden lg:flex items-center gap-6 mr-4">
                   {user &&
-                    (user.role === "staff" ||
-                      user.role === "picker" ||
-                      user.role === "admin") && (
+                    (user.role === Role.STAFF_PICKER ||
+                      user.role === Role.ADMINISTRADOR) && (
                       <Link
                         to="/staff"
                         className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"
@@ -234,7 +232,7 @@ export const Navbar: React.FC = () => {
                       </Link>
                     )}
                   {user &&
-                    (user.role === "delivery" || user.role === "admin") && (
+                    (user.role === Role.DELIVERY || user.role === Role.ADMINISTRADOR) && (
                       <Link
                         to="/delivery"
                         className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"
@@ -243,7 +241,7 @@ export const Navbar: React.FC = () => {
                         Reparto
                       </Link>
                     )}
-                  {user && user.role === "admin" && (
+                  {user && user.role === Role.ADMINISTRADOR && (
                     <Link
                       to="/admin"
                       className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"

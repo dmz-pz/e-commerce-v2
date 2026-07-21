@@ -4,6 +4,7 @@ import { useGlobalCatalog } from '../context/CatalogContext.tsx';
 import { useCart } from '../context/CartContext.tsx';
 import { useUser } from '../context/UserContext.tsx';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Role } from '../types/index.ts';
 
 export const BottomNav: React.FC = () => {
   const { setSelectedCategory, setSelectedSubcategory, setShowCart, setShowCategoriesModal } = useGlobalCatalog();
@@ -14,7 +15,7 @@ export const BottomNav: React.FC = () => {
 
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  if (user && (user.role === 'staff' || user.role === 'picker' || user.role === 'admin' || user.role === 'delivery')) {
+  if (user && (user.role === Role.STAFF_PICKER || user.role === Role.ADMINISTRADOR || user.role === Role.DELIVERY)) {
     return null;
   }
 
