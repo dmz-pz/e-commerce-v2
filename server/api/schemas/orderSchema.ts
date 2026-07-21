@@ -9,6 +9,10 @@ export const createOrderSchema = z.object({
     deliveryAddress: z.string().optional(),
     fulfillmentMethod: FulfillmentMethodEnum.optional(),
 
+    // Datos de pago
+    paymentMethod: z.enum(["PAGO_MOVIL", "ZELLE", "BINANCE", "EFECTIVO_DELIVERY", "PUNTO_DELIVERY"]),
+    paymentReference: z.string().optional(),
+
     // Carrito de compras limpio (Sin precios ni datos de identidad)
     items: z
       .array(

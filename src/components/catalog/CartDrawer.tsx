@@ -15,10 +15,11 @@ export const CartDrawer: React.FC = () => {
   const onCheckoutClick = () => {
     if (!user) {
       setShowCart(false);
-      navigate('/login');
+      navigate('/login?redirect=/checkout');
       return;
     }
-    handleCheckout();
+    setShowCart(false);
+    navigate('/checkout');
   };
 
   return (

@@ -18,6 +18,7 @@ import Profile from './pages/Profile.tsx';
 import ForgotPassword from './pages/ForgotPassword.tsx';
 import ResetPassword from './pages/ResetPassword.tsx';
 import { DeliveryDashboard } from './pages/DeliveryDashboard.tsx';
+import { Checkout } from './pages/Checkout.tsx';
 
 import { Role } from './types/index.ts';
 
@@ -109,6 +110,11 @@ export default function App() {
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/checkout" element={
+                <ProtectedRoute>
+                  <Checkout />
                 </ProtectedRoute>
               } />
               <Route path="/delivery" element={

@@ -2,7 +2,8 @@ import { orderRepository } from "../repositories/orderRepository.ts";
 import { userRepository } from "../repositories/userRepository.ts";
 import { productRepository } from "../repositories/productRepository.ts";
 import { productService } from "./productService.ts"; //
-import { OrderStatus, ItemStatus } from "../../../generated/prisma/enums.ts"; //
+import { OrderStatus, ItemStatus, PaymentStatus } from "../../../generated/prisma/enums.ts"; //
+import { paymentRepository } from "../repositories/paymentRepository.ts";
 import { CreateOrderInput } from "../schemas/orderSchema.ts";
 import { AppError } from "../utils/appErrors.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
@@ -102,9 +103,9 @@ export class OrderService {
 
     const newOrder = await orderRepository.create({
       customerId: customer.id,
-      customerName: fullCustomerName, //
-      cedula: customer.cedula, //
-      customerPhone: customer.phone, //
+      customerName: fullCustomerName,
+      cedula: customer.cedula,
+      customerPhone: customer.phone,
       deliveryAddress: orderData.deliveryAddress,
       fulfillmentMethod: orderData.fulfillmentMethod,
       subtotal: calculatedSubtotal,
@@ -112,6 +113,19 @@ export class OrderService {
       total: calculatedTotal,
       items: enrichedItems,
     });
+
+    // F. Crear el registro de pago asociado a la orden si se seleccionó un método de pago
+    if (orderData.paymentMethod) {
+      await paymentRepository.create({
+        orderId: newOrder.id,
+        amount: calculatedTotal,
+        method: orderData.paymentMethod as any, // Hacemos cast temporal por el enum
+        status: PaymentStatus.PENDING as any,
+        reference: orderData.paymentReference || undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
 
     return newOrder;
   }

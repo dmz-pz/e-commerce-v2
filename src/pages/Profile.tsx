@@ -28,6 +28,12 @@ const Profile: React.FC = () => {
         .then((data) => {
           setMyOrders(data || []);
           setLoadingOrders(false);
+          if (window.location.hash === '#orders') {
+            setTimeout(() => {
+              const el = document.getElementById('orders');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
         })
         .catch((err) => {
           console.error("Error al obtener compras del usuario:", err);
@@ -326,6 +332,7 @@ const Profile: React.FC = () => {
 
           {/* Orders History Section */}
           <motion.section 
+            id="orders"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
