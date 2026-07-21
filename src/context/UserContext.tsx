@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient.ts';
+import { Role } from '../types/index.ts';
 
 interface Address {
   id: string;
@@ -16,7 +17,7 @@ interface User {
   email: string;
   phone?: string;
   addresses: Address[];
-  role?: 'client' | 'staff' | 'picker' | 'admin' | 'delivery';
+  role?: Role;
 }
 
 interface UserContextType {
@@ -43,43 +44,32 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  // Validar sesión inicial con el backend
+  // Validar sesión inicial con el backend leyendo la cookie httpOnly vía GET /auth/me
   useEffect(() => {
     const fetchMe = async () => {
-      const savedToken = localStorage.getItem('token');
-      if (savedToken) {
-        try {
-          const res = await apiClient.get<{
-            user: {
-              id: string;
-              name: string;
-              email: string;
-              phone?: string;
-              role?: string;
-            };
-          }>('auth/me');
-          
-          if (res && res.user) {
-            const userObj: User = {
-              id: res.user.id,
-              name: res.user.name,
-              email: res.user.email,
-              phone: res.user.phone,
-              addresses: [],
-              role: (res.user.role?.toLowerCase() as any) || 'client'
-            };
-            setUser(userObj);
-            localStorage.setItem('demo_user', JSON.stringify(userObj));
-          }
-        } catch (err) {
-          console.error("Error al validar sesión con backend, limpiando credenciales:", err);
-          logout();
+      try {
+        const res = await apiClient.get<{
+          user: {
+            id: string;
+            name: string;
+            email: string;
+            phone?: string;
+            role?: Role;
+          };
+        }>('auth/me');
+        
+        if (res && res.user) {
+          setUser({
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            phone: res.user.phone,
+            addresses: [],
+            role: res.user.role || Role.CLIENTE
+          });
         }
-      } else {
-        const savedUser = localStorage.getItem('demo_user');
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        }
+      } catch (err) {
+        setUser(null);
       }
     };
 
@@ -89,30 +79,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const res = await apiClient.post<{
       status: string;
-      token: string;
       user: {
         id: string;
         name: string;
         email: string;
         phone?: string;
-        role?: string;
+        role?: Role;
       };
     }>('auth/login', { email, password });
 
-    if (res && res.token) {
-      localStorage.setItem('token', res.token);
-      const userObj: User = {
+    if (res && res.user) {
+      setUser({
         id: res.user.id,
         name: res.user.name,
         email: res.user.email,
         phone: res.user.phone,
         addresses: [],
-        role: (res.user.role?.toLowerCase() as any) || 'client'
-      };
-      setUser(userObj);
-      localStorage.setItem('demo_user', JSON.stringify(userObj));
+        role: res.user.role || Role.CLIENTE
+      });
     } else {
-      throw new Error('No se recibió el token de autenticación');
+      throw new Error('Credenciales o respuesta de autenticación inválida');
     }
   };
 
@@ -131,10 +117,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await login(data.email, data.password);
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('demo_user');
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await apiClient.post('auth/logout');
+    } catch (err) {
+      console.error("Error al cerrar sesión en servidor:", err);
+    } finally {
+      setUser(null);
+    }
   };
 
   const updateProfile = async (data: Partial<User>) => {
@@ -146,7 +136,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: string;
           email: string;
           phone?: string;
-          role?: string;
+          role?: Role;
         };
       }>('auth/profile', data);
       
@@ -156,16 +146,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: res.user.name,
           email: res.user.email,
           phone: res.user.phone,
-          role: (res.user.role?.toLowerCase() as any) || 'client'
+          role: res.user.role || Role.CLIENTE
         };
         setUser(updatedUser);
-        localStorage.setItem('demo_user', JSON.stringify(updatedUser));
       }
     } catch (err: any) {
       console.warn("Falla al actualizar perfil en servidor, actualizando localmente:", err);
       const updatedUser = { ...user, ...data };
       setUser(updatedUser);
-      localStorage.setItem('demo_user', JSON.stringify(updatedUser));
     }
   };
 
@@ -174,7 +162,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newAddress = { ...address, id: Math.random().toString(36).substr(2, 9) };
     const updatedUser = { ...user, addresses: [...user.addresses, newAddress] };
     setUser(updatedUser);
-    localStorage.setItem('demo_user', JSON.stringify(updatedUser));
   };
 
   const updateAddress = async (id: string, updatedFields: Partial<Address>) => {
@@ -184,7 +171,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
     const updatedUser = { ...user, addresses: updatedAddresses };
     setUser(updatedUser);
-    localStorage.setItem('demo_user', JSON.stringify(updatedUser));
   };
 
   const deleteAddress = async (id: string) => {
@@ -192,7 +178,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedAddresses = user.addresses.filter(addr => addr.id !== id);
     const updatedUser = { ...user, addresses: updatedAddresses };
     setUser(updatedUser);
-    localStorage.setItem('demo_user', JSON.stringify(updatedUser));
   };
 
   return (

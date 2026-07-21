@@ -38,12 +38,23 @@ export class UserRepository {
   }
 
   async getById(id: string) {
-    try { // Alineado con tu inicializador[cite: 5]
+    try {
       return await this.prisma.user.findUnique({
         where: { id },
       });
     } catch (error: any) {
       throw new Error(`Error al buscar usuario por ID: ${error.message}`);
+    }
+  }
+
+  async updatePassword(id: string, passwordHash: string) {
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data: { passwordHash },
+      });
+    } catch (error: any) {
+      throw new Error(`Error al actualizar contraseña del usuario: ${error.message}`);
     }
   }
 }

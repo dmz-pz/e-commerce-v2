@@ -61,7 +61,12 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Contraseña</label>
+              <div className="flex justify-between items-center mb-2 px-1">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Contraseña</label>
+                <Link to="/forgot-password" className="text-[10px] font-bold text-brand hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                 <input 

@@ -93,5 +93,55 @@ export const loginSchema = z.object({
     .strict(),
 });
 
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(
+        z.email({
+          error: (issue) =>
+            issue.input === undefined
+              ? "El correo electrónico es requerido"
+              : "El formato de correo electrónico no es válido",
+        }),
+      ),
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(
+        z.email({
+          error: "El formato de correo electrónico no es válido",
+        }),
+      ),
+    code: z
+      .string({ error: "El código de recuperación es requerido" })
+      .trim()
+      .min(6, "El código de recuperación debe tener al menos 6 caracteres"),
+    newPassword: z
+      .string({ error: "La nueva contraseña es requerida" })
+      .trim()
+      .min(8, { error: "La contraseña debe tener al menos 8 caracteres" })
+      .refine((v) => /[A-Z]/.test(v), {
+        error: "Debe incluir al menos una mayúscula",
+      })
+      .refine((v) => /[a-z]/.test(v), {
+        error: "Debe incluir al menos una minúscula",
+      })
+      .refine((v) => /\d/.test(v), {
+        error: "Debe incluir al menos un número",
+      }),
+  }),
+});
+
 export type RegisterUserInput = z.infer<typeof registerSchema>["body"];
 export type LoginInput = z.infer<typeof loginSchema>["body"];
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>["body"];
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>["body"];

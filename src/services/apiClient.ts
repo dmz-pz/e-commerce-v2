@@ -16,8 +16,8 @@ class ApiClient {
     };
 
     const isFormData = options.body instanceof FormData;
-    if (!isFormData && !headers["Content-Type"]) {
-      headers["Content-Type"] = "application/json";
+    if (isFormData) {
+      delete headers["Content-Type"];
     }
 
     const response = await fetch(url, {
