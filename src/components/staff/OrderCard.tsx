@@ -193,7 +193,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
       {/* Action Buttons for Operating workflow */}
       <div className="flex flex-col gap-3">
-        {order.status === OrderStatus.PENDING && (
+        {order.status === OrderStatus.PENDING && !order.deliveryPersonId && (
           <button 
             type="button"
             onClick={() => onUpdateStatus(order.id, OrderStatus.PICKING)}
@@ -204,7 +204,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
         
-        {order.status === OrderStatus.PICKING && (
+        {order.status === OrderStatus.PICKING && !order.deliveryPersonId && (
           <button 
             type="button"
             onClick={() => onUpdateStatus(order.id, OrderStatus.READY_TO_PAY)}
@@ -215,7 +215,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
 
-        {(order.status === OrderStatus.READY_TO_PAY || order.status === OrderStatus.PAID) && !assigningId && (
+        {(order.status === OrderStatus.READY_TO_PAY || order.status === OrderStatus.PAID) && !order.deliveryPersonId && !assigningId && (
           <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex flex-col gap-3">
             <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2">
               <Bike className="w-3 h-3" /> Requiere Asignación de Motorizado
@@ -273,14 +273,28 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </motion.div>
         )}
 
+        {order.deliveryPersonId && order.status !== OrderStatus.DELIVERED && (
+          <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <Bike className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest block mb-0.5">En Reparto</span>
+              <span className="text-[10px] font-black text-slate-700 uppercase">
+                En ruta con: {order.deliveryPerson ? `${order.deliveryPerson.firstName} ${order.deliveryPerson.lastName}` : 'Motorizado'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {order.status === OrderStatus.DELIVERED && (
           <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3">
             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
               <Check className="w-4 h-4 text-green-600" />
             </div>
             <div>
-              <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest block mb-0.5">Pedido Enviado</span>
-              <span className="text-[10px] font-black text-slate-700 uppercase">En ruta con repartidor...</span>
+              <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest block mb-0.5">Pedido Entregado</span>
+              <span className="text-[10px] font-black text-slate-700 uppercase">El cliente ya recibió su compra</span>
             </div>
           </div>
         )}

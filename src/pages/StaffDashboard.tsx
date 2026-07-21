@@ -68,15 +68,20 @@ export const StaffDashboard: React.FC = () => {
       if (!order) return;
 
       const updatedItems = order.items.map(item => {
+        const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
         if (item.productId === productId) {
-          const currentQty = item.requestedQuantity ?? (item as any).quantity ?? 1;
           const newQty = currentQty + delta;
-          return { ...item, requestedQuantity: newQty < 1 ? 1 : newQty, quantity: newQty < 1 ? 1 : newQty };
+          return { ...item, requestedQuantity: newQty < 1 ? 1 : newQty };
         }
-        return item;
+        return { ...item, requestedQuantity: currentQty };
       });
 
-      await orderService.updateOrderItems(orderId, updatedItems as any);
+      const payload = updatedItems.map(item => ({
+        productId: item.productId,
+        requestedQuantity: item.requestedQuantity
+      }));
+
+      await orderService.updateOrderItems(orderId, payload);
       fetchOrders();
     } catch (err: any) {
       console.error("Error updating quantity:", err);
@@ -118,14 +123,14 @@ export const StaffDashboard: React.FC = () => {
       if (!order) return;
 
       const oldItem = order.items.find(i => i.productId === oldProductId);
-      const qty = oldItem ? (oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
+      const qty = oldItem ? Number(oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
 
       // 1. Filtrar el producto anterior y transformar los items al formato del payload del backend { productId, requestedQuantity }
       const payload = order.items
         .filter(item => item.productId !== oldProductId)
         .map(item => ({
           productId: item.productId,
-          requestedQuantity: item.requestedQuantity ?? (item as any).quantity ?? 1,
+          requestedQuantity: Number(item.requestedQuantity ?? (item as any).quantity ?? 1),
         }));
 
       // 2. Si el producto sustituto ya existe en la orden, incrementar la cantidad
@@ -177,6 +182,8 @@ export const StaffDashboard: React.FC = () => {
 
   const filteredOrders = filter === 'all'
     ? orders
+    : filter === OrderStatus.READY_TO_PAY
+    ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
     : orders.filter(o => o.status === filter);
 
   if (loading) {
