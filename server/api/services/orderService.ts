@@ -16,6 +16,13 @@ export class OrderService {
   }
 
   /**
+   * Obtiene únicamente las órdenes pertenecientes a un usuario en particular.
+   */
+  async getUserOrders(userId: string) {
+    return await orderRepository.getByCustomerId(userId);
+  }
+
+  /**
    * 2. Obtiene una orden por su ID real.
    */
   async getOrderById(id: string) {

@@ -37,6 +37,21 @@ export class OrderRepository {
   }
 
   /**
+   * Obtiene las órdenes pertenecientes a un cliente específico.
+   */
+  async getByCustomerId(customerId: string) {
+    return await this.prisma.order.findMany({
+      where: { customerId },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
+  /**
    * 2. Obtiene una orden específica por su ID junto a sus productos.
    */
   async getById(id: string) {

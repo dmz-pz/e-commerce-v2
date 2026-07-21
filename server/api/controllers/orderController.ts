@@ -12,13 +12,44 @@ export class OrderController {
     }
   }
 
+  async getMyOrders(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError(
+          "Operación no autorizada. Falta la identidad del usuario.",
+          401,
+        );
+      }
+      const orders = await orderService.getUserOrders(userId);
+      res.json(orders);
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction) {
     const orderId = req.params.orderId;
+    const user = (req as any).user;
     try {
       const order = await orderService.getOrderById(orderId);
       if (!order) {
         throw new AppError("La orden solicitada no fue encontrada", 404);
       }
+
+      // Si el usuario es cliente, validar que la orden le pertenezca
+      if (
+        user &&
+        !["ADMINISTRADOR", "STAFF_PICKER", "DELIVERY"].includes(user.role)
+      ) {
+        if (order.customerId !== user.id) {
+          throw new AppError(
+            "No tienes permisos para visualizar esta orden.",
+            403,
+          );
+        }
+      }
+
       res.json(order);
     } catch (error: any) {
       next(error);
