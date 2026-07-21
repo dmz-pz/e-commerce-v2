@@ -7,32 +7,39 @@ import { apiClient } from './apiClient.ts';
 import { Order, OrderStatus, DeliveryPerson, CartItem } from '../types/index.ts';
 
 export interface CreateOrderPayload {
-  customerName: string;
-  customerID?: string;
-  customerPhone?: string;
-  paymentMethod?: string;
-  customerEmail?: string;
-  items: CartItem[];
+  deliveryAddress?: string;
+  fulfillmentMethod?: 'DELIVERY' | 'PICK_UP';
+  items: Array<{
+    productId: string;
+    requestedQuantity: number;
+  }>;
 }
 
 export const orderService = {
   /**
-   * Obtiene la lista de todos los pedidos activos.
+   * Obtiene la lista de todos los pedidos activos (Para Administradores, Staff y Delivery).
    */
   getOrders: async (): Promise<Order[]> => {
     return apiClient.get<Order[]>('/api/orders');
   },
 
   /**
+   * Obtiene únicamente los pedidos pertenecientes al cliente en sesión.
+   */
+  getMyOrders: async (): Promise<Order[]> => {
+    return apiClient.get<Order[]>('/api/orders/my-orders');
+  },
+
+  /**
    * Registra un nuevo pedido en el sistema.
-   * @param payload - Datos del cliente y de los artículos en el carrito.
+   * @param payload - Dirección opcional, método de entrega e ítems solicitados.
    */
   createOrder: async (payload: CreateOrderPayload): Promise<Order> => {
     return apiClient.post<Order>('/api/orders', payload);
   },
 
   /**
-   * Actualiza el estado de un pedido (por ejemplo, de "pending" a "picking").
+   * Actualiza el estado de un pedido (por ejemplo, de PENDING a PICKING).
    * @param orderId - El ID del pedido a actualizar.
    * @param status - El nuevo estado del pedido.
    */
@@ -41,12 +48,22 @@ export const orderService = {
   },
 
   /**
-   * Actualiza los productos (ítems) e importes totales de un pedido activo (Sustitución o Eliminación de stock).
+   * Actualiza los productos (ítems) e importes totales de un pedido activo.
    * @param orderId - El ID del pedido.
    * @param items - La nueva lista de artículos modificados.
    */
-  updateOrderItems: async (orderId: string, items: CartItem[]): Promise<Order> => {
+  updateOrderItems: async (orderId: string, items: Array<{ productId: string; requestedQuantity: number }>): Promise<Order> => {
     return apiClient.patch<Order>(`/api/orders/${orderId}/items`, { items });
+  },
+
+  /**
+   * Registra el proceso de recolección física (picking) realizado por el personal.
+   */
+  processPicking: async (
+    orderId: string, 
+    items: Array<{ productId: string; pickedQuantity: number; status: string; substitutedWithId?: string }>
+  ): Promise<Order> => {
+    return apiClient.patch<Order>(`/api/orders/${orderId}/picking`, { items });
   },
 
   /**

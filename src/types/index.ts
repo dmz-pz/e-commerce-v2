@@ -82,6 +82,14 @@ export interface User {
   deletedAt?: string;
 }
 
+export interface DeliveryPerson {
+  id: string;
+  name: string;
+  phone?: string;
+  status: 'available' | 'busy' | 'offline';
+  vehicle?: string;
+}
+
 // ==========================================
 // MÓDULO 2: CATÁLOGO DE PRODUCTOS (PIM)
 // ==========================================
