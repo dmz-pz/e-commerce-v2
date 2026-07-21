@@ -15,19 +15,23 @@ import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import Login from './pages/Login.tsx';
 import Register from './pages/Register.tsx';
 import Profile from './pages/Profile.tsx';
+import ForgotPassword from './pages/ForgotPassword.tsx';
+import ResetPassword from './pages/ResetPassword.tsx';
 import { DeliveryDashboard } from './pages/DeliveryDashboard.tsx';
+
+import { Role } from './types/index.ts';
 
 // Redirecciona a usuarios con roles operativos/administrativos lejos de la tienda pública
 const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useUser();
   if (user) {
-    if (user.role === 'admin') {
+    if (user.role === Role.ADMINISTRADOR) {
       return <Navigate to="/admin" replace />;
     }
-    if (user.role === 'staff' || user.role === 'picker') {
+    if (user.role === Role.STAFF_PICKER) {
       return <Navigate to="/staff" replace />;
     }
-    if (user.role === 'delivery') {
+    if (user.role === Role.DELIVERY) {
       return <Navigate to="/delivery" replace />;
     }
   }
@@ -38,13 +42,13 @@ const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useUser();
   if (user) {
-    if (user.role === 'admin') {
+    if (user.role === Role.ADMINISTRADOR) {
       return <Navigate to="/admin" replace />;
     }
-    if (user.role === 'staff' || user.role === 'picker') {
+    if (user.role === Role.STAFF_PICKER) {
       return <Navigate to="/staff" replace />;
     }
-    if (user.role === 'delivery') {
+    if (user.role === Role.DELIVERY) {
       return <Navigate to="/delivery" replace />;
     }
     return <Navigate to="/" replace />;
@@ -73,12 +77,12 @@ export default function App() {
                 </ClientRoute>
               } />
               <Route path="/staff" element={
-                <ProtectedRoute allowedRoles={['staff', 'picker', 'admin']}>
+                <ProtectedRoute allowedRoles={[Role.STAFF_PICKER, Role.ADMINISTRADOR]}>
                   <StaffDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <ProtectedRoute allowedRoles={[Role.ADMINISTRADOR]}>
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
@@ -92,13 +96,23 @@ export default function App() {
                   <Register />
                 </AuthRoute>
               } />
+              <Route path="/forgot-password" element={
+                <AuthRoute>
+                  <ForgotPassword />
+                </AuthRoute>
+              } />
+              <Route path="/reset-password" element={
+                <AuthRoute>
+                  <ResetPassword />
+                </AuthRoute>
+              } />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
               } />
               <Route path="/delivery" element={
-                <ProtectedRoute allowedRoles={['delivery', 'admin']}>
+                <ProtectedRoute allowedRoles={[Role.DELIVERY, Role.ADMINISTRADOR]}>
                   <DeliveryDashboard />
                 </ProtectedRoute>
               } />

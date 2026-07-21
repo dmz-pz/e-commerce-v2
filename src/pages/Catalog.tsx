@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
-import { ShoppingBasket, Star, Tag, TrendingUp, Sparkles, Plus, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { ShoppingBasket, Star, Tag, TrendingUp, Sparkles, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGlobalCatalog } from '../context/CatalogContext.tsx';
 import { useCart } from '../context/CartContext.tsx';
 import { PromoCarousel } from '../components/catalog/PromoCarousel.tsx';
 import { ProductCard } from '../components/catalog/ProductCard.tsx';
 import { FidelityBanner, RecipesBanner, EcoFreshBanner } from '../components/catalog/AdvertisingSection.tsx';
-import { CartDrawer } from '../components/catalog/CartDrawer.tsx';
 import { ProductSection } from '../components/catalog/ProductSection.tsx';
 import { SubcategorySidebar } from '../components/catalog/SubcategorySidebar.tsx';
 import { BentoPromos } from '../components/catalog/BentoPromos.tsx';
-import { CategoryCircularNav } from '../components/catalog/CategoryCircularNav.tsx';
+import { PaginationBar } from '../components/catalog/PaginationBar.tsx';
 
 export const Catalog: React.FC = () => {
   const {
@@ -20,7 +19,6 @@ export const Catalog: React.FC = () => {
     setSelectedSubcategory,
     subcategories,
     searchQuery,
-    checkoutLoading,
     loading,
     showCart,
     setShowCart,
@@ -28,11 +26,17 @@ export const Catalog: React.FC = () => {
     recommendedProducts,
     discountedProducts,
     bestSellers,
-    handleCheckout
+    page,
+    setPage,
+    limit,
+    setLimit,
+    sortBy,
+    setSortBy,
+    totalProducts,
+    totalPages,
   } = useGlobalCatalog();
 
-  const { items, total, removeItem, addItem } = useCart();
-  const [displayLimit, setDisplayLimit] = useState(20);
+  const { items, total } = useCart();
 
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
@@ -41,11 +45,6 @@ export const Catalog: React.FC = () => {
   );
 
   const isGeneralCatalog = selectedCategory === 'all' && searchQuery === '';
-  const productsToDisplay = isGeneralCatalog 
-    ? filteredProducts.slice(0, displayLimit) 
-    : filteredProducts;
-
-  const hasMoreProducts = isGeneralCatalog && filteredProducts.length > displayLimit;
 
   return (
     <main className="max-w-[1920px] mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-10">
@@ -58,7 +57,7 @@ export const Catalog: React.FC = () => {
 
       <header className="hidden md:flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
-          <span className="text-brand font-black uppercase tracking-[0.4em] text-[10px] mb-2 block">Bienvenido a Minegocio</span>
+          <span className="text-brand font-black uppercase tracking-[0.4em] text-[10px] mb-2 block">Bienvenido a Supermercado</span>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
             Tu Super,<br /><span className="text-brand">Más Fresco.</span>
           </h1>
@@ -76,7 +75,7 @@ export const Catalog: React.FC = () => {
         </div>
       </header>
       
-      {/* Promotional content - Desktop Only Carousel */}
+      {/* Portada Principal: Carrusel y Secciones Destacadas (Máx 10 por bloque) */}
       {selectedCategory === 'all' && searchQuery === '' && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="hidden md:block mb-12">
@@ -112,42 +111,81 @@ export const Catalog: React.FC = () => {
         </div>
       )}
 
+      {/* Vista de Catálogo por Categoría / Subcategoría o Búsqueda */}
       {!isGeneralCatalog && (
-        <div className="mt-16 flex flex-col lg:flex-row gap-12">
+        <div className="mt-8 flex flex-col lg:flex-row gap-10">
           <SubcategorySidebar />
 
           <div className="flex-1">
-            <div className="mb-8 px-2">
-              <div className="flex items-center gap-3 mb-6">
+            {/* Header del Catálogo y Controles de Filtros */}
+            <div className="mb-6 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+              <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-brand" />
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                  {selectedCategory === 'all' && searchQuery === '' ? 'Todo el Catálogo' : 
-                   searchQuery !== '' ? `Buscando "${searchQuery}"` : `Explorando ${selectedCategory}`}
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  {searchQuery !== '' ? `Buscando "${searchQuery}"` : `Explorando ${selectedCategory}`}
                 </h2>
               </div>
 
-              {/* Mobile Subcategory Chips */}
-              {selectedCategory !== 'all' && subcategories.length > 1 && (
-                <div className="flex lg:hidden overflow-x-auto custom-scrollbar gap-2 mb-8 -mx-4 px-10">
-                  {subcategories.map((sub) => (
+              {/* Toolbar: Comprar por (Ordenamiento) + Artículos por página */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort-select" className="text-xs font-bold text-slate-500">Comprar por</label>
+                  <select
+                    id="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 cursor-pointer"
+                  >
+                    <option value="relevance">Relevancia</option>
+                    <option value="price_asc">Menor Precio</option>
+                    <option value="price_desc">Mayor Precio</option>
+                    <option value="name_asc">Nombre (A-Z)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label htmlFor="top-limit-select" className="text-xs font-bold text-slate-500">Artículos por página</label>
+                  <select
+                    id="top-limit-select"
+                    value={limit}
+                    onChange={(e) => setLimit(Number(e.target.value))}
+                    className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 cursor-pointer"
+                  >
+                    <option value={12}>12</option>
+                    <option value={24}>24</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Subcategory Chips */}
+            {selectedCategory !== 'all' && subcategories.length > 0 && (
+              <div className="flex lg:hidden overflow-x-auto custom-scrollbar gap-2 mb-6 -mx-4 px-10">
+                {subcategories.map((sub) => {
+                  const subName = typeof sub === 'string' ? sub : sub.name;
+                  const subId = typeof sub === 'string' ? sub : sub.id;
+                  return (
                     <button
-                      key={sub}
-                      onClick={() => setSelectedSubcategory(sub)}
-                      className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
-                        selectedSubcategory === sub
-                          ? 'bg-brand text-white shadow-lg shadow-brand/20'
+                      key={subId}
+                      onClick={() => setSelectedSubcategory(subName)}
+                      className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+                        selectedSubcategory === subName || selectedSubcategory === subId
+                          ? 'bg-brand text-white shadow-md shadow-brand/20'
                           : 'bg-white text-slate-400 border border-slate-100 hover:border-brand/30'
                       }`}
                     >
-                      {sub === 'all' ? 'Ver todo' : sub}
+                      {subName === 'all' ? 'Ver todo' : subName}
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
+            {/* Grilla de productos */}
             <div className="w-full">
-              <div className="flex md:grid overflow-x-auto md:overflow-visible pb-8 md:pb-0 gap-4 md:gap-8 items-stretch custom-scrollbar -mx-4 px-10 md:-mx-0 md:px-0 snap-x md:snap-none md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+              <div className="flex md:grid overflow-x-auto md:overflow-visible pb-8 md:pb-0 gap-4 md:gap-6 items-stretch custom-scrollbar -mx-4 px-10 md:-mx-0 md:px-0 snap-x md:snap-none md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
                 <AnimatePresence mode='popLayout'>
                   {filteredProducts.length === 0 && (
                     <motion.div 
@@ -155,53 +193,31 @@ export const Catalog: React.FC = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="col-span-full w-full py-32 md:py-48 text-center bg-white rounded-[2rem] md:rounded-[3rem] border border-dashed border-slate-200"
+                      className="col-span-full w-full py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200"
                     >
-                      <ShoppingBasket className="w-16 h-16 md:w-20 md:h-20 text-slate-100 mx-auto mb-6 md:mb-8" />
-                      <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] md:text-sm px-4">Sin resultados • Intenta otra búsqueda</p>
+                      <ShoppingBasket className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs px-4">Sin resultados • Intenta otra búsqueda o subcategoría</p>
                     </motion.div>
                   )}
 
-                  {/* In-grid products */}
-                  {productsToDisplay.length > 0 && productsToDisplay.map((product) => (
+                  {filteredProducts.length > 0 && filteredProducts.map((product) => (
                     <div key={product.id} className="w-[160px] md:w-full shrink-0 snap-start flex">
                       <ProductCard product={product} />
                     </div>
                   ))}
-
-                  {/* Load More Button */}
-                  {hasMoreProducts && (
-                    <div className="col-span-full flex justify-center py-12">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setDisplayLimit(prev => prev + 20)}
-                        className="group flex flex-col items-center gap-3 bg-white border border-slate-100 hover:border-brand/30 px-12 py-6 rounded-3xl shadow-sm hover:shadow-xl transition-all"
-                      >
-                        <div className="w-12 h-12 rounded-2xl bg-brand/5 flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors">
-                          <ChevronDown className="w-6 h-6" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-400 group-hover:text-brand transition-colors">
-                          Cargar más productos
-                        </span>
-                      </motion.button>
-                    </div>
-                  )}
-                  
-                  {/* Mobile "Ver Todo" placeholder at the end if searching */}
-                  {productsToDisplay.length > 0 && !hasMoreProducts && (
-                    <div className="md:hidden w-32 shrink-0 flex items-center justify-center snap-start">
-                      <div className="flex flex-col items-center gap-3 text-slate-300">
-                        <div className="w-12 h-12 rounded-full border-2 border-slate-100 flex items-center justify-center">
-                          <Plus className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Ver<br/>Más</span>
-                      </div>
-                    </div>
-                  )}
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* Barra de Paginación Inferior */}
+            <PaginationBar 
+              page={page}
+              totalPages={totalPages}
+              totalProducts={totalProducts}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
           </div>
         </div>
       )}
