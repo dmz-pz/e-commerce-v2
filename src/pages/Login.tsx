@@ -2,22 +2,26 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
-import { User, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Lock, Mail, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '../components/Logo.tsx';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useUser();
   const navigate = useNavigate();
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       await login(email, password);
       navigate('/profile');
@@ -30,7 +34,7 @@ const Login: React.FC = () => {
 
   return (
     <main className="min-h-[80vh] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden"
@@ -49,8 +53,8 @@ const Login: React.FC = () => {
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Email</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                   placeholder="tu@email.com"
@@ -69,8 +73,8 @@ const Login: React.FC = () => {
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   required
                   className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                   placeholder="••••••••"
@@ -81,7 +85,7 @@ const Login: React.FC = () => {
             </div>
 
             {error && (
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"
@@ -90,7 +94,7 @@ const Login: React.FC = () => {
               </motion.p>
             )}
 
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-brand-dark transition-all disabled:opacity-50 shadow-lg shadow-brand/20 group"
