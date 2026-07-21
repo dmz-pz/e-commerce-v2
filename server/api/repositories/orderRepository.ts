@@ -28,7 +28,8 @@ export class OrderRepository {
   async getAll() {
     return await this.prisma.order.findMany({
       include: {
-        items: true, // Incluye la relación OrderItem[] mapeada en tu schema
+        items: true,
+        deliveryPerson: true,
       },
       orderBy: {
         createdAt: "desc", // Ordena las órdenes de la más nueva a la más antigua
@@ -44,6 +45,7 @@ export class OrderRepository {
       where: { customerId },
       include: {
         items: true,
+        deliveryPerson: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -59,6 +61,7 @@ export class OrderRepository {
       where: { id },
       include: {
         items: true, // Incluye los OrderItem de la orden
+        deliveryPerson: true,
       },
     });
   }
@@ -221,10 +224,10 @@ export class OrderRepository {
       where: { id },
       data: {
         deliveryPersonId,
-        status: OrderStatus.DELIVERED, // Transición automática según tu flujo original
       },
       include: {
         items: true,
+        deliveryPerson: true,
       },
     });
   }
