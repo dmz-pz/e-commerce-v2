@@ -173,19 +173,23 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   // 6. PROCESAMIENTO DEL CHECKOUT
   const handleCheckout = async () => {
     if (items.length === 0) return;
+    if (!user) {
+      alert("Debes iniciar sesión para realizar un pedido.");
+      return;
+    }
     setCheckoutLoading(true);
     try {
       await orderService.createOrder({
-        customerName: user?.name || "Cliente Invitado",
-        customerID: "V-99999999",
-        customerPhone: "0412-0000000",
-        paymentMethod: "Efectivo / Pendiente",
-        customerEmail: user?.email,
-        items: items,
+        fulfillmentMethod: "DELIVERY",
+        items: items.map((item) => ({
+          productId: item.productId,
+          requestedQuantity: item.quantity,
+        })),
       });
 
+      const customerDisplayName = (user as any).firstName || (user as any).name || "";
       alert(
-        `¡Gracias ${user?.name || ""}! Pedido realizado con éxito. El personal ya está preparando tu compra.`,
+        `¡Gracias ${customerDisplayName}! Pedido realizado con éxito. El personal ya está preparando tu compra.`,
       );
       clearCart();
       setShowCart(false);
