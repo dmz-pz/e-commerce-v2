@@ -12,13 +12,52 @@ interface OrderCardProps {
   modifyingOrderId: string | null;
   errorMessage: string | null;
   assigningId: string | null;
+  isDirty?: boolean;
   setAssigningId: (id: string | null) => void;
   onUpdateStatus: (orderId: string, status: OrderStatus) => Promise<void>;
   onAssignDelivery: (orderId: string, motorizadoId: string) => Promise<void>;
-  onUpdateItemQuantity: (orderId: string, productId: string, delta: number) => Promise<void>;
-  onRemoveItem: (orderId: string, productId: string) => Promise<void>;
+  onUpdateItemQuantity: (orderId: string, productId: string, delta: number) => void;
+  onRemoveItem: (orderId: string, productId: string) => void;
+  onSaveOrderItems?: (orderId: string) => Promise<void>;
+  onDiscardOrderChanges?: (orderId: string) => void;
   onSetSubstitutingItem: (item: { orderId: string, productId: string, name: string } | null) => void;
+  onOpenCancelModal?: (orderId: string, customerName: string) => void;
 }
+
+const getStatusStyles = (status: OrderStatus) => {
+  switch (status) {
+    case OrderStatus.PENDING:
+      return {
+        cardBg: 'bg-gradient-to-br from-orange-50/30 to-amber-50/10 border-orange-100/70 hover:border-orange-200 hover:shadow-[0_20px_50px_rgba(249,115,22,0.05)]',
+        topAccent: 'bg-orange-500',
+      };
+    case OrderStatus.PICKING:
+      return {
+        cardBg: 'bg-gradient-to-br from-blue-50/20 to-brand/[0.01] border-blue-100/70 hover:border-blue-200 hover:shadow-[0_20px_50px_rgba(0,51,153,0.06)]',
+        topAccent: 'bg-brand',
+      };
+    case OrderStatus.READY_TO_PAY:
+      return {
+        cardBg: 'bg-gradient-to-br from-purple-50/20 to-indigo-50/10 border-purple-100/70 hover:border-purple-200 hover:shadow-[0_20px_50px_rgba(168,85,247,0.05)]',
+        topAccent: 'bg-purple-500',
+      };
+    case OrderStatus.PAID:
+      return {
+        cardBg: 'bg-gradient-to-br from-emerald-50/20 to-teal-50/10 border-emerald-100/70 hover:border-emerald-200 hover:shadow-[0_20px_50px_rgba(16,185,129,0.05)]',
+        topAccent: 'bg-emerald-500',
+      };
+    case OrderStatus.CANCELLED:
+      return {
+        cardBg: 'bg-gradient-to-br from-red-50/10 to-slate-50/20 border-red-100/60 hover:border-red-200 hover:shadow-[0_20px_50px_rgba(239,68,68,0.03)]',
+        topAccent: 'bg-red-400',
+      };
+    default:
+      return {
+        cardBg: 'bg-white border-slate-200 hover:shadow-[0_20px_50px_rgba(0,51,153,0.08)]',
+        topAccent: 'bg-slate-300',
+      };
+  }
+};
 
 export const OrderCard: React.FC<OrderCardProps> = ({
   order,
@@ -26,14 +65,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   modifyingOrderId,
   errorMessage,
   assigningId,
+  isDirty = false,
   setAssigningId,
   onUpdateStatus,
   onAssignDelivery,
   onUpdateItemQuantity,
   onRemoveItem,
+  onSaveOrderItems,
+  onDiscardOrderChanges,
   onSetSubstitutingItem,
+  onOpenCancelModal,
 }) => {
   const isModifyingThisOrder = modifyingOrderId === order.id;
+  const styles = getStatusStyles(order.status);
 
   return (
     <motion.div
@@ -41,8 +85,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="bg-white border border-slate-200 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 hover:shadow-[0_20px_50px_rgba(0,51,153,0.08)] transition-all group relative overflow-hidden flex flex-col"
+      className={`${styles.cardBg} border rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 transition-all group relative overflow-hidden flex flex-col`}
     >
+      {/* Barra de acento de estado en la parte superior */}
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.topAccent}`} />
       {/* Header and status badge */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -56,12 +102,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           order.status === OrderStatus.PICKING ? 'bg-brand/5 text-brand border-brand/10' :
           order.status === OrderStatus.READY_TO_PAY ? 'bg-purple-50 text-purple-600 border-purple-100' :
           order.status === OrderStatus.PAID ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+          order.status === OrderStatus.CANCELLED ? 'bg-red-50 text-red-600 border-red-100' :
           'bg-green-50 text-green-600 border-green-100'
         }`}>
           {order.status === OrderStatus.PENDING ? 'Pendiente' : 
            order.status === OrderStatus.PICKING ? 'En Preparación' : 
            order.status === OrderStatus.READY_TO_PAY ? 'Listo p/ Pagar' : 
-           order.status === OrderStatus.PAID ? 'Pagado' : 'Enviado'}
+           order.status === OrderStatus.PAID ? 'Pagado' : 
+           order.status === OrderStatus.CANCELLED ? 'Cancelado' : 'Enviado'}
         </div>
       </div>
 
@@ -114,7 +162,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         </span>
         
         {order.items.map((item, idx) => {
-          const canEdit = order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING;
+          const canEdit = !order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
           return (
             <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 hover:border-brand/10 transition-all shadow-sm">
               <div className="flex justify-between items-start gap-3">
@@ -212,6 +260,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           >
             <CheckCircle2 className="w-4 h-4" />
             Terminar y Marcar Listo p/ Pagar
+          </button>
+        )}
+
+        {/* Cancel Order Trigger Button for active editable orders */}
+        {!order.deliveryPersonId && order.status !== OrderStatus.CANCELLED && order.status !== OrderStatus.DELIVERED && (
+          <button
+            type="button"
+            onClick={() => onOpenCancelModal?.(order.id, order.customerName)}
+            disabled={isModifyingThisOrder}
+            className="w-full py-2.5 px-4 bg-red-50/50 hover:bg-red-50 text-red-600 border border-red-100 hover:border-red-200 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <Trash2 className="w-3 h-3 text-red-500" />
+            Cancelar Orden
           </button>
         )}
 
