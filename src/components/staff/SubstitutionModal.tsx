@@ -28,7 +28,8 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
       const query = searchQuery.toLowerCase();
       return p.name.toLowerCase().includes(query) ||
              (p.brand && p.brand.toLowerCase().includes(query)) ||
-             p.category.toLowerCase().includes(query);
+             (p.subcategory?.name && p.subcategory.name.toLowerCase().includes(query)) ||
+             (p.subcategory?.category?.name && p.subcategory.category.name.toLowerCase().includes(query));
     });
 
   return (
@@ -101,7 +102,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <img
-                    src={product.imageUrl}
+                    src={product.images?.[0]?.url}
                     alt={product.name}
                     referrerPolicy="no-referrer"
                     className="w-9 h-9 object-cover rounded-lg bg-slate-50 border border-slate-100 shrink-0"
@@ -112,7 +113,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   <div>
                     <h4 className="font-bold text-slate-900 text-xs leading-none mb-1">{product.name}</h4>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-brand font-mono">${(product.discountPrice || product.price).toFixed(2)}</span>
+                      <span className="text-[10px] font-black text-brand font-mono">${Number(product.discountPrice || product.price || 0).toFixed(2)}</span>
                       <span className="text-[8px] font-bold text-slate-300 uppercase">•</span>
                       <span className={`text-[10px] font-bold ${product.stock > 0 ? 'text-green-600' : 'text-red-550'}`}>
                         Stock: {product.stock} {product.unit}

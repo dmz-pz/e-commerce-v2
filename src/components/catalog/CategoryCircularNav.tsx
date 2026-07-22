@@ -1,14 +1,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
+import { Category } from '../../types/index.ts';
 
 export const CategoryCircularNav: React.FC = () => {
   const { categories, selectedCategory, setSelectedCategory } = useGlobalCatalog();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleCategoryClick = (cat: string) => {
-    setSelectedCategory(cat);
+  const handleCategoryClick = (catId: string) => {
+    setSelectedCategory(catId);
     if (location.pathname !== '/') {
       navigate('/');
     }
@@ -24,6 +25,11 @@ export const CategoryCircularNav: React.FC = () => {
     'Bebidas': { icon: '🥤', bg: 'bg-amber-50' },
   };
 
+  const allCategories: Category[] = [
+    { id: 'all', name: 'all' } as Category,
+    ...categories
+  ];
+
   return (
     <div className="md:hidden mb-8">
       <div className="flex items-center justify-between px-2 mb-4">
@@ -31,14 +37,14 @@ export const CategoryCircularNav: React.FC = () => {
         <button className="text-[10px] font-black text-brand uppercase tracking-widest">Ver Todo</button>
       </div>
       <div className="flex overflow-x-auto no-scrollbar gap-4 -mx-4 px-10">
-        {categories.map((cat) => {
-          const asset = categoryAssets[cat] || { icon: '📦', bg: 'bg-slate-50' };
-          const isActive = selectedCategory === cat;
+        {allCategories.map((cat) => {
+          const asset = categoryAssets[cat.name] || { icon: '📦', bg: 'bg-slate-50' };
+          const isActive = selectedCategory === cat.id;
           
           return (
             <button
-              key={cat}
-              onClick={() => handleCategoryClick(cat)}
+              key={cat.id}
+              onClick={() => handleCategoryClick(cat.id)}
               className="flex flex-col items-center gap-2 shrink-0 group"
             >
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all border-2 ${
@@ -49,7 +55,7 @@ export const CategoryCircularNav: React.FC = () => {
               <span className={`text-[9px] font-bold uppercase tracking-tight text-center max-w-[70px] leading-tight ${
                 isActive ? 'text-brand' : 'text-slate-500'
               }`}>
-                {cat === 'all' ? 'Ver todo' : cat}
+                {cat.name === 'all' ? 'Ver todo' : cat.name}
               </span>
             </button>
           );
