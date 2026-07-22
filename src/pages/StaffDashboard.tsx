@@ -9,6 +9,7 @@ import { productService } from '../services/productService.ts';
 import { StaffHeader } from '../components/staff/StaffHeader.tsx';
 import { OrderCard } from '../components/staff/OrderCard.tsx';
 import { SubstitutionModal } from '../components/staff/SubstitutionModal.tsx';
+import { CancelOrderModal } from '../components/staff/CancelOrderModal.tsx';
 
 export const StaffDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -20,11 +21,18 @@ export const StaffDashboard: React.FC = () => {
   // Estados para preparación interactiva, errores y productos sustitutos
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const [substitutingItem, setSubstitutingItem] = useState<{ orderId: string, productId: string, name: string } | null>(null);
+  const [cancelingOrder, setCancelingOrder] = useState<{ id: string; customerName: string; isLastItem?: boolean } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modifyingOrderId, setModifyingOrderId] = useState<string | null>(null);
+  const [dirtyOrders, setDirtyOrders] = useState<Record<string, boolean>>({});
+
+  const dirtyOrdersRef = React.useRef(dirtyOrders);
+  useEffect(() => {
+    dirtyOrdersRef.current = dirtyOrders;
+  }, [dirtyOrders]);
 
   const fetchOrders = () => {
-    orderService.getOrders()
+    orderService.getOrders({ todayOnly: true })
       .then(data => {
         setOrders(data);
         setLoading(false);
@@ -54,58 +62,87 @@ export const StaffDashboard: React.FC = () => {
 
     // Polling cada 10 segundos para emular actualizaciones en ruta
     const interval = setInterval(() => {
-      fetchOrders();
+      orderService.getOrders({ todayOnly: true })
+        .then(data => {
+          setOrders(prevOrders => {
+            return data.map(serverOrder => {
+              if (dirtyOrdersRef.current[serverOrder.id]) {
+                const localDraft = prevOrders.find(o => o.id === serverOrder.id);
+                return localDraft || serverOrder;
+              }
+              return serverOrder;
+            });
+          });
+        })
+        .catch(err => console.error("Error polling orders:", err));
+
       fetchMotorizados();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateItemQuantity = async (orderId: string, productId: string, delta: number) => {
-    setModifyingOrderId(orderId);
-    setErrorMessage(null);
-    try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
+  const handleUpdateItemQuantity = (orderId: string, productId: string, delta: number) => {
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.id !== orderId) return order;
 
       const updatedItems = order.items.map(item => {
         const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
         if (item.productId === productId) {
-          const newQty = currentQty + delta;
-          return { ...item, requestedQuantity: newQty < 1 ? 1 : newQty };
+          const newQty = Math.max(1, currentQty + delta);
+          return { ...item, requestedQuantity: newQty };
         }
         return { ...item, requestedQuantity: currentQty };
       });
 
-      const payload = updatedItems.map(item => ({
-        productId: item.productId,
-        requestedQuantity: item.requestedQuantity
-      }));
+      const newTotal = updatedItems.reduce((acc, item) => {
+        const qty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const price = Number(item.price || 0);
+        return acc + (price * qty);
+      }, 0);
 
-      await orderService.updateOrderItems(orderId, payload);
-      fetchOrders();
-    } catch (err: any) {
-      console.error("Error updating quantity:", err);
-      setErrorMessage(err.message || "No se pudo actualizar la cantidad. Verifique el stock.");
-      setTimeout(() => setErrorMessage(null), 4000);
-    } finally {
-      setModifyingOrderId(null);
-    }
+      return { ...order, items: updatedItems, total: newTotal };
+    }));
+
+    setDirtyOrders(prev => ({ ...prev, [orderId]: true }));
   };
 
-  const handleRemoveItem = async (orderId: string, productId: string) => {
+  const handleRemoveItem = (orderId: string, productId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    if (order.items.length <= 1) {
+      setCancelingOrder({ id: order.id, customerName: order.customerName, isLastItem: true });
+      return;
+    }
+
     if (!window.confirm("¿Está seguro de eliminar este producto de la orden?")) return;
+    setOrders(prevOrders => prevOrders.map(o => {
+      if (o.id !== orderId) return o;
+
+      const updatedItems = o.items.filter(item => item.productId !== productId);
+      const newTotal = updatedItems.reduce((acc, item) => {
+        const qty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const price = Number(item.price || 0);
+        return acc + (price * qty);
+      }, 0);
+
+      return { ...o, items: updatedItems, total: newTotal };
+    }));
+
+    setDirtyOrders(prev => ({ ...prev, [orderId]: true }));
+  };
+
+  const handleConfirmCancelOrder = async (orderId: string, reason: string) => {
     setModifyingOrderId(orderId);
     setErrorMessage(null);
     try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-
-      const updatedItems = order.items.filter(item => item.productId !== productId);
-      await orderService.updateOrderItems(orderId, updatedItems as any);
+      await orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED, reason as any);
+      setCancelingOrder(null);
+      setDirtyOrders(prev => ({ ...prev, [orderId]: false }));
       fetchOrders();
     } catch (err: any) {
-      console.error("Error removing item:", err);
-      setErrorMessage(err.message || "No se pudo eliminar el producto.");
+      console.error("Error canceling order:", err);
+      setErrorMessage(err.message || "No se pudo cancelar la orden.");
       setTimeout(() => setErrorMessage(null), 4000);
     } finally {
       setModifyingOrderId(null);
@@ -116,47 +153,81 @@ export const StaffDashboard: React.FC = () => {
     if (!substitutingItem) return;
     const { orderId, productId: oldProductId } = substitutingItem;
 
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.id !== orderId) return order;
+
+      const oldItem = order.items.find(i => i.productId === oldProductId);
+      const qty = oldItem ? Number(oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
+
+      const remainingItems = order.items.filter(item => item.productId !== oldProductId);
+      const existingInOrder = remainingItems.find(item => item.productId === replacementProduct.id);
+      let updatedItems: typeof order.items;
+
+      if (existingInOrder) {
+        updatedItems = remainingItems.map(item => {
+          if (item.productId === replacementProduct.id) {
+            const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+            return { ...item, requestedQuantity: currentQty + qty };
+          }
+          return item;
+        });
+      } else {
+        const newItem = {
+          productId: replacementProduct.id,
+          name: replacementProduct.name,
+          price: replacementProduct.discountPrice || replacementProduct.price,
+          requestedQuantity: qty,
+        };
+        updatedItems = [...remainingItems, newItem as any];
+      }
+
+      const newTotal = updatedItems.reduce((acc, item) => {
+        const itemQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const itemPrice = Number(item.price || 0);
+        return acc + (itemPrice * itemQty);
+      }, 0);
+
+      return { ...order, items: updatedItems, total: newTotal };
+    }));
+
+    setDirtyOrders(prev => ({ ...prev, [orderId]: true }));
+    setSubstitutingItem(null);
+  };
+
+  const handleSaveOrderItems = async (orderId: string) => {
     setModifyingOrderId(orderId);
     setErrorMessage(null);
     try {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
 
-      const oldItem = order.items.find(i => i.productId === oldProductId);
-      const qty = oldItem ? Number(oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
+      const payload = order.items.map(item => ({
+        productId: item.productId,
+        requestedQuantity: Number(item.requestedQuantity ?? (item as any).quantity ?? 1)
+      }));
 
-      // 1. Filtrar el producto anterior y transformar los items al formato del payload del backend { productId, requestedQuantity }
-      const payload = order.items
-        .filter(item => item.productId !== oldProductId)
-        .map(item => ({
-          productId: item.productId,
-          requestedQuantity: Number(item.requestedQuantity ?? (item as any).quantity ?? 1),
-        }));
-
-      // 2. Si el producto sustituto ya existe en la orden, incrementar la cantidad
-      const existingInOrder = payload.find(item => item.productId === replacementProduct.id);
-      if (existingInOrder) {
-        existingInOrder.requestedQuantity += qty;
-      } else {
-        // 3. Si no existe, agregar el nuevo producto sustituto
-        payload.push({
-          productId: replacementProduct.id,
-          requestedQuantity: qty
-        });
-      }
-
-      await orderService.updateOrderItems(orderId, payload);
-      setSubstitutingItem(null);
-      fetchOrders();
+      const updatedOrder = await orderService.updateOrderItems(orderId, payload);
+      setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+      setDirtyOrders(prev => ({ ...prev, [orderId]: false }));
     } catch (err: any) {
-      console.error("Error performing substitution:", err);
-      setErrorMessage(err.message || "No se pudo realizar la sustitución. Verifique stock del sustituto.");
+      console.error("Error saving order items:", err);
+      setErrorMessage(err.message || "No se pudieron guardar los cambios. Verifique el stock.");
+      setTimeout(() => setErrorMessage(null), 4000);
     } finally {
       setModifyingOrderId(null);
     }
   };
 
+  const handleDiscardOrderChanges = (orderId: string) => {
+    fetchOrders();
+    setDirtyOrders(prev => ({ ...prev, [orderId]: false }));
+  };
+
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
+    if (dirtyOrders[orderId]) {
+      await handleSaveOrderItems(orderId);
+    }
+
     if (status === OrderStatus.READY_TO_PAY) {
       setAssigningId(orderId);
       return;
@@ -171,6 +242,9 @@ export const StaffDashboard: React.FC = () => {
 
   const handleAssignDelivery = async (orderId: string, motorizadoId: string) => {
     try {
+      if (dirtyOrders[orderId]) {
+        await handleSaveOrderItems(orderId);
+      }
       await orderService.assignDeliveryPerson(orderId, motorizadoId);
       setAssigningId(null);
       fetchOrders();
@@ -183,7 +257,7 @@ export const StaffDashboard: React.FC = () => {
   const filteredOrders = filter === 'all'
     ? orders
     : filter === OrderStatus.READY_TO_PAY
-    ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
+    ? orders.filter(o => (o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID) && !!o.deliveryPersonId)
     : orders.filter(o => o.status === filter);
 
   if (loading) {
@@ -220,12 +294,16 @@ export const StaffDashboard: React.FC = () => {
                   modifyingOrderId={modifyingOrderId}
                   errorMessage={errorMessage}
                   assigningId={assigningId}
+                  isDirty={!!dirtyOrders[order.id]}
                   setAssigningId={setAssigningId}
                   onUpdateStatus={handleUpdateStatus}
                   onAssignDelivery={handleAssignDelivery}
                   onUpdateItemQuantity={handleUpdateItemQuantity}
                   onRemoveItem={handleRemoveItem}
+                  onSaveOrderItems={handleSaveOrderItems}
+                  onDiscardOrderChanges={handleDiscardOrderChanges}
                   onSetSubstitutingItem={setSubstitutingItem}
+                  onOpenCancelModal={(id, customerName) => setCancelingOrder({ id, customerName })}
                 />
               ))
             )}
@@ -239,6 +317,14 @@ export const StaffDashboard: React.FC = () => {
         onClose={() => { setSubstitutingItem(null); setErrorMessage(null); }}
         catalogProducts={catalogProducts}
         onPerformSubstitution={handlePerformSubstitution}
+        errorMessage={errorMessage}
+      />
+
+      {/* Modular Cancel Order Popup Overlay */}
+      <CancelOrderModal
+        cancelingOrder={cancelingOrder}
+        onClose={() => { setCancelingOrder(null); setErrorMessage(null); }}
+        onConfirmCancel={handleConfirmCancelOrder}
         errorMessage={errorMessage}
       />
     </main>

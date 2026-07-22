@@ -12,8 +12,8 @@ export class OrderService {
   /**
    * 1. Obtiene todas las órdenes del repositorio real de la base de datos.
    */
-  async getAllOrders() {
-    return await orderRepository.getAll();
+  async getAllOrders(options?: { todayOnly?: boolean }) {
+    return await orderRepository.getAll(options);
   }
 
   /**

@@ -25,8 +25,18 @@ export class OrderRepository {
    */
   private prisma = getPrisma();
 
-  async getAll() {
+  async getAll(options?: { todayOnly?: boolean }) {
+    const where: any = {};
+    if (options?.todayOnly) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      where.createdAt = {
+        gte: startOfToday,
+      };
+    }
+
     return await this.prisma.order.findMany({
+      where,
       include: {
         items: true,
         deliveryPerson: true,

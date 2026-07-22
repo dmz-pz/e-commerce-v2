@@ -5,7 +5,8 @@ import { AppError } from "../utils/appErrors.ts";
 export class OrderController {
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const orders = await orderService.getAllOrders();
+      const todayOnly = req.query.todayOnly === 'true' || req.query.today === 'true';
+      const orders = await orderService.getAllOrders({ todayOnly });
       res.json(orders);
     } catch (error: any) {
       next(error);

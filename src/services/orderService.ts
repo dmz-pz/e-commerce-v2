@@ -19,8 +19,9 @@ export const orderService = {
   /**
    * Obtiene la lista de todos los pedidos activos (Para Administradores, Staff y Delivery).
    */
-  getOrders: async (): Promise<Order[]> => {
-    return apiClient.get<Order[]>('/api/orders');
+  getOrders: async (params?: { todayOnly?: boolean }): Promise<Order[]> => {
+    const query = params?.todayOnly ? '?todayOnly=true' : '';
+    return apiClient.get<Order[]>(`/api/orders${query}`);
   },
 
   /**
@@ -43,8 +44,8 @@ export const orderService = {
    * @param orderId - El ID del pedido a actualizar.
    * @param status - El nuevo estado del pedido.
    */
-  updateOrderStatus: async (orderId: string, status: OrderStatus): Promise<void> => {
-    return apiClient.patch<void>(`/api/orders/${orderId}/status`, { status });
+  updateOrderStatus: async (orderId: string, status: OrderStatus, reason?: string): Promise<void> => {
+    return apiClient.patch<void>(`/api/orders/${orderId}/status`, { status, reason });
   },
 
   /**
