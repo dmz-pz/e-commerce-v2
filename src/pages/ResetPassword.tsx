@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Mail, Lock, KeyRound, ArrowRight, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Mail, KeyRound, ArrowRight, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Logo } from '../components/Logo.tsx';
+import { PasswordInput } from '../components/PasswordInput.tsx';
 import { apiClient } from '../services/apiClient.ts';
 
 export const ResetPassword: React.FC = () => {
@@ -107,32 +108,24 @@ export const ResetPassword: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Nueva Contraseña</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="password" 
-                    required
-                    className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
+                <PasswordInput
+                  required
+                  className="h-12 text-xs font-bold"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
               </div>
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Confirmar Contraseña</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="password" 
-                    required
-                    className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
+                <PasswordInput
+                  required
+                  className="h-12 text-xs font-bold"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
               </div>
 
               {error && (

@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
-import { User, Lock, Mail, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '../components/Logo.tsx';
+import { PasswordInput } from '../components/PasswordInput.tsx';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useUser();
@@ -71,17 +69,12 @@ const Login: React.FC = () => {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input
-                  type="password"
-                  required
-                  className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              <PasswordInput
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
 
             {error && (
