@@ -46,13 +46,13 @@ export const Navbar: React.FC = () => {
     const diff = latest - previous;
 
     // Al llegar arriba del todo, siempre mostrar
-    if (latest < 50) {
+    if (latest < 25) {
       setIsVisible(true);
       return;
     }
 
     // Solo ocultar si el scroll es hacia abajo y ha superado un umbral de 10px
-    if (diff > 10 && latest > 150) {
+    if (diff > 5 && latest > 75) {
       setIsVisible(false);
     }
     // Solo mostrar si el scroll es hacia arriba y ha superado un umbral de 10px
@@ -232,7 +232,8 @@ export const Navbar: React.FC = () => {
                       </Link>
                     )}
                   {user &&
-                    (user.role === Role.DELIVERY || user.role === Role.ADMINISTRADOR) && (
+                    (user.role === Role.DELIVERY ||
+                      user.role === Role.ADMINISTRADOR) && (
                       <Link
                         to="/delivery"
                         className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"
