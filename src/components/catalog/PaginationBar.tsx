@@ -8,6 +8,8 @@ interface PaginationBarProps {
   limit: number;
   onPageChange: (newPage: number) => void;
   onLimitChange: (newLimit: number) => void;
+  entityName?: string;
+  limitOptions?: number[];
 }
 
 export const PaginationBar: React.FC<PaginationBarProps> = ({
@@ -17,6 +19,8 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   limit,
   onPageChange,
   onLimitChange,
+  entityName = 'productos',
+  limitOptions = [12, 24, 50, 100],
 }) => {
   if (totalProducts === 0) return null;
 
@@ -37,7 +41,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
       {/* Resumen de cantidad e ítems por página */}
       <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
         <span>
-          Mostrando <strong className="text-slate-800 font-bold">{startItem}</strong> - <strong className="text-slate-800 font-bold">{endItem}</strong> de <strong className="text-slate-800 font-bold">{totalProducts}</strong> productos
+          Mostrando <strong className="text-slate-800 font-bold">{startItem}</strong> - <strong className="text-slate-800 font-bold">{endItem}</strong> de <strong className="text-slate-800 font-bold">{totalProducts}</strong> {entityName}
         </span>
 
         <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
@@ -48,10 +52,9 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             onChange={(e) => onLimitChange(Number(e.target.value))}
             className="h-9 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 cursor-pointer"
           >
-            <option value={12}>12</option>
-            <option value={24}>24</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
+            {limitOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
           </select>
         </div>
       </div>

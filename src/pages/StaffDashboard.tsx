@@ -10,6 +10,7 @@ import { StaffHeader } from '../components/staff/StaffHeader.tsx';
 import { OrderCard } from '../components/staff/OrderCard.tsx';
 import { SubstitutionModal } from '../components/staff/SubstitutionModal.tsx';
 import { CancelOrderModal } from '../components/staff/CancelOrderModal.tsx';
+import { PaginationBar } from '../components/catalog/PaginationBar.tsx';
 
 export const StaffDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -17,6 +18,10 @@ export const StaffDashboard: React.FC = () => {
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+
+  // Estados para paginación de pedidos
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(6);
 
   // Estados para preparación interactiva, errores y productos sustitutos
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -80,6 +85,12 @@ export const StaffDashboard: React.FC = () => {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Resetear a página 1 al cambiar el filtro
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
+
 
   const handleUpdateItemQuantity = (orderId: string, productId: string, delta: number) => {
     setOrders(prevOrders => prevOrders.map(order => {
@@ -260,6 +271,17 @@ export const StaffDashboard: React.FC = () => {
     ? orders.filter(o => (o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID) && !!o.deliveryPersonId)
     : orders.filter(o => o.status === filter);
 
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / limit));
+
+  // Validar límites de página al cambiar cantidad de pedidos o límite
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const paginatedOrders = filteredOrders.slice((page - 1) * limit, page * limit);
+
   if (loading) {
     return (
       <div className="p-8 text-center font-mono text-brand animate-pulse">
@@ -278,7 +300,7 @@ export const StaffDashboard: React.FC = () => {
         {/* Orders Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredOrders.length === 0 ? (
+            {paginatedOrders.length === 0 ? (
               <div className="col-span-full py-32 text-center bg-white rounded-[2rem] border border-dashed border-slate-200 shadow-inner">
                 <Package className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                 <p className="text-slate-400 font-medium tracking-tight text-lg">
@@ -286,7 +308,7 @@ export const StaffDashboard: React.FC = () => {
                 </p>
               </div>
             ) : (
-              filteredOrders.map((order) => (
+              paginatedOrders.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -309,6 +331,20 @@ export const StaffDashboard: React.FC = () => {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Barra de Paginación Inferior */}
+        {filteredOrders.length > 0 && (
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            totalProducts={filteredOrders.length}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+            entityName="pedidos"
+            limitOptions={[6, 12, 24, 48]}
+          />
+        )}
       </div>
 
       {/* Modular Substitution Popup Overlay */}
