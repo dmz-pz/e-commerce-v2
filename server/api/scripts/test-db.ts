@@ -1,15 +1,13 @@
 import "dotenv/config";
-import { getPrisma, useMock } from "../db.ts";
+import { prisma} from "../db.ts";
 
 async function main() {
-  if (useMock) {
+  if (false) {
     console.error(
       "USE_MOCK_DATABASE=true o falta DATABASE_URL. Ajusta las env vars.",
     );
     process.exit(1);
   }
-
-  const prisma = getPrisma();
 
   try {
     const rows = await prisma.product.findMany({ take: 5 });

@@ -1,9 +1,7 @@
-import { getPrisma } from "../server/api/db";
+import { prisma } from "../server/api/db";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
-
-const prisma = getPrisma();
 const API_URL = "http://localhost:3000/api"; // Ajusta la ruta base de tu enrutador Express si es necesario
 
 async function main() {

@@ -1,4 +1,4 @@
-import { getPrisma } from "../db.ts";
+import { prisma } from "../db.ts";
 import { OrderStatus, ItemStatus } from "../../../generated/prisma/enums.ts"; //
 
 export interface CreateOrderPayload {
@@ -23,7 +23,6 @@ export class OrderRepository {
   /**
    * 1. Obtiene todas las órdenes de la base de datos con sus items asociados.
    */
-  private prisma = getPrisma();
 
   async getAll(options?: { todayOnly?: boolean }) {
     const where: any = {};
@@ -35,11 +34,12 @@ export class OrderRepository {
       };
     }
 
-    return await this.prisma.order.findMany({
+    return await prisma.order.findMany({
       where,
       include: {
         items: true,
-        deliveryPerson: true,
+        payment: true,
+        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
       },
       orderBy: {
         createdAt: "desc", // Ordena las órdenes de la más nueva a la más antigua
@@ -51,11 +51,12 @@ export class OrderRepository {
    * Obtiene las órdenes pertenecientes a un cliente específico.
    */
   async getByCustomerId(customerId: string) {
-    return await this.prisma.order.findMany({
+    return await prisma.order.findMany({
       where: { customerId },
       include: {
         items: true,
-        deliveryPerson: true,
+        payment: true,
+        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
       },
       orderBy: {
         createdAt: "desc",
@@ -67,11 +68,12 @@ export class OrderRepository {
    * 2. Obtiene una orden específica por su ID junto a sus productos.
    */
   async getById(id: string) {
-    return await this.prisma.order.findUnique({
+    return await prisma.order.findUnique({
       where: { id },
       include: {
         items: true, // Incluye los OrderItem de la orden
-        deliveryPerson: true,
+        payment: true,
+        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
       },
     });
   }
@@ -80,7 +82,7 @@ export class OrderRepository {
    * 3. Crea una orden y sus items de forma atómica en una sola transacción.
    */
   async create(data: CreateOrderPayload) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
           customerId: data.customerId,
@@ -118,20 +120,63 @@ export class OrderRepository {
     });
   }
 
-  /**
-   * 4. Actualiza el estado de la orden y registra opcionalmente al picker que la tomó.
-   */
-  async updateStatus(id: string, status: OrderStatus, pickerId?: string) {
-    return await this.prisma.order.update({
-      where: { id },
-      data: {
-        status,
-        ...(pickerId && { pickerId }),
-        // 'updatedAt' se actualizará automáticamente gracias a tu directiva @updatedAt
-      },
-      include: {
-        items: true,
-      },
+  async updateStatus(id: string, status: OrderStatus, pickerId?: string, actionUserId?: string) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Update the order status
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: {
+          status,
+          ...(pickerId && { pickerId }),
+        },
+        include: {
+          items: true,
+          payment: true,
+          deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+        },
+      });
+
+      // 2. If it's a delivery action (DELIVERED or RETURNED), handle the active DeliveryJob and cash
+      if (status === "DELIVERED" || status === "RETURNED") {
+        const activeJob = updatedOrder.deliveryJobs[0];
+        
+        if (activeJob && activeJob.status !== "COMPLETED" && activeJob.status !== "FAILED") {
+          // A. Mark job as COMPLETED or FAILED
+          const jobStatus = status === "DELIVERED" ? "COMPLETED" : "FAILED";
+          await tx.deliveryJob.update({
+            where: { id: activeJob.id },
+            data: { 
+              status: jobStatus,
+              completedAt: new Date()
+            }
+          });
+
+          // B. Cash in hand reconciliation for EFECTIVO_DELIVERY
+          if (status === "DELIVERED" && updatedOrder.payment?.method === "EFECTIVO_DELIVERY") {
+            const driverId = activeJob.deliveryPersonId;
+            // Mark payment as APPROVED
+            await tx.payment.update({
+              where: { id: updatedOrder.payment.id },
+              data: { status: "APPROVED" }
+            });
+
+            // Upsert the delivery profile and add cash
+            await tx.deliveryProfile.upsert({
+              where: { userId: driverId },
+              create: {
+                userId: driverId,
+                status: "AVAILABLE",
+                cashInHand: updatedOrder.total
+              },
+              update: {
+                cashInHand: { increment: updatedOrder.total }
+              }
+            });
+          }
+        }
+      }
+
+      return updatedOrder;
     });
   }
 
@@ -151,7 +196,7 @@ export class OrderRepository {
     subtotal: number,
     total: number,
   ) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       // Paso A: Eliminamos todos los items anteriores asociados a esta orden[cite: 1]
       await tx.orderItem.deleteMany({
         where: { orderId: id },
@@ -193,7 +238,7 @@ export class OrderRepository {
     subtotal: number,
     total: number,
   ) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       // 1. Modificar cada ítem en su sitio usando updateMany
       for (const item of items) {
         await tx.orderItem.updateMany({
@@ -227,18 +272,24 @@ export class OrderRepository {
   }
 
   /**
-   * 6. Asigna el repartidor a la orden y cambia su estado a entregado.
+   * 6. Asigna el repartidor creando un DeliveryJob
    */
   async assignDelivery(id: string, deliveryPersonId: string) {
-    return await this.prisma.order.update({
-      where: { id },
-      data: {
-        deliveryPersonId,
-      },
-      include: {
-        items: true,
-        deliveryPerson: true,
-      },
+    return await prisma.$transaction(async (tx) => {
+      await tx.deliveryJob.create({
+        data: {
+          orderId: id,
+          deliveryPersonId,
+        }
+      });
+      return await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          payment: true,
+          deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+        },
+      });
     });
   }
 }

@@ -1,6 +1,6 @@
 // 📁 Archivo: server/api/repositories/auditLogRepository.ts
 
-import { getPrisma } from "../db.ts";
+import { prisma } from "../db.ts";
 import { Prisma } from "../../../generated/prisma/client.ts";
 
 /**
@@ -17,7 +17,6 @@ export interface CreateAuditLogInput {
 
 export class AuditLogRepository {
   async getAll() {
-    const prisma = getPrisma();
     return await prisma.auditLog.findMany({
       orderBy: { timestamp: "desc" },
     });
@@ -27,7 +26,6 @@ export class AuditLogRepository {
    * Inserta un log de auditoría respetando al 100% el modelo real AuditLog.
    */
   async create(input: CreateAuditLogInput): Promise<void> {
-    const prisma = getPrisma();
 
     await prisma.auditLog.create({
       data: {

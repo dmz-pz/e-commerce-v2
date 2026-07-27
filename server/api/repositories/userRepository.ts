@@ -1,4 +1,4 @@
-import { getPrisma } from "../db.ts";
+import { prisma } from "../db.ts";
 import { RegisterUserInput } from "../schemas/authSchema";
 
 type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
@@ -7,10 +7,9 @@ type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
 };
 
 export class UserRepository {
-  private prisma = getPrisma()
   async create(data: UserCreateInput) {
     try {
-      const newUser = await this.prisma.user.create({
+      const newUser = await prisma.user.create({
         data,
       });
       return newUser;
@@ -24,7 +23,7 @@ export class UserRepository {
   async getByEmail(email: string) {
     try {
 
-      const user = await this.prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { email },
       });
       return user;
@@ -39,7 +38,7 @@ export class UserRepository {
 
   async getById(id: string) {
     try {
-      return await this.prisma.user.findUnique({
+      return await prisma.user.findUnique({
         where: { id },
       });
     } catch (error: any) {
@@ -49,7 +48,7 @@ export class UserRepository {
 
   async updatePassword(id: string, passwordHash: string) {
     try {
-      return await this.prisma.user.update({
+      return await prisma.user.update({
         where: { id },
         data: { passwordHash },
       });

@@ -1,4 +1,4 @@
-import { getPrisma } from "../db.ts";
+import { prisma } from "../db.ts";
 import type { CreateProductInput } from "../schemas/productSchema.ts";
 import { Prisma } from "../../../generated/prisma/client.ts";
 
@@ -29,10 +29,9 @@ export class ProductRepository {
   /**
    * Obtiene los productos desde la BD con sus relaciones puras de Prisma.
    */
-  private prisma = getPrisma();
 
   async getAll(includeInactive = false): Promise<ProductWithRelations[]> {
-    return await this.prisma.product.findMany({
+    return await prisma.product.findMany({
       where: includeInactive ? {} : { isActive: true },
       include: {
         images: true,
@@ -78,7 +77,7 @@ export class ProductRepository {
     }
 
     const [items, total] = await Promise.all([
-      this.prisma.product.findMany({
+      prisma.product.findMany({
         where,
         take: limit,
         skip,
@@ -92,7 +91,7 @@ export class ProductRepository {
           },
         },
       }),
-      this.prisma.product.count({ where }),
+      prisma.product.count({ where }),
     ]);
 
     return {
@@ -108,7 +107,7 @@ export class ProductRepository {
    * Busca un producto por ID único devolviendo el tipo relacional de Prisma o null.
    */
   async getById(id: string): Promise<ProductWithRelations | null> {
-    return await this.prisma.product.findUnique({
+    return await prisma.product.findUnique({
       where: { id },
       include: {
         images: true,
@@ -128,7 +127,7 @@ export class ProductRepository {
     input: CreateProductInput,
     imageUrl: string,
   ): Promise<ProductWithRelations> {
-    return await this.prisma.product.create({
+    return await prisma.product.create({
       data: {
         name: input.name,
         description: input.description,
@@ -172,7 +171,7 @@ export class ProductRepository {
     id: string,
     input: Partial<CreateProductInput>,
   ): Promise<ProductWithRelations> {
-    return await this.prisma.product.update({
+    return await prisma.product.update({
       where: { id },
       data: {
         name: input.name,
@@ -208,7 +207,7 @@ export class ProductRepository {
    * Modifica exclusivamente el stock de un producto.
    */
   async updateStock(id: string, newStock: number): Promise<void> {
-    await this.prisma.product.update({
+    await prisma.product.update({
       where: { id },
       data: { stock: newStock },
     });
@@ -218,7 +217,6 @@ export class ProductRepository {
    * Aplica un borrado lógico (Soft Delete) cambiando el flag de estado.
    */
   async softDelete(id: string): Promise<ProductWithRelations> {
-    const prisma = getPrisma();
     return await prisma.product.update({
       where: { id },
       data: { isActive: false },
@@ -233,8 +231,7 @@ export class ProductRepository {
     });
   }
 
-  async getByIds(ids: string[], includeInactive = false) {
-    const prisma = getPrisma(); // Alineado con tu inicializador
+  async getByIds(ids: string[], includeInactive = false) { // Alineado con tu inicializador
 
     return await prisma.product.findMany({
       where: {
@@ -248,7 +245,7 @@ export class ProductRepository {
    * Busca un producto específicamente por su código de barras (Lector industrial).
    */
   async getByBarcode(barcode: string): Promise<ProductWithRelations | null> {
-    return await this.prisma.product.findUnique({
+    return await prisma.product.findUnique({
       where: { barcode },
       include: {
         images: true,

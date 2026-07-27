@@ -1,9 +1,8 @@
 import { Payment, PaymentStatus } from "../../../src/types/index.ts";
-import { getPrisma } from "../db.ts";
+import { prisma } from "../db.ts";
 
 export class PaymentRepository {
   async getAll(): Promise<Payment[]> {
-    const prisma = getPrisma();
     const results = await prisma.payment.findMany({
       orderBy: { createdAt: "desc" }
     });
@@ -15,7 +14,6 @@ export class PaymentRepository {
   }
 
   async getByOrderId(orderId: string): Promise<Payment | undefined> {
-    const prisma = getPrisma();
     const r: any = await prisma.payment.findUnique({
       where: { orderId }
     });
@@ -30,7 +28,6 @@ export class PaymentRepository {
   }
 
   async create(paymentData: Omit<Payment, 'id'>): Promise<Payment> {
-    const prisma = getPrisma();
     const created: any = await prisma.payment.create({
       data: {
         orderId: paymentData.orderId,
@@ -49,7 +46,6 @@ export class PaymentRepository {
   }
 
   async updateStatus(id: string, status: PaymentStatus): Promise<Payment | undefined> {
-    const prisma = getPrisma();
     const updated: any = await prisma.payment.update({
       where: { id },
       data: { status }

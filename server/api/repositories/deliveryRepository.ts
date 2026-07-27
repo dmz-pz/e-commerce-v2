@@ -1,42 +1,23 @@
 import { DeliveryPerson } from "../../../src/types/index.ts";
-import { getPrisma } from "../db.ts";
-import { Role, OrderStatus } from "../../../generated/prisma/enums.ts";
+import { prisma } from "../db.ts";
+import { Role } from "../../../generated/prisma/enums.ts";
 
 export class DeliveryRepository {
-  private get prisma() {
-    return getPrisma();
-  }
+  
 
   async getAll(): Promise<DeliveryPerson[]> {
-    const deliveryUsers = await this.prisma.user.findMany({
-      where: {
-        role: Role.DELIVERY,
-        deletedAt: null,
-      },
+    const deliveryProfiles = await prisma.deliveryProfile.findMany({
+      include: {
+        user: true
+      }
     });
 
-    const activeOrders = await this.prisma.order.findMany({
-      where: {
-        status: {
-          notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
-        },
-        deliveryPersonId: {
-          not: null,
-        },
-      },
-      select: {
-        deliveryPersonId: true,
-      },
-    });
-
-    const busyDriverIds = new Set(activeOrders.map(o => o.deliveryPersonId).filter(Boolean) as string[]);
-
-    return deliveryUsers.map(u => ({
-      id: u.id,
-      name: `${u.firstName} ${u.lastName}`.trim(),
-      phone: u.phone,
-      status: busyDriverIds.has(u.id) ? "busy" : "available",
-      vehicle: "Moto / Vehículo Asignado",
+    return deliveryProfiles.map(p => ({
+      id: p.userId,
+      name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+      phone: p.user.phone,
+      status: p.status.toLowerCase() as any,
+      vehicle: p.vehiclePlate || "Moto / Vehículo Asignado",
     }));
   }
 
@@ -45,15 +26,61 @@ export class DeliveryRepository {
     return all.filter(p => p.status === "available");
   }
 
-  async updateStatus(id: string, status: 'available' | 'busy' | 'offline'): Promise<DeliveryPerson | undefined> {
-    const all = await this.getAll();
-    const person = all.find(p => p.id === id);
-    if (person) {
-      person.status = status;
-      return person;
+  async getProfile(userId: string) {
+    let profile = await prisma.deliveryProfile.findUnique({
+      where: { userId },
+      include: { user: true }
+    });
+    
+    if (!profile) {
+      profile = await prisma.deliveryProfile.create({
+        data: {
+          userId,
+          status: "OFFLINE",
+          cashInHand: 0.0
+        },
+        include: { user: true }
+      });
     }
-    return undefined;
+    
+    return {
+      userId: profile.userId,
+      status: profile.status.toLowerCase(),
+      cashInHand: Number(profile.cashInHand),
+      vehiclePlate: profile.vehiclePlate
+    };
+  }
+
+  async updateStatus(id: string, status: 'available' | 'busy' | 'offline'): Promise<DeliveryPerson | undefined> {
+    const uppercaseStatus = status.toUpperCase() as any;
+    
+    // First ensure the user has a profile
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return undefined;
+    
+    const profile = await prisma.deliveryProfile.upsert({
+      where: { userId: id },
+      create: {
+        userId: id,
+        status: uppercaseStatus,
+      },
+      update: {
+        status: uppercaseStatus,
+      },
+      include: {
+        user: true
+      }
+    });
+
+    return {
+      id: profile.userId,
+      name: `${profile.user.firstName} ${profile.user.lastName}`.trim(),
+      phone: profile.user.phone,
+      status: profile.status.toLowerCase() as any,
+      vehicle: profile.vehiclePlate || "Moto / Vehículo Asignado",
+    };
   }
 }
 
 export const deliveryRepository = new DeliveryRepository();
+

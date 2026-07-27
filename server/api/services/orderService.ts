@@ -1,6 +1,7 @@
 import { orderRepository } from "../repositories/orderRepository.ts";
 import { userRepository } from "../repositories/userRepository.ts";
 import { productRepository } from "../repositories/productRepository.ts";
+import { deliveryRepository } from "../repositories/deliveryRepository.ts";
 import { productService } from "./productService.ts"; //
 import { OrderStatus, ItemStatus, PaymentStatus } from "../../../generated/prisma/enums.ts"; //
 import { paymentRepository } from "../repositories/paymentRepository.ts";
@@ -133,11 +134,11 @@ export class OrderService {
   /**
    * 4. Actualiza el estado de la orden y devuelve el stock en caso de cancelación.
    */
-  async updateStatus(id: string, status: OrderStatus, pickerId?: string) {
+  async updateStatus(id: string, status: OrderStatus, pickerId?: string, actionUserId?: string) {
+    const order = await orderRepository.getById(id);
+    
     // Si la orden se cancela, devolvemos todo el stock reservado al inventario
     if (status === OrderStatus.CANCELLED) {
-      //
-      const order = await orderRepository.getById(id);
       if (order) {
         for (const item of order.items) {
           // Nota: Convertimos requestedQuantity (Decimal) a Number de JS
@@ -149,7 +150,20 @@ export class OrderService {
       }
     }
 
-    return await orderRepository.updateStatus(id, status, pickerId);
+    const updatedOrder = await orderRepository.updateStatus(id, status, pickerId);
+
+    if (actionUserId && order && (status === OrderStatus.DELIVERED || status === OrderStatus.READY_TO_PAY)) {
+      const actionName = status === OrderStatus.DELIVERED ? 'DELIVERY_COMPLETED' : 'DELIVERY_RETURNED';
+      await auditLogRepository.create({
+        action: actionName,
+        performedById: actionUserId,
+        orderId: id,
+        previousState: { status: order.status },
+        newState: { status: updatedOrder.status },
+      });
+    }
+
+    return updatedOrder;
   }
 
   /**
@@ -337,7 +351,7 @@ export class OrderService {
 
     // Consultar los precios oficiales vigentes en la base de datos
     const dbProducts = await productRepository.getByIds(finalProductIds, true);
-    const pricesMap = new Map(dbProducts.map((p) => [p.id, Number(p.price)]));
+    const pricesMap = new Map(dbProducts.map((p: any) => [p.id, Number(p.price)]));
 
     let calculatedSubtotal = 0;
 
@@ -416,8 +430,23 @@ export class OrderService {
   /**
    * 6. Asigna el repartidor a la orden.
    */
-  async assignDelivery(id: string, deliveryPersonId: string) {
-    return await orderRepository.assignDelivery(id, deliveryPersonId);
+  async assignDelivery(id: string, deliveryPersonId: string, actionUserId?: string) {
+    const updatedOrder = await orderRepository.assignDelivery(id, deliveryPersonId);
+
+    // Actualizamos el perfil del motorizado a ocupado (BUSY) de manera explícita
+    await deliveryRepository.updateStatus(deliveryPersonId, 'busy');
+
+    if (actionUserId) {
+      await auditLogRepository.create({
+        action: 'DELIVERY_ASSIGNED',
+        performedById: actionUserId,
+        orderId: id,
+        previousState: { deliveryPersonId: null },
+        newState: { deliveryPersonId },
+      });
+    }
+    
+    return updatedOrder;
   }
 }
 

@@ -1,47 +1,37 @@
 import { PrismaClient } from "../../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
 import dotenv from "dotenv";
 
-export const useMock = "";
-
 dotenv.config();
+
 if (!process.env.DATABASE_URL) {
-  console.error("❌ ERROR: process.env.DATABASE_URL no está definida en db.ts");
+  throw new Error("❌ ERROR: DATABASE_URL no está definida.");
 }
 
-const pool = new pg.Pool({
+const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
-  max: 10,
+  max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
-const adapter = new PrismaPg(pool);
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-let prisma: PrismaClient | null = null;
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({ adapter });
 
-export function getPrisma(): PrismaClient {
-  if (prisma) {
-    return prisma;
-  }
-  prisma = new PrismaClient({ adapter });
-  return prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
 
+// Solo usar en cierre del proceso (SIGTERM, SIGINT)
 export async function shutdownDatabase(): Promise<void> {
   try {
-    if (prisma) {
-      await prisma.$disconnect();
-      prisma = null;
-    }
+    await prisma.$disconnect();
   } catch (error) {
     console.error("Error disconnecting Prisma:", error);
-  }
-
-  try {
-    await pool.end();
-  } catch (error) {
-    console.error("Error closing pg pool:", error);
   }
 }
