@@ -126,7 +126,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <div className="col-span-2 flex items-center gap-2 pt-1 border-t border-slate-200/50">
           <CreditCard className="w-3 h-3 text-slate-400" />
           <span className="text-[10px] font-black text-brand uppercase tracking-wider">
-            {order.payment?.method || (order as any).paymentMethod || 'Efectivo / En Entrega'}
+            {order.payment?.method  || 'Efectivo / En Entrega'}
           </span>
         </div>
       </div>
