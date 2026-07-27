@@ -75,6 +75,20 @@ export const orderService = {
   },
 
   /**
+   * Obtiene el perfil de repartidor para el usuario en sesión.
+   */
+  getDriverProfile: async (): Promise<{ userId: string; status: string; cashInHand: number; vehiclePlate: string | null }> => {
+    return apiClient.get<{ userId: string; status: string; cashInHand: number; vehiclePlate: string | null }>('/api/delivery/profile');
+  },
+
+  /**
+   * Actualiza el estado de disponibilidad del repartidor.
+   */
+  updateDriverStatus: async (status: 'available' | 'busy' | 'offline'): Promise<void> => {
+    return apiClient.put<void>('/api/delivery/status', { status });
+  },
+
+  /**
    * Asigna un repartidor motorizado a un pedido que está listo para entrega.
    * @param orderId - El ID del pedido.
    * @param deliveryPersonId - El ID del repartidor asignado.

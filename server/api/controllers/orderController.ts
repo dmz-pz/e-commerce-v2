@@ -78,8 +78,17 @@ export class OrderController {
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     const { orderId } = req.params;
     const { status, pickerId } = req.body;
+    const user = (req as any).user;
     try {
-      const order = await orderService.updateStatus(orderId, status, pickerId);
+      if (user && user.role === "DELIVERY" && status === "DELIVERED") {
+        const existingOrder = await orderService.getOrderById(orderId);
+        const activeJob = (existingOrder as any)?.deliveryJobs?.[0];
+        if (activeJob?.deliveryPersonId !== user.id) {
+          throw new AppError("No tienes permisos para marcar como entregada esta orden.", 403);
+        }
+      }
+
+      const order = await orderService.updateStatus(orderId, status, pickerId, user?.id);
       if (order) {
         res.json(order);
       } else {
@@ -142,8 +151,13 @@ export class OrderController {
   async assignDelivery(req: Request, res: Response, next: NextFunction) {
     const { id } = req.params;
     const { deliveryPersonId } = req.body;
+    const user = (req as any).user;
     try {
-      const order = await orderService.assignDelivery(id, deliveryPersonId);
+      if (user && user.role === "DELIVERY" && deliveryPersonId !== user.id) {
+        throw new AppError("No puedes asignar este pedido a otro repartidor.", 403);
+      }
+
+      const order = await orderService.assignDelivery(id, deliveryPersonId, user?.id);
       if (order) {
         res.json(order);
       } else {

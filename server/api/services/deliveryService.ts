@@ -13,6 +13,10 @@ export class DeliveryService {
   async setStatus(id: string, status: 'available' | 'busy' | 'offline'): Promise<DeliveryPerson | undefined> {
     return await deliveryRepository.updateStatus(id, status);
   }
+
+  async getProfile(userId: string) {
+    return await deliveryRepository.getProfile(userId);
+  }
 }
 
 export const deliveryService = new DeliveryService();
