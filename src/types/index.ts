@@ -19,7 +19,9 @@ export enum OrderStatus {
   PICKING = "PICKING",
   READY_TO_PAY = "READY_TO_PAY",
   PAID = "PAID",
+  OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY",
   DELIVERED = "DELIVERED",
+  RETURNED = "RETURNED",
   CANCELLED = "CANCELLED",
 }
 
@@ -55,6 +57,25 @@ export enum UnitType {
   GR = "GR",
 }
 
+export enum DriverStatus {
+  AVAILABLE = "AVAILABLE",
+  BUSY = "BUSY",
+  OFFLINE = "OFFLINE",
+}
+
+export enum DeliveryJobStatus {
+  ASSIGNED = "ASSIGNED",
+  IN_TRANSIT = "IN_TRANSIT",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+}
+
+export enum SettlementStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
 // ==========================================
 // MÓDULO 1: USUARIOS, ROLES Y DIRECCIONES
 // ==========================================
@@ -86,7 +107,7 @@ export interface DeliveryPerson {
   id: string;
   name: string;
   phone?: string;
-  status: 'available' | 'busy' | 'offline';
+  status: DriverStatus | 'available' | 'busy' | 'offline'; // Keep legacy lowercase for temporal compatibility
   vehicle?: string;
 }
 
@@ -155,6 +176,16 @@ export interface OrderItem {
   substitutedWith?: Product;
 }
 
+export interface DeliveryJob {
+  id: string;
+  orderId: string;
+  deliveryPersonId: string;
+  status: DeliveryJobStatus | 'ASSIGNED' | 'IN_TRANSIT' | 'COMPLETED' | 'FAILED';
+  failureReason?: string;
+  assignedAt: string;
+  completedAt?: string;
+}
+
 export interface Order {
   id: string;
   customerId: string;
@@ -172,8 +203,9 @@ export interface Order {
   payment?: Payment;
   pickerId?: string;
   picker?: User;
-  deliveryPersonId?: string;
+  deliveryPersonId?: string; // Mantenerlo por compatibilidad temporal
   deliveryPerson?: User;
+  deliveryJobs?: DeliveryJob[];
   createdAt: string;
   updatedAt: string;
 }

@@ -1,12 +1,12 @@
-  // ==========================================
-  // CONFIGURACIÓN DE INFRAESTRUCTURA
-  // ==========================================
+// ==========================================
+// CONFIGURACIÓN DE INFRAESTRUCTURA
+// ==========================================
 
-  datasource db {
-    provider = "postgresql"
-  }
+datasource db {
+  provider = "postgresql"
+}
 
-  generator client {
+generator client {
   provider               = "prisma-client"
   output                 = "../generated/prisma"
   moduleFormat           = "esm"
@@ -14,264 +14,318 @@
   importFileExtension    = "ts"
 }
 
-  // ==========================================
-  // ENUMS (REGLAS DE NEGOCIO ESTRICTAS)
-  // ==========================================
+// ==========================================
+// ENUMS (REGLAS DE NEGOCIO ESTRICTAS)
+// ==========================================
 
-  enum Role {
+enum Role {
   CLIENTE
   ADMINISTRADOR
   STAFF_PICKER
   DELIVERY
-  }
+}
 
-  enum OrderStatus {
+enum OrderStatus {
   PENDING
   PICKING
   READY_TO_PAY
   PAID
+  OUT_FOR_DELIVERY // En calle con el motorizado
   DELIVERED
+  RETURNED // Intento fallido, devuelto a tienda
   CANCELLED
-  }
+}
 
-  enum ItemStatus {
+enum ItemStatus {
   COMPLETED
   PARTIAL
   SUBSTITUTED
   CANCELLED
-  }
- 
-  enum FulfillmentMethod {
+}
+
+enum FulfillmentMethod {
   DELIVERY
   PICK_UP
-  }
+}
 
-  enum PaymentMethod {
-  PAGO_MOVIL // Digital manual (Verificación de captura/referencia)
-  ZELLE // Digital manual (Verificación de captura/referencia)
-  BINANCE // Digital manual (Verificación de captura/referencia)
-  EFECTIVO_DELIVERY // Cobro en sitio por el delivery o pick-up
-  PUNTO_DELIVERY // Cobro en sitio con tarjeta por el delivery o en sucursal
-  }
+enum PaymentMethod {
+  PAGO_MOVIL
+  ZELLE
+  BINANCE
+  EFECTIVO_DELIVERY
+  PUNTO_DELIVERY
+}
 
-  enum PaymentStatus {
+enum PaymentStatus {
   PENDING
   APPROVED
   REJECTED
-  } 
+}
 
-  enum UnitType {
+enum UnitType {
   UNID
   KG
   GR
-  // Puedes añadir otros a futuro como LITRO o PACK
 }
 
-  // ==========================================
-  // MÓDULO 1: USUARIOS, ROLES Y ACCESOS
-  // ==========================================
+enum DriverStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
 
-  model User {
-  id String @id @default(uuid())
-  cedula String @unique
-  firstName String
-  lastName String
-  phone String
-  email String @unique
-  passwordHash String  
-  birthdate DateTime?
-  role Role @default(CLIENTE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum DeliveryJobStatus {
+  ASSIGNED
+  IN_TRANSIT
+  COMPLETED
+  FAILED
+}
 
-  // Campo para Borrado Lógico
-  deletedAt     DateTime? 
+enum SettlementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
-  // Relaciones virtuales 
-  addresses Address[]
-  orders Order[] @relation("CustomerOrders")
-  ordersPicked Order[] @relation("PickerOrders")
-  ordersDelivered Order[] @relation("DeliveryOrders")
+// ==========================================
+// MÓDULO 1: USUARIOS, ROLES Y ACCESOS
+// ==========================================
+
+model User {
+  id           String    @id @default(uuid())
+  cedula       String    @unique
+  firstName    String
+  lastName     String
+  phone        String
+  email        String    @unique
+  passwordHash String
+  birthdate    DateTime?
+  role         Role      @default(CLIENTE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relaciones
+  addresses    Address[]
+  orders       Order[]    @relation("CustomerOrders")
+  ordersPicked Order[]    @relation("PickerOrders")
   auditActions AuditLog[] @relation("UserAudited")
 
-  @@map("users")
-  }
+  // Relaciones de Delivery
+  deliveryProfile     DeliveryProfile?
+  deliveryJobs        DeliveryJob[]      @relation("DriverJobs")
+  settlements         DriverSettlement[] @relation("DriverSettlements")
+  settlementsReviewed DriverSettlement[] @relation("AdminSettlements")
 
-  model Address {
-  id String @id @default(uuid())
-  alias String // Ej: "Casa", "Trabajo"
-  line1 String  
-  line2 String?
+  @@map("users")
+}
+
+model Address {
+  id     String  @id @default(uuid())
+  alias  String
+  line1  String
+  line2  String?
   userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
-  }
+}
 
-  // ==========================================
-  // MÓDULO 2: CATÁLOGO DE PRODUCTOS (PIM)
-  // ==========================================
+// ==========================================
+// MÓDULO 2: CATÁLOGO DE PRODUCTOS (PIM)
+// ==========================================
 
-  model Category {
-  id String @id @default(uuid())
-  name String @unique
+model Category {
+  id            String        @id @default(uuid())
+  name          String        @unique
   subcategories Subcategory[]
-  @@map("categories")
-  }
 
-  model Subcategory {
-  id String @id @default(uuid())
-  name String
+  @@map("categories")
+}
+
+model Subcategory {
+  id         String    @id @default(uuid())
+  name       String
   categoryId String
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  products Product[]
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
 
   @@unique([name, categoryId])
   @@map("subcategories")
-  }
+}
 
-  model Product {
-  id String @id @default(uuid())
-  name String
-  description String @db.Text
-  barcode  String? @unique
-  price Decimal @db.Decimal(10, 2)
-  discountPrice Decimal? @db.Decimal(10, 2)
-  stock Int @default(0)
-  brand String?
-  rating Float @default(0.0)
-  reviewCount Int @default(0)
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  description    String   @db.Text
+  barcode        String?  @unique
+  price          Decimal  @db.Decimal(10, 2)
+  discountPrice  Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  brand          String?
+  rating         Float    @default(0.0)
+  reviewCount    Int      @default(0)
   specifications Json?
-  unit UnitType @default(UNID)
-  isRecommended Boolean @default(false)
-  salesCount Int @default(0)
-  isActive Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  unit           UnitType @default(UNID)
+  isRecommended  Boolean  @default(false)
+  salesCount     Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  // Relaciones
-  images ProductImage[]
-  subcategoryId String
-  subcategory Subcategory @relation(fields: [subcategoryId], references: [id])
-  orderItems OrderItem[]
-  substitutedInItems OrderItem[] @relation("SubstitutedWithProduct")
+  images             ProductImage[]
+  subcategoryId      String
+  subcategory        Subcategory    @relation(fields: [subcategoryId], references: [id])
+  orderItems         OrderItem[]
+  substitutedInItems OrderItem[]    @relation("SubstitutedWithProduct")
 
-  // 🚀 ÍNDICES SENIOR: Optimización de búsquedas y navegación por categorías
   @@index([subcategoryId])
   @@index([name])
   @@map("products")
-  }
-
+}
 
 model ProductImage {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   productId String
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
   url       String
   order     Int?
 }
 
-  // ==========================================
-  // MÓDULO 3: TRANSACCIONES Y MULTI-ESTADOS (PICKING)
-  // ==========================================
+// ==========================================
+// MÓDULO 3: TRANSACCIONES Y MULTI-ESTADOS
+// ==========================================
 
-  model Order {
-  id String @id @default(uuid()) // Corregido: ID automático
-  customerId String  
-  customer User @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
-
+model Order {
+  id                String            @id @default(uuid())
+  customerId        String
+  customer          User              @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
   fulfillmentMethod FulfillmentMethod @default(DELIVERY)
-  deliveryAddress String? // Captura de texto libre (Inmutabilidad)
+  deliveryAddress   String?
+  customerName      String
+  cedula            String
+  customerPhone     String
+  subtotal          Decimal           @default(0.00) @db.Decimal(10, 2)
+  shippingCost      Decimal           @default(0.00) @db.Decimal(10, 2)
+  total             Decimal           @db.Decimal(10, 2)
+  status            OrderStatus       @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  // Datos históricos del cliente al momento de la compra (Inmutabilidad Financiera)
-  customerName String
-  cedula String  
-  customerPhone String
+  payment      Payment?
+  items        OrderItem[]
+  auditLogs    AuditLog[]
+  deliveryJobs DeliveryJob[]
 
-  subtotal Decimal @db.Decimal(10, 2) @default(0.00) // Suma calculada de items realmente pickeados
-  shippingCost Decimal @db.Decimal(10, 2) @default(0.00)
-  total Decimal @db.Decimal(10, 2)
-  status OrderStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relaciones
-  payment Payment?  
-  items OrderItem[]
-  auditLogs AuditLog[]
-
-  // Personal operativo de la sucursal física
   pickerId String?
-  picker User? @relation("PickerOrders", fields: [pickerId], references: [id])
-  deliveryPersonId String?
-  deliveryPerson User? @relation("DeliveryOrders", fields: [deliveryPersonId], references: [id])
+  picker   User?   @relation("PickerOrders", fields: [pickerId], references: [id])
 
-  // 🚀 ÍNDICES SENIOR: Optimización extrema de colas de trabajo y vistas operativas
   @@index([customerId])
-  @@index([status]) // Crítico para que el picker liste rápido las "PENDING" o "PICKING"
+  @@index([status])
   @@index([pickerId])
-  @@index([deliveryPersonId])
   @@map("orders")
-  }
+}
 
-  model OrderItem {
-  id String @id @default(uuid())
-  orderId String
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product Product @relation(fields: [productId], references: [id])
-  name String // Nombre histórico del producto
-  price Decimal @db.Decimal(10, 2) // Precio congelado
+model OrderItem {
+  id                String     @id @default(uuid())
+  orderId           String
+  order             Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product    @relation(fields: [productId], references: [id])
+  name              String
+  price             Decimal    @db.Decimal(10, 2)
+  requestedQuantity Decimal    @db.Decimal(10, 3)
+  pickedQuantity    Decimal    @db.Decimal(10, 3)
+  status            ItemStatus @default(COMPLETED)
+  substitutedWithId String?
+  substitutedWith   Product?   @relation("SubstitutedWithProduct", fields: [substitutedWithId], references: [id])
 
-  // Soporte para peso/fracciones (ej: 1.250 kg de carne)
-  requestedQuantity Decimal @db.Decimal(10, 3)
-  pickedQuantity Decimal @db.Decimal(10, 3)
-  status ItemStatus @default(COMPLETED)
-
-  // Flujo del Picker: Producto que sustituye al original si se agota
-  substitutedWithId String?  
-  substitutedWith Product? @relation("SubstitutedWithProduct", fields: [substitutedWithId], references: [id])
-
-  // 🚀 ÍNDICES SENIOR: Acelera el cruce de tablas al consultar carritos y órdenes
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
-  }
+}
 
-  // ==========================================
-  // MÓDULO 4: CONTROL FINANCIERO Y AUDITORÍA
-  // ==========================================
+// ==========================================
+// MÓDULO 4: LOGÍSTICA DE REPARTOS
+// ==========================================
 
-  model Payment {
-  id String @id @default(uuid())
-  orderId String @unique
-  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  amount Decimal @db.Decimal(10, 2)
-  method PaymentMethod  
-  status PaymentStatus @default(PENDING)
-  reference String? // Removido el @unique para evitar colisiones con nulos/v acíos en base de datos.
-  receiptUrl String? // URL de captura subida por el cliente
-  reviewedById String? // Operador/Admin que concilió el pago en físico
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model DeliveryProfile {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          DriverStatus @default(OFFLINE)
+  cashInHand      Decimal      @default(0.00) @db.Decimal(10, 2) // Dinero físico recolectado pendiente por rendir
+  vehiclePlate    String?
+  currentLocation Json? // Coordenadas
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  // 🚀 ÍNDICES SENIOR: Optimiza la mesa de control de finanzas del administrador
+  @@map("delivery_profiles")
+}
+
+model DeliveryJob {
+  id               String            @id @default(uuid())
+  orderId          String
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPersonId String
+  deliveryPerson   User              @relation("DriverJobs", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
+  status           DeliveryJobStatus @default(ASSIGNED)
+  failureReason    String?
+  assignedAt       DateTime          @default(now())
+  completedAt      DateTime?
+
+  @@index([deliveryPersonId])
+  @@index([orderId])
+  @@map("delivery_jobs")
+}
+
+model DriverSettlement {
+  id               String           @id @default(uuid())
+  deliveryPersonId String
+  deliveryPerson   User             @relation("DriverSettlements", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
+  amount           Decimal          @db.Decimal(10, 2)
+  status           SettlementStatus @default(PENDING)
+  reviewedById     String?
+  reviewedBy       User?            @relation("AdminSettlements", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([deliveryPersonId])
+  @@map("driver_settlements")
+}
+
+// ==========================================
+// MÓDULO 5: CONTROL FINANCIERO Y AUDITORÍA
+// ==========================================
+
+model Payment {
+  id           String        @id @default(uuid())
+  orderId      String        @unique
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  amount       Decimal       @db.Decimal(10, 2)
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  reference    String?
+  receiptUrl   String?
+  reviewedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
   @@index([status])
   @@map("payments")
-  }
+}
 
-  model AuditLog {
-  id String @id @default(uuid())
-  orderId String?
-  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  action String // Ej: "PICKER_REDUCED_QUANTITY", "ADMIN_APPROVED_PAYMENT"
+model AuditLog {
+  id            String   @id @default(uuid())
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  action        String
   performedById String
-  performedBy User @relation("UserAudited", fields: [performedById], references: [id])
-  previousState Json? // Snapshot JSON antes del cambio
-  newState Json? // Snapshot JSON después del cambio
-  timestamp DateTime @default(now())
+  performedBy   User     @relation("UserAudited", fields: [performedById], references: [id])
+  previousState Json?
+  newState      Json?
+  timestamp     DateTime @default(now())
 
-  // 🚀 ÍNDICES SENIOR: Agiliza las búsquedas de soporte ante reclamos de una orden
   @@index([orderId])
   @@map("audit_logs")
-  }
+}
