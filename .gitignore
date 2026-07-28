@@ -21,3 +21,4 @@ pnpm-store/
 /src/generated/prisma
 
 /generated/prisma
+*.toml
