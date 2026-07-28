@@ -139,13 +139,13 @@ export class OrderRepository {
       // 2. If it's a delivery action (DELIVERED or RETURNED), handle the active DeliveryJob and cash
       if (status === "DELIVERED" || status === "RETURNED") {
         const activeJob = updatedOrder.deliveryJobs[0];
-        
+
         if (activeJob && activeJob.status !== "COMPLETED" && activeJob.status !== "FAILED") {
           // A. Mark job as COMPLETED or FAILED
           const jobStatus = status === "DELIVERED" ? "COMPLETED" : "FAILED";
           await tx.deliveryJob.update({
             where: { id: activeJob.id },
-            data: { 
+            data: {
               status: jobStatus,
               completedAt: new Date()
             }
@@ -203,7 +203,7 @@ export class OrderRepository {
       });
 
       // Paso B: Insertamos los nuevos items y actualizamos los totales de la cabecera
-      return await tx.order.update({
+      const updatedOrder = await tx.order.update({
         where: { id },
         data: {
           subtotal,
@@ -221,8 +221,17 @@ export class OrderRepository {
         },
         include: {
           items: true,
+          payment: true,
         },
       });
+
+      // Asegurar la actualización del pago usando orderId directo (ignora si falla por no existir)
+      await tx.payment.updateMany({
+        where: { orderId: id },
+        data: { amount: total }
+      });
+
+      return updatedOrder;
     });
   }
 
@@ -264,9 +273,19 @@ export class OrderRepository {
           pickerId,
         },
         include: {
-          items: true, // Incluimos los items actualizados para retornarlos al servicio
+          items: true,
+          payment: true,
         },
       });
+
+      // Si la orden tiene un registro de pago, actualizamos su monto
+      if (updatedOrder.payment) {
+        await tx.payment.update({
+          where: { id: updatedOrder.payment.id },
+          data: { amount: total }
+        });
+      }
+
       return updatedOrder;
     });
   }
