@@ -15,6 +15,8 @@ export const useStaffDashboard = () => {
 
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const [substitutingItem, setSubstitutingItem] = useState<{ orderId: string, productId: string, name: string } | null>(null);
+  const [addingToOrderId, setAddingToOrderId] = useState<string | null>(null);
+  const [validatingPaymentOrderId, setValidatingPaymentOrderId] = useState<string | null>(null);
   const [cancelingOrder, setCancelingOrder] = useState<{ id: string; customerName: string; isLastItem?: boolean } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modifyingOrderId, setModifyingOrderId] = useState<string | null>(null);
@@ -191,6 +193,47 @@ export const useStaffDashboard = () => {
     setSubstitutingItem(null);
   };
 
+  const handleAddProduct = async (product: Product) => {
+    if (!addingToOrderId) return;
+    const orderId = addingToOrderId;
+
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.id !== orderId) return order;
+
+      const existingInOrder = order.items.find(item => item.productId === product.id);
+      let updatedItems: typeof order.items;
+
+      if (existingInOrder) {
+        updatedItems = order.items.map(item => {
+          if (item.productId === product.id) {
+            const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+            return { ...item, requestedQuantity: currentQty + 1 };
+          }
+          return item;
+        });
+      } else {
+        const newItem = {
+          productId: product.id,
+          name: product.name,
+          price: product.discountPrice || product.price,
+          requestedQuantity: 1,
+        };
+        updatedItems = [...order.items, newItem as any];
+      }
+
+      const newTotal = updatedItems.reduce((acc, item) => {
+        const itemQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const itemPrice = Number(item.price || 0);
+        return acc + (itemPrice * itemQty);
+      }, 0);
+
+      return { ...order, items: updatedItems, total: newTotal };
+    }));
+
+    setDirtyOrders(prev => ({ ...prev, [orderId]: true }));
+    setAddingToOrderId(null);
+  };
+
   const handleSaveOrderItems = async (orderId: string) => {
     setModifyingOrderId(orderId);
     setErrorMessage(null);
@@ -234,6 +277,50 @@ export const useStaffDashboard = () => {
       fetchOrders();
     } catch (err) {
       console.error("Error updating order status:", err);
+    }
+  };
+
+  const handleConfirmPaymentAndFinish = async (orderId: string, reference: string, receiptFile?: File) => {
+    setModifyingOrderId(orderId);
+    setErrorMessage(null);
+    try {
+      // 1. Guardar cambios si hay items sucios
+      if (dirtyOrders[orderId]) {
+        await handleSaveOrderItems(orderId);
+      }
+
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      // 3. Confirmar la referencia de pago y avanzar estado
+      const formData = new FormData();
+      formData.append('status', OrderStatus.READY_TO_PAY);
+      formData.append('paymentReference', reference);
+      if (receiptFile) {
+        formData.append('receiptImage', receiptFile);
+      }
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Error al validar el pago.');
+      }
+
+      setValidatingPaymentOrderId(null);
+      fetchOrders();
+    } catch (err: any) {
+      console.error("Error confirming payment:", err);
+      setErrorMessage(err.message || 'Ocurrió un error al procesar el pago.');
+    } finally {
+      setModifyingOrderId(null);
     }
   };
 
@@ -284,6 +371,10 @@ export const useStaffDashboard = () => {
     catalogProducts,
     substitutingItem,
     setSubstitutingItem,
+    addingToOrderId,
+    setAddingToOrderId,
+    validatingPaymentOrderId,
+    setValidatingPaymentOrderId,
     cancelingOrder,
     setCancelingOrder,
     errorMessage,
@@ -298,9 +389,11 @@ export const useStaffDashboard = () => {
     handleRemoveItem,
     handleConfirmCancelOrder,
     handlePerformSubstitution,
+    handleAddProduct,
     handleSaveOrderItems,
     handleDiscardOrderChanges,
     handleUpdateStatus,
+    handleConfirmPaymentAndFinish,
     handleAssignDelivery,
   };
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Clock, CheckCircle2, Smartphone, CreditCard, IdCard, Bike, Check, 
@@ -22,6 +22,8 @@ interface OrderCardProps {
   onDiscardOrderChanges?: (orderId: string) => void;
   onSetSubstitutingItem: (item: { orderId: string, productId: string, name: string } | null) => void;
   onOpenCancelModal?: (orderId: string, customerName: string) => void;
+  onAddProduct?: (orderId: string) => void;
+  onRequirePaymentReference?: (orderId: string) => void;
 }
 
 const getStatusStyles = (status: OrderStatus) => {
@@ -51,6 +53,11 @@ const getStatusStyles = (status: OrderStatus) => {
         cardBg: 'bg-gradient-to-br from-red-50/10 to-slate-50/20 border-red-100/60 hover:border-red-200 hover:shadow-[0_20px_50px_rgba(239,68,68,0.03)]',
         topAccent: 'bg-red-400',
       };
+    case OrderStatus.DELIVERED:
+      return {
+        cardBg: 'bg-slate-50/80 border-slate-200 grayscale-[0.5] opacity-60',
+        topAccent: 'bg-green-500',
+      };
     default:
       return {
         cardBg: 'bg-white border-slate-200 hover:shadow-[0_20px_50px_rgba(0,51,153,0.08)]',
@@ -75,6 +82,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onDiscardOrderChanges,
   onSetSubstitutingItem,
   onOpenCancelModal,
+  onAddProduct,
+  onRequirePaymentReference,
 }) => {
   const isModifyingThisOrder = modifyingOrderId === order.id;
   const styles = getStatusStyles(order.status);
@@ -85,7 +94,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`${styles.cardBg} border rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 transition-all group relative overflow-hidden flex flex-col ${order.deliveryPersonId ? 'grayscale-[0.7] opacity-60' : ''}`}
+      className={`${styles.cardBg} border rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 transition-all group relative overflow-hidden flex flex-col`}
     >
       {/* Barra de acento de estado en la parte superior */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.topAccent}`} />
@@ -157,81 +166,96 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
       {/* Items Section */}
       <div className="space-y-3 mb-8 flex-1">
-        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2 block">
-          Artículos ({order.items.length})
-        </span>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] block">
+            Artículos ({order.items.length})
+          </span>
+          {!order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
+            <button
+              type="button"
+              onClick={() => onAddProduct?.(order.id)}
+              disabled={isModifyingThisOrder}
+              className="text-[9px] font-black uppercase tracking-widest text-brand hover:text-brand-dark bg-brand/5 hover:bg-brand/10 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="Añadir nuevo producto"
+            >
+              <Plus className="w-3 h-3" /> Añadir Producto
+            </button>
+          )}
+        </div>
         
-        {order.items.map((item, idx) => {
-          const canEdit = !order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
-          return (
-            <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 hover:border-brand/10 transition-all shadow-sm">
-              <div className="flex justify-between items-start gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 bg-brand/5 text-brand rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">
-                    {item.requestedQuantity ?? (item as any).quantity ?? 1}
-                  </div>
-                  <span className="text-slate-700 font-bold text-xs tracking-tight leading-snug">{item.name}</span>
-                </div>
-                <span className="text-slate-500 font-mono font-medium text-xs shrink-0">
-                  ${Number(item.price).toFixed(2)}
-                </span>
-              </div>
-              
-              {/* Picking and Substitution controls */}
-              {canEdit && (
-                <div className="flex justify-between items-center pt-2 border-t border-slate-100/50 mt-1">
-                  {/* Quantity adjustment buttons */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onUpdateItemQuantity(order.id, item.productId, -1)}
-                      disabled={isModifyingThisOrder}
-                      className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
-                      title="Reducir cantidad"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="text-[11px] font-bold text-slate-600 w-4 text-center">
+        <div className="max-h-[280px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5">
+          {order.items.map((item, idx) => {
+            const canEdit = !order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
+            return (
+              <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 hover:border-brand/10 transition-all shadow-sm">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 bg-brand/5 text-brand rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">
                       {item.requestedQuantity ?? (item as any).quantity ?? 1}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onUpdateItemQuantity(order.id, item.productId, 1)}
-                      disabled={isModifyingThisOrder}
-                      className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
-                      title="Aumentar cantidad"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
+                    </div>
+                    <span className="text-slate-700 font-bold text-xs tracking-tight leading-snug">{item.name}</span>
                   </div>
-
-                  {/* Substitution and deletion triggers */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onSetSubstitutingItem({ orderId: order.id, productId: item.productId, name: item.name })}
-                      disabled={isModifyingThisOrder}
-                      className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-brand bg-white border border-slate-200 hover:border-brand/20 rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-                      title="Sustituir producto"
-                    >
-                      <RefreshCw className="w-2.5 h-2.5" />
-                      Sustituir
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(order.id, item.productId)}
-                      disabled={isModifyingThisOrder}
-                      className="p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 border border-red-100/50 flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
-                      title="Eliminar producto"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <span className="text-slate-500 font-mono font-medium text-xs shrink-0">
+                    ${Number(item.price).toFixed(2)}
+                  </span>
                 </div>
-              )}
-            </div>
-          );
-        })}
+                
+                {/* Picking and Substitution controls */}
+                {canEdit && (
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-100/50 mt-1">
+                    {/* Quantity adjustment buttons */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onUpdateItemQuantity(order.id, item.productId, -1)}
+                        disabled={isModifyingThisOrder}
+                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
+                        title="Reducir cantidad"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="text-[11px] font-bold text-slate-600 w-4 text-center">
+                        {item.requestedQuantity ?? (item as any).quantity ?? 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateItemQuantity(order.id, item.productId, 1)}
+                        disabled={isModifyingThisOrder}
+                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
+                        title="Aumentar cantidad"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Substitution and deletion triggers */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onSetSubstitutingItem({ orderId: order.id, productId: item.productId, name: item.name })}
+                        disabled={isModifyingThisOrder}
+                        className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-brand bg-white border border-slate-200 hover:border-brand/20 rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
+                        title="Sustituir producto"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" />
+                        Sustituir
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveItem(order.id, item.productId)}
+                        disabled={isModifyingThisOrder}
+                        className="p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 border border-red-100/50 flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
+                        title="Eliminar producto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
         <div className="pt-6 border-t border-slate-100 flex justify-between items-center px-2">
           <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Total Facturado</span>
@@ -255,7 +279,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         {order.status === OrderStatus.PICKING && !order.deliveryPersonId && (
           <button 
             type="button"
-            onClick={() => onUpdateStatus(order.id, OrderStatus.READY_TO_PAY)}
+            onClick={() => {
+              const onlineMethods = ['PAGO_MOVIL', 'ZELLE', 'BINANCE'];
+              if (order.payment?.method && onlineMethods.includes(order.payment.method)) {
+                onRequirePaymentReference?.(order.id);
+              } else {
+                onUpdateStatus(order.id, OrderStatus.READY_TO_PAY);
+              }
+            }}
             className="w-full bg-accent text-brand py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent-dark transition-all flex items-center justify-center gap-3 shadow-lg shadow-accent/20 active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />

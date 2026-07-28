@@ -9,6 +9,7 @@ interface SubstitutionModalProps {
   catalogProducts: Product[];
   onPerformSubstitution: (replacementProduct: Product) => Promise<void>;
   errorMessage: string | null;
+  isAddMode?: boolean;
 }
 
 export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
@@ -17,6 +18,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   catalogProducts,
   onPerformSubstitution,
   errorMessage,
+  isAddMode = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -65,10 +67,12 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Sustituir Producto</h3>
-            <p className="text-slate-500 text-[11px] font-medium mt-1">
-              Reemplazando: <span className="font-bold text-slate-800">{substitutingItem.name}</span>
-            </p>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">{isAddMode ? 'Añadir Producto' : 'Sustituir Producto'}</h3>
+            {!isAddMode && (
+              <p className="text-slate-500 text-[11px] font-medium mt-1">
+                Reemplazando: <span className="font-bold text-slate-800">{substitutingItem.name}</span>
+              </p>
+            )}
           </div>
 
           {/* Barra de Búsqueda */}
@@ -128,7 +132,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   onClick={() => onPerformSubstitution(product)}
                   className="px-3 py-2 bg-brand hover:bg-brand-dark text-white rounded-lg text-[9px] uppercase font-black tracking-widest disabled:opacity-30 disabled:bg-slate-100 disabled:text-slate-400 transition-all active:scale-95 shrink-0 cursor-pointer"
                 >
-                  Reemplazar
+                  {isAddMode ? 'Añadir' : 'Reemplazar'}
                 </button>
               </div>
             ))}

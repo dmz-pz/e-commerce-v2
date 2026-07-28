@@ -9,6 +9,7 @@ import { OrderCard } from '../components/staff/OrderCard.tsx';
 import { SubstitutionModal } from '../components/staff/SubstitutionModal.tsx';
 import { CancelOrderModal } from '../components/staff/CancelOrderModal.tsx';
 import { PaginationBar } from '../components/catalog/PaginationBar.tsx';
+import { PaymentReferenceModal } from '../components/staff/PaymentReferenceModal.tsx';
 
 export const StaffDashboard: React.FC = () => {
   const {
@@ -24,6 +25,10 @@ export const StaffDashboard: React.FC = () => {
     catalogProducts,
     substitutingItem,
     setSubstitutingItem,
+    addingToOrderId,
+    setAddingToOrderId,
+    validatingPaymentOrderId,
+    setValidatingPaymentOrderId,
     cancelingOrder,
     setCancelingOrder,
     errorMessage,
@@ -38,9 +43,11 @@ export const StaffDashboard: React.FC = () => {
     handleRemoveItem,
     handleConfirmCancelOrder,
     handlePerformSubstitution,
+    handleAddProduct,
     handleSaveOrderItems,
     handleDiscardOrderChanges,
     handleUpdateStatus,
+    handleConfirmPaymentAndFinish,
     handleAssignDelivery,
   } = useStaffDashboard();
 
@@ -86,6 +93,8 @@ export const StaffDashboard: React.FC = () => {
                   onSaveOrderItems={handleSaveOrderItems}
                   onDiscardOrderChanges={handleDiscardOrderChanges}
                   onSetSubstitutingItem={setSubstitutingItem}
+                  onAddProduct={() => setAddingToOrderId(order.id)}
+                  onRequirePaymentReference={() => setValidatingPaymentOrderId(order.id)}
                   onOpenCancelModal={(id, customerName) => setCancelingOrder({ id, customerName })}
                 />
               ))
@@ -117,12 +126,35 @@ export const StaffDashboard: React.FC = () => {
         errorMessage={errorMessage}
       />
 
+      {/* Add New Product Popup Overlay (Reusing SubstitutionModal UI) */}
+      <SubstitutionModal
+        substitutingItem={addingToOrderId ? { orderId: addingToOrderId, productId: '', name: 'NUEVO PRODUCTO' } : null}
+        onClose={() => { setAddingToOrderId(null); setErrorMessage(null); }}
+        catalogProducts={catalogProducts}
+        onPerformSubstitution={handleAddProduct}
+        errorMessage={errorMessage}
+        isAddMode={true}
+      />
+
       {/* Modular Cancel Order Popup Overlay */}
       <CancelOrderModal
         cancelingOrder={cancelingOrder}
         onClose={() => { setCancelingOrder(null); setErrorMessage(null); }}
         onConfirmCancel={handleConfirmCancelOrder}
         errorMessage={errorMessage}
+      />
+
+      {/* Payment Reference Validation Modal */}
+      <PaymentReferenceModal
+        orderData={validatingPaymentOrderId 
+          ? { 
+              id: validatingPaymentOrderId, 
+              total: Number(filteredOrders.find((o: any) => o.id === validatingPaymentOrderId)?.total || 0),
+              customerName: filteredOrders.find((o: any) => o.id === validatingPaymentOrderId)?.customerName || 'Cliente'
+            } 
+          : null}
+        onClose={() => setValidatingPaymentOrderId(null)}
+        onSubmit={(ref, file) => handleConfirmPaymentAndFinish(validatingPaymentOrderId!, ref, file)}
       />
     </main>
   );
