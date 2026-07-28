@@ -85,7 +85,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`${styles.cardBg} border rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 transition-all group relative overflow-hidden flex flex-col`}
+      className={`${styles.cardBg} border rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 transition-all group relative overflow-hidden flex flex-col ${order.deliveryPersonId ? 'grayscale-[0.7] opacity-60' : ''}`}
     >
       {/* Barra de acento de estado en la parte superior */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.topAccent}`} />
