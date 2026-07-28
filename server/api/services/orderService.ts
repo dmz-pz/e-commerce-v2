@@ -134,7 +134,14 @@ export class OrderService {
   /**
    * 4. Actualiza el estado de la orden y devuelve el stock en caso de cancelación.
    */
-  async updateStatus(id: string, status: OrderStatus, pickerId?: string, actionUserId?: string) {
+  async updateStatus(
+    id: string, 
+    status: OrderStatus, 
+    pickerId?: string, 
+    actionUserId?: string,
+    paymentReference?: string,
+    paymentReceiptUrl?: string
+  ) {
     const order = await orderRepository.getById(id);
     
     // Si la orden se cancela, devolvemos todo el stock reservado al inventario
@@ -151,6 +158,16 @@ export class OrderService {
     }
 
     const updatedOrder = await orderRepository.updateStatus(id, status, pickerId);
+
+    // Guardar referencia de pago si aplica
+    if (status === OrderStatus.READY_TO_PAY && paymentReference) {
+      const updatedPayment = await paymentRepository.updateReference(id, paymentReference, paymentReceiptUrl);
+      if (updatedOrder.payment && updatedPayment) {
+        (updatedOrder.payment as any).reference = updatedPayment.reference;
+        (updatedOrder.payment as any).receiptUrl = updatedPayment.receiptUrl;
+        (updatedOrder.payment as any).updatedAt = updatedPayment.updatedAt;
+      }
+    }
 
     if (actionUserId && order && (status === OrderStatus.DELIVERED || status === OrderStatus.READY_TO_PAY)) {
       const actionName = status === OrderStatus.DELIVERED ? 'DELIVERY_COMPLETED' : 'DELIVERY_RETURNED';
@@ -359,6 +376,14 @@ export class OrderService {
       // Si el ítem fue cancelado por el picker, su costo en esta orden pasa a ser 0
       if (pickingItem.status === ItemStatus.CANCELLED) {
         continue;
+      }
+
+      // Salvavidas: Si el frontend envió 0 pero el estado no es CANCELLED, rescatamos la cantidad de la BD
+      let finalQuantity = pickingItem.pickedQuantity;
+      if (!finalQuantity || finalQuantity <= 0) {
+        const dbItem = order.items.find(i => i.productId === pickingItem.productId);
+        finalQuantity = dbItem ? Number(dbItem.requestedQuantity) : 1;
+        pickingItem.pickedQuantity = finalQuantity; // Actualizamos el payload para que se guarde bien
       }
 
       // Determinar cuál ID de producto debemos cobrar (el original o el sustituto)

@@ -77,7 +77,17 @@ export class OrderController {
 
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     const { orderId } = req.params;
-    const { status, pickerId } = req.body;
+    const { status, pickerId, paymentReference } = req.body;
+    let paymentReceiptUrl: string | undefined;
+
+    if (!status) {
+      return next(new AppError("El estado (status) es requerido para actualizar la orden.", 400));
+    }
+
+    if (req.file) {
+      paymentReceiptUrl = `/uploads/payments/${req.file.filename}`;
+    }
+
     const user = (req as any).user;
     try {
       if (user && user.role === "DELIVERY" && status === "DELIVERED") {
@@ -88,7 +98,7 @@ export class OrderController {
         }
       }
 
-      const order = await orderService.updateStatus(orderId, status, pickerId, user?.id);
+      const order = await orderService.updateStatus(orderId, status, pickerId, user?.id, paymentReference, paymentReceiptUrl);
       if (order) {
         res.json(order);
       } else {

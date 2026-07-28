@@ -4,6 +4,7 @@ import { validateResource } from "../middlewares/validate.middleware.ts";
 import { createOrderSchema } from "../schemas/orderSchema.ts";
 import { verifyToken } from "../middlewares/auth.middleware.ts";
 import { authorizeRoles } from "../middlewares/role.middleware.ts";
+import { uploadPaymentReceipt } from "../middlewares/upload.middleware.ts";
 import { Role } from "../../../generated/prisma/enums.ts";
 
 const router = Router();
@@ -36,6 +37,7 @@ router.get("/:orderId", orderController.getById);
 router.patch(
   "/:orderId/status",
   authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY),
+  uploadPaymentReceipt.single("receiptImage"),
   orderController.updateStatus,
 );
 

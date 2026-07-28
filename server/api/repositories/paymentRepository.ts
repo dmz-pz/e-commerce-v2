@@ -56,6 +56,21 @@ export class PaymentRepository {
       createdAt: updated.createdAt.getTime()
     } as Payment;
   }
+
+  async updateReference(orderId: string, reference: string, receiptUrl?: string): Promise<Payment | undefined> {
+    const updated: any = await prisma.payment.update({
+      where: { orderId },
+      data: {
+        reference,
+        ...(receiptUrl && { receiptUrl })
+      }
+    });
+    return {
+      ...updated,
+      amount: Number(updated.amount),
+      createdAt: updated.createdAt.getTime()
+    } as Payment;
+  }
 }
 
 export const paymentRepository = new PaymentRepository();
