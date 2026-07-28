@@ -1,8 +1,331 @@
-## Run Locally
+// ==========================================
+// CONFIGURACIÓN DE INFRAESTRUCTURA
+// ==========================================
 
-**Prerequisites:** Node.js, postgresql
+datasource db {
+  provider = "postgresql"
+}
 
-1. Install dependencies:
-   `pnpm install`
-2. Run the app:
-   `pnpm run dev`
+generator client {
+  provider               = "prisma-client"
+  output                 = "../generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+}
+
+// ==========================================
+// ENUMS (REGLAS DE NEGOCIO ESTRICTAS)
+// ==========================================
+
+enum Role {
+  CLIENTE
+  ADMINISTRADOR
+  STAFF_PICKER
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  PICKING
+  READY_TO_PAY
+  PAID
+  OUT_FOR_DELIVERY // En calle con el motorizado
+  DELIVERED
+  RETURNED // Intento fallido, devuelto a tienda
+  CANCELLED
+}
+
+enum ItemStatus {
+  COMPLETED
+  PARTIAL
+  SUBSTITUTED
+  CANCELLED
+}
+
+enum FulfillmentMethod {
+  DELIVERY
+  PICK_UP
+}
+
+enum PaymentMethod {
+  PAGO_MOVIL
+  ZELLE
+  BINANCE
+  EFECTIVO_DELIVERY
+  PUNTO_DELIVERY
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UnitType {
+  UNID
+  KG
+  GR
+}
+
+enum DriverStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum DeliveryJobStatus {
+  ASSIGNED
+  IN_TRANSIT
+  COMPLETED
+  FAILED
+}
+
+enum SettlementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ==========================================
+// MÓDULO 1: USUARIOS, ROLES Y ACCESOS
+// ==========================================
+
+model User {
+  id           String    @id @default(uuid())
+  cedula       String    @unique
+  firstName    String
+  lastName     String
+  phone        String
+  email        String    @unique
+  passwordHash String
+  birthdate    DateTime?
+  role         Role      @default(CLIENTE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relaciones
+  addresses    Address[]
+  orders       Order[]    @relation("CustomerOrders")
+  ordersPicked Order[]    @relation("PickerOrders")
+  auditActions AuditLog[] @relation("UserAudited")
+
+  // Relaciones de Delivery
+  deliveryProfile     DeliveryProfile?
+  deliveryJobs        DeliveryJob[]      @relation("DriverJobs")
+  settlements         DriverSettlement[] @relation("DriverSettlements")
+  settlementsReviewed DriverSettlement[] @relation("AdminSettlements")
+
+  @@map("users")
+}
+
+model Address {
+  id     String  @id @default(uuid())
+  alias  String
+  line1  String
+  line2  String?
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+// ==========================================
+// MÓDULO 2: CATÁLOGO DE PRODUCTOS (PIM)
+// ==========================================
+
+model Category {
+  id            String        @id @default(uuid())
+  name          String        @unique
+  subcategories Subcategory[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         String    @id @default(uuid())
+  name       String
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
+
+  @@unique([name, categoryId])
+  @@map("subcategories")
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  description    String   @db.Text
+  barcode        String?  @unique
+  price          Decimal  @db.Decimal(10, 2)
+  discountPrice  Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  brand          String?
+  rating         Float    @default(0.0)
+  reviewCount    Int      @default(0)
+  specifications Json?
+  unit           UnitType @default(UNID)
+  isRecommended  Boolean  @default(false)
+  salesCount     Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  images             ProductImage[]
+  subcategoryId      String
+  subcategory        Subcategory    @relation(fields: [subcategoryId], references: [id])
+  orderItems         OrderItem[]
+  substitutedInItems OrderItem[]    @relation("SubstitutedWithProduct")
+
+  @@index([subcategoryId])
+  @@index([name])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  url       String
+  order     Int?
+}
+
+// ==========================================
+// MÓDULO 3: TRANSACCIONES Y MULTI-ESTADOS
+// ==========================================
+
+model Order {
+  id                String            @id @default(uuid())
+  customerId        String
+  customer          User              @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  fulfillmentMethod FulfillmentMethod @default(DELIVERY)
+  deliveryAddress   String?
+  customerName      String
+  cedula            String
+  customerPhone     String
+  subtotal          Decimal           @default(0.00) @db.Decimal(10, 2)
+  shippingCost      Decimal           @default(0.00) @db.Decimal(10, 2)
+  total             Decimal           @db.Decimal(10, 2)
+  status            OrderStatus       @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  payment      Payment?
+  items        OrderItem[]
+  auditLogs    AuditLog[]
+  deliveryJobs DeliveryJob[]
+
+  pickerId String?
+  picker   User?   @relation("PickerOrders", fields: [pickerId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([pickerId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String     @id @default(uuid())
+  orderId           String
+  order             Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product    @relation(fields: [productId], references: [id])
+  name              String
+  price             Decimal    @db.Decimal(10, 2)
+  requestedQuantity Decimal    @db.Decimal(10, 3)
+  pickedQuantity    Decimal    @db.Decimal(10, 3)
+  status            ItemStatus @default(COMPLETED)
+  substitutedWithId String?
+  substitutedWith   Product?   @relation("SubstitutedWithProduct", fields: [substitutedWithId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// ==========================================
+// MÓDULO 4: LOGÍSTICA DE REPARTOS
+// ==========================================
+
+model DeliveryProfile {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          DriverStatus @default(OFFLINE)
+  cashInHand      Decimal      @default(0.00) @db.Decimal(10, 2) // Dinero físico recolectado pendiente por rendir
+  vehiclePlate    String?
+  currentLocation Json? // Coordenadas
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("delivery_profiles")
+}
+
+model DeliveryJob {
+  id               String            @id @default(uuid())
+  orderId          String
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPersonId String
+  deliveryPerson   User              @relation("DriverJobs", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
+  status           DeliveryJobStatus @default(ASSIGNED)
+  failureReason    String?
+  assignedAt       DateTime          @default(now())
+  completedAt      DateTime?
+
+  @@index([deliveryPersonId])
+  @@index([orderId])
+  @@map("delivery_jobs")
+}
+
+model DriverSettlement {
+  id               String           @id @default(uuid())
+  deliveryPersonId String
+  deliveryPerson   User             @relation("DriverSettlements", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
+  amount           Decimal          @db.Decimal(10, 2)
+  status           SettlementStatus @default(PENDING)
+  reviewedById     String?
+  reviewedBy       User?            @relation("AdminSettlements", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([deliveryPersonId])
+  @@map("driver_settlements")
+}
+
+// ==========================================
+// MÓDULO 5: CONTROL FINANCIERO Y AUDITORÍA
+// ==========================================
+
+model Payment {
+  id           String        @id @default(uuid())
+  orderId      String        @unique
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  amount       Decimal       @db.Decimal(10, 2)
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  reference    String?
+  receiptUrl   String?
+  reviewedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@map("payments")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  action        String
+  performedById String
+  performedBy   User     @relation("UserAudited", fields: [performedById], references: [id])
+  previousState Json?
+  newState      Json?
+  timestamp     DateTime @default(now())
+
+  @@index([orderId])
+  @@map("audit_logs")
+}
