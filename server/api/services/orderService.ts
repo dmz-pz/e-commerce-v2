@@ -458,8 +458,8 @@ export class OrderService {
   async assignDelivery(id: string, deliveryPersonId: string, actionUserId?: string) {
     const updatedOrder = await orderRepository.assignDelivery(id, deliveryPersonId);
 
-    // Actualizamos el perfil del motorizado a ocupado (BUSY) de manera explícita
-    await deliveryRepository.updateStatus(deliveryPersonId, 'busy');
+    // Comentado para permitir asignación de múltiples pedidos antes de salir de la tienda (Rutas Múltiples)
+    // await deliveryRepository.updateStatus(deliveryPersonId, 'busy');
 
     if (actionUserId) {
       await auditLogRepository.create({

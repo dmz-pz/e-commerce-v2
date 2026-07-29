@@ -39,7 +39,11 @@ export class OrderRepository {
       include: {
         items: true,
         payment: true,
-        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+        deliveryJobs: { 
+          orderBy: { assignedAt: "desc" }, 
+          take: 1,
+          include: { deliveryPerson: true }
+        },
       },
       orderBy: {
         createdAt: "desc", // Ordena las órdenes de la más nueva a la más antigua
@@ -56,7 +60,11 @@ export class OrderRepository {
       include: {
         items: true,
         payment: true,
-        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+        deliveryJobs: { 
+          orderBy: { assignedAt: "desc" }, 
+          take: 1,
+          include: { deliveryPerson: true }
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -73,7 +81,11 @@ export class OrderRepository {
       include: {
         items: true, // Incluye los OrderItem de la orden
         payment: true,
-        deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+        deliveryJobs: { 
+          orderBy: { assignedAt: "desc" }, 
+          take: 1,
+          include: { deliveryPerson: true }
+        },
       },
     });
   }
@@ -132,7 +144,11 @@ export class OrderRepository {
         include: {
           items: true,
           payment: true,
-          deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+          deliveryJobs: { 
+            orderBy: { assignedAt: "desc" }, 
+            take: 1,
+            include: { deliveryPerson: true }
+          },
         },
       });
 
@@ -306,7 +322,11 @@ export class OrderRepository {
         include: {
           items: true,
           payment: true,
-          deliveryJobs: { orderBy: { assignedAt: "desc" }, take: 1 },
+          deliveryJobs: { 
+            orderBy: { assignedAt: "desc" }, 
+            take: 1,
+            include: { deliveryPerson: true }
+          },
         },
       });
     });

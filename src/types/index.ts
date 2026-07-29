@@ -180,6 +180,7 @@ export interface DeliveryJob {
   id: string;
   orderId: string;
   deliveryPersonId: string;
+  deliveryPerson?: User;
   status: DeliveryJobStatus | 'ASSIGNED' | 'IN_TRANSIT' | 'COMPLETED' | 'FAILED';
   failureReason?: string;
   assignedAt: string;

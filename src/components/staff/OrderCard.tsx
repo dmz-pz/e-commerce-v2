@@ -88,6 +88,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   const isModifyingThisOrder = modifyingOrderId === order.id;
   const styles = getStatusStyles(order.status);
 
+  const activeJob = order.deliveryJobs?.[0];
+  const deliveryPersonId = activeJob && activeJob.status !== 'FAILED' ? activeJob.deliveryPersonId : undefined;
+  const deliveryPerson = activeJob && activeJob.status !== 'FAILED' ? activeJob.deliveryPerson : undefined;
+
   return (
     <motion.div
       layout
@@ -170,7 +174,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] block">
             Artículos ({order.items.length})
           </span>
-          {!order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
+          {!deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
             <button
               type="button"
               onClick={() => onAddProduct?.(order.id)}
@@ -185,7 +189,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         
         <div className="max-h-[280px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5">
           {order.items.map((item, idx) => {
-            const canEdit = !order.deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
+            const canEdit = !deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
             return (
               <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 hover:border-brand/10 transition-all shadow-sm">
                 <div className="flex justify-between items-start gap-3">
@@ -265,7 +269,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
       {/* Action Buttons for Operating workflow */}
       <div className="flex flex-col gap-3">
-        {order.status === OrderStatus.PENDING && !order.deliveryPersonId && (
+        {order.status === OrderStatus.PENDING && !deliveryPersonId && (
           <button 
             type="button"
             onClick={() => onUpdateStatus(order.id, OrderStatus.PICKING)}
@@ -276,7 +280,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
         
-        {order.status === OrderStatus.PICKING && !order.deliveryPersonId && (
+        {order.status === OrderStatus.PICKING && !deliveryPersonId && (
           <button 
             type="button"
             onClick={() => {
@@ -295,7 +299,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         )}
 
         {/* Cancel Order Trigger Button for active editable orders */}
-        {!order.deliveryPersonId && order.status !== OrderStatus.CANCELLED && order.status !== OrderStatus.DELIVERED && (
+        {!deliveryPersonId && order.status !== OrderStatus.CANCELLED && order.status !== OrderStatus.DELIVERED && (
           <button
             type="button"
             onClick={() => onOpenCancelModal?.(order.id, order.customerName)}
@@ -307,7 +311,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
 
-        {(order.status === OrderStatus.READY_TO_PAY || order.status === OrderStatus.PAID) && !order.deliveryPersonId && !assigningId && (
+        {(order.status === OrderStatus.READY_TO_PAY || order.status === OrderStatus.PAID) && !deliveryPersonId && !assigningId && (
           <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex flex-col gap-3">
             <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2">
               <Bike className="w-3 h-3" /> Requiere Asignación de Motorizado
@@ -365,7 +369,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </motion.div>
         )}
 
-        {order.deliveryPersonId && order.status !== OrderStatus.DELIVERED && (
+        {deliveryPersonId && order.status !== OrderStatus.DELIVERED && (
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
               <Bike className="w-4 h-4 text-blue-600" />
@@ -373,7 +377,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             <div>
               <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest block mb-0.5">En Reparto</span>
               <span className="text-[10px] font-black text-slate-700 uppercase">
-                En ruta con: {order.deliveryPerson ? `${order.deliveryPerson.firstName} ${order.deliveryPerson.lastName}` : 'Motorizado'}
+                En ruta con: {deliveryPerson ? `${deliveryPerson.firstName} ${deliveryPerson.lastName}` : 'Motorizado'}
               </span>
             </div>
           </div>

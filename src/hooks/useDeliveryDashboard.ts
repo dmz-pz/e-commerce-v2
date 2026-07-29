@@ -75,7 +75,8 @@ export const useDeliveryDashboard = () => {
     try {
       setActionError(null);
       await orderService.assignDeliveryPerson(orderId, user.id);
-      await handleStatusChange('busy');
+      // Removido para permitir asignación múltiple consecutiva (Rutas Múltiples)
+      // await handleStatusChange('busy');
       await Promise.all([loadOrders(), loadDriverProfile()]);
       setActiveTab('assigned');
     } catch (err: any) {
@@ -167,12 +168,13 @@ export const useDeliveryDashboard = () => {
            o.status === OrderStatus.DELIVERED;
   });
 
-  // Vincular dinámicamente el estado del conductor a sus órdenes asignadas
-  useEffect(() => {
-    if (assignedOrders.length > 0 && driverStatus === 'available') {
-      handleStatusChange('busy');
-    }
-  }, [assignedOrders.length, driverStatus]);
+  // Comentado para permitir que el repartidor se mantenga 'available' en tienda
+  // y solo pase a 'busy' manualmente al salir a entregar las rutas.
+  // useEffect(() => {
+  //   if (assignedOrders.length > 0 && driverStatus === 'available') {
+  //     handleStatusChange('busy');
+  //   }
+  // }, [assignedOrders.length, driverStatus]);
 
   const currentOrdersList = activeTab === 'assigned' ? assignedOrders : activeTab === 'ready' ? readyOrders : historyOrders;
   const totalPages = Math.max(1, Math.ceil(currentOrdersList.length / limit));
