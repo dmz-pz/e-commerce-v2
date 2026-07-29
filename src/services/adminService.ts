@@ -27,9 +27,23 @@ export const adminService = {
    * @param status - El veredicto ('APPROVED' o 'REJECTED').
    * @param userId - ID del usuario administrador que realiza la auditoría.
    */
-  reviewPayment: async (paymentId: string, status: 'APPROVED' | 'REJECTED', userId = 'admin-dashboard'): Promise<void> => {
-    return apiClient.patch<void>(`/api/admin/payments/${paymentId}`, { status }, {
-      headers: { 'x-user-id': userId }
-    });
+  reviewPayment: async (paymentId: string, status: 'APPROVED' | 'REJECTED'): Promise<void> => {
+    return apiClient.patch<void>(`/api/admin/payments/${paymentId}`, { status });
+  },
+
+  // ==========================================
+  // MÉTODOS DE LIQUIDACIÓN DE MOTORIZADOS
+  // ==========================================
+  
+  getDriversCash: async (): Promise<any[]> => {
+    return apiClient.get<any[]>('/api/admin/drivers/cash');
+  },
+
+  getSettlements: async (): Promise<any[]> => {
+    return apiClient.get<any[]>('/api/admin/settlements');
+  },
+
+  settleCash: async (driverId: string): Promise<any> => {
+    return apiClient.post<any>(`/api/admin/drivers/${driverId}/settle`, {});
   }
 };

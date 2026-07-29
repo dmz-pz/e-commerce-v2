@@ -1,6 +1,7 @@
 import { DeliveryPerson } from "../../../src/types/index.ts";
 import { prisma } from "../db.ts";
 import { Role } from "../../../generated/prisma/enums.ts";
+import { AppError } from "../utils/appErrors.ts";
 
 export class DeliveryRepository {
   
@@ -79,6 +80,72 @@ export class DeliveryRepository {
       status: profile.status.toLowerCase() as any,
       vehicle: profile.vehiclePlate || "Moto / Vehículo Asignado",
     };
+  }
+
+  // ==========================================
+  // METODOS DE LIQUIDACIÓN DE EFECTIVO
+  // ==========================================
+  async getDriversWithPendingCash() {
+    const profiles = await prisma.deliveryProfile.findMany({
+      where: {
+        cashInHand: { gt: 0 }
+      },
+      include: { user: true }
+    });
+
+    return profiles.map(p => ({
+      id: p.userId,
+      name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+      cashInHand: Number(p.cashInHand),
+      status: p.status
+    }));
+  }
+
+  async settleDriverCash(driverId: string, adminId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const profile = await tx.deliveryProfile.findUnique({ where: { userId: driverId } });
+      if (!profile || Number(profile.cashInHand) <= 0) {
+        throw new AppError("El repartidor no tiene efectivo pendiente por rendir.", 400);
+      }
+
+      const amount = profile.cashInHand;
+
+      // 1. Crear recibo de liquidación
+      const settlement = await tx.driverSettlement.create({
+        data: {
+          deliveryPersonId: driverId,
+          amount: amount,
+          status: "APPROVED",
+          reviewedById: adminId
+        }
+      });
+
+      // 2. Resetear la bolsa del repartidor a 0
+      await tx.deliveryProfile.update({
+        where: { userId: driverId },
+        data: { cashInHand: 0.0 }
+      });
+
+      return settlement;
+    });
+  }
+
+  async getSettlementHistory() {
+    const settlements = await prisma.driverSettlement.findMany({
+      include: {
+        deliveryPerson: true,
+        reviewedBy: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return settlements.map(s => ({
+      id: s.id,
+      driverName: `${s.deliveryPerson.firstName} ${s.deliveryPerson.lastName}`.trim(),
+      amount: Number(s.amount),
+      status: s.status,
+      reviewedByName: s.reviewedBy ? `${s.reviewedBy.firstName} ${s.reviewedBy.lastName}`.trim() : 'Sistema',
+      createdAt: s.createdAt
+    }));
   }
 }
 

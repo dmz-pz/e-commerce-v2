@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ClipboardList,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { Logo } from "../components/Logo.tsx";
 import { productService } from "../services/productService.ts";
@@ -26,11 +27,12 @@ import { SalesTab } from "../components/admin/SalesTab.tsx";
 import { PaymentsTab } from "../components/admin/PaymentsTab.tsx";
 import { AuditLogsTab } from "../components/admin/AuditLogsTab.tsx";
 import { ProductCreateModal } from "../components/admin/ProductCreateModal.tsx";
+import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
 
 export const AdminDashboard: React.FC = () => {
   // Pestañas de navegación
   const [activeTab, setActiveTab] = useState<
-    "inventory" | "payments" | "audit" | "sales"
+    "inventory" | "payments" | "audit" | "sales" | "settlements"
   >("inventory");
 
   // Estados generales de datos
@@ -123,7 +125,7 @@ export const AdminDashboard: React.FC = () => {
     status: "APPROVED" | "REJECTED",
   ) => {
     try {
-      await adminService.reviewPayment(paymentId, status, "admin-dashboard");
+      await adminService.reviewPayment(paymentId, status);
       fetchPayments();
       fetchAuditLogs();
     } catch (err) {
@@ -211,6 +213,17 @@ export const AdminDashboard: React.FC = () => {
               Auditar Transacciones
             </button>
             <button
+              onClick={() => setActiveTab("settlements")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                activeTab === "settlements"
+                  ? "bg-brand text-white shadow-md shadow-brand/10"
+                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+              }`}
+            >
+              <Wallet className="w-4 h-4" />
+              Tesorería (Efectivo)
+            </button>
+            <button
               onClick={() => setActiveTab("audit")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
                 activeTab === "audit"
@@ -256,8 +269,12 @@ export const AdminDashboard: React.FC = () => {
           <SalesTab
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
-            onRefreshLogs={fetchAuditLogs}
+            onRefreshLogs={loadAllData}
           />
+        )}
+
+        {activeTab === "settlements" && (
+          <SettlementsTab />
         )}
 
         {activeTab === "payments" && (
