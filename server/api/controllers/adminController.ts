@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { adminService } from "../services/adminService.ts";
 import { AppError } from "../utils/appErrors.ts";
+import { Role, PaymentStatus } from "../../../generated/prisma/enums.ts";
 
 export class AdminController {
   async getAllPayments(req: Request, res: Response) {
@@ -8,7 +9,11 @@ export class AdminController {
       const payments = await adminService.getAllPayments();
       res.json(payments);
     } catch (error) {
-      res.status(500).json({ error: "Failed to retrieve payment records." });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to retrieve payment records." });
+      }
     }
   }
 
@@ -17,7 +22,11 @@ export class AdminController {
       const logs = await adminService.getAuditLogs();
       res.json(logs);
     } catch (error) {
-      res.status(500).json({ error: "Failed to query system audit logs." });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to query system audit logs." });
+      }
     }
   }
 
@@ -25,11 +34,11 @@ export class AdminController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const performedById = (req as any).user.id;
+      const performedById = req.user!.id;
 
-      const updated = await adminService.updatePaymentStatus(id, status, performedById);
+      const updated = await adminService.updatePaymentStatus(id, status as PaymentStatus, performedById);
       res.json(updated);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -45,8 +54,12 @@ export class AdminController {
     try {
       const drivers = await adminService.getDriversCash();
       res.json(drivers);
-    } catch (error: any) {
-      res.status(500).json({ error: "No se pudo obtener el efectivo pendiente de los motorizados." });
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "No se pudo obtener el efectivo pendiente de los motorizados." });
+      }
     }
   }
 
@@ -54,23 +67,93 @@ export class AdminController {
     try {
       const history = await adminService.getSettlements();
       res.json(history);
-    } catch (error: any) {
-      res.status(500).json({ error: "No se pudo obtener el historial de liquidaciones." });
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "No se pudo obtener el historial de liquidaciones." });
+      }
     }
   }
 
   async settleCash(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const performedById = (req as any).user.id;
+      const performedById = req.user!.id;
 
       const settlement = await adminService.settleCash(id, performedById);
       res.json(settlement);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
         res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+  }
+
+  // ==========================================
+  // MÉTODOS DE GESTIÓN DE PERSONAL
+  // ==========================================
+  async getUsers(req: Request, res: Response) {
+    try {
+      const { role } = req.query;
+      const users = await adminService.getUsers(role as Role | undefined);
+      res.json(users);
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "No se pudo obtener la lista de personal." });
+      }
+    }
+  }
+
+  async createStaff(req: Request, res: Response) {
+    try {
+      const userData = req.body;
+      const performedById = req.user!.id;
+
+      const newUser = await adminService.createStaff(userData, performedById);
+      res.status(201).json(newUser);
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Error interno al crear el empleado." });
+      }
+    }
+  }
+
+  async updateUserRole(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const performedById = req.user!.id;
+
+      const updatedUser = await adminService.updateUserRole(id, role, performedById);
+      res.json(updatedUser);
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Error interno al actualizar el rol." });
+      }
+    }
+  }
+
+  async deleteUser(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const performedById = req.user!.id;
+
+      await adminService.deleteUser(id, performedById);
+      res.json({ message: "Usuario dado de baja exitosamente." });
+    } catch (error: unknown) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Error interno al dar de baja al empleado." });
       }
     }
   }

@@ -4,7 +4,18 @@
  */
 
 import { apiClient } from './apiClient.ts';
-import { Payment, AuditLog } from '../types/index.ts';
+import { Payment, AuditLog, User } from '../types/index.ts';
+
+// Re-utilizamos la misma estructura del backend para asegurar consistencia
+export interface CreateStaffPayload {
+  cedula: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  password?: string;
+  role: string;
+}
 
 export const adminService = {
   /**
@@ -45,5 +56,26 @@ export const adminService = {
 
   settleCash: async (driverId: string): Promise<any> => {
     return apiClient.post<any>(`/api/admin/drivers/${driverId}/settle`, {});
+  },
+
+  // ==========================================
+  // MÉTODOS DE GESTIÓN DE PERSONAL (STAFF)
+  // ==========================================
+  
+  getUsers: async (role?: string): Promise<User[]> => {
+    const url = role ? `/api/admin/users?role=${role}` : '/api/admin/users';
+    return apiClient.get<User[]>(url);
+  },
+
+  createStaff: async (userData: CreateStaffPayload): Promise<User> => {
+    return apiClient.post<User>('/api/admin/users', userData);
+  },
+
+  updateUserRole: async (userId: string, role: string): Promise<User> => {
+    return apiClient.patch<User>(`/api/admin/users/${userId}/role`, { role });
+  },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    return apiClient.delete<void>(`/api/admin/users/${userId}`);
   }
 };

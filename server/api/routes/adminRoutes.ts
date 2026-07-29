@@ -18,4 +18,10 @@ router.get("/drivers/cash", adminController.getDriversCash);
 router.get("/settlements", adminController.getSettlements);
 router.post("/drivers/:id/settle", adminController.settleCash);
 
+// Gestión de Personal (Staff)
+router.get("/users", adminController.getUsers);
+router.post("/users", adminController.createStaff);
+router.patch("/users/:id/role", adminController.updateUserRole);
+router.delete("/users/:id", adminController.deleteUser);
+
 export default router;

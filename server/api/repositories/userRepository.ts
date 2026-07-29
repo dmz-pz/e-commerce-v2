@@ -1,5 +1,7 @@
 import { prisma } from "../db.ts";
 import { RegisterUserInput } from "../schemas/authSchema";
+import { AppError } from "../utils/appErrors.ts";
+import { Role } from "../../../generated/prisma/enums.ts";
 
 type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
   passwordHash: string;
@@ -14,8 +16,9 @@ export class UserRepository {
       });
       return newUser;
     } catch (error: any) {
-      throw new Error(
+      throw new AppError(
         `Error al crear el usuario en la base de datos: ${error.message}`,
+        500
       );
     }
   }
@@ -29,10 +32,9 @@ export class UserRepository {
       return user;
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Error al buscar usuario por email: ${error.message}`);
+        throw new AppError(`Error al buscar usuario por email: ${error.message}`, 500);
       }
-
-      throw new Error("Error inesperado al buscar usuario por email");
+      throw new AppError("Error inesperado al buscar usuario por email", 500);
     }
   }
 
@@ -42,7 +44,7 @@ export class UserRepository {
         where: { id },
       });
     } catch (error: any) {
-      throw new Error(`Error al buscar usuario por ID: ${error.message}`);
+      throw new AppError(`Error al buscar usuario por ID: ${error.message}`, 500);
     }
   }
 
@@ -53,7 +55,43 @@ export class UserRepository {
         data: { passwordHash },
       });
     } catch (error: any) {
-      throw new Error(`Error al actualizar contraseña del usuario: ${error.message}`);
+      throw new AppError(`Error al actualizar contraseña del usuario: ${error.message}`, 500);
+    }
+  }
+
+  async getAll(filters?: { role?: Role }) {
+    try {
+      return await prisma.user.findMany({
+        where: {
+          deletedAt: null,
+          ...(filters?.role ? { role: filters.role } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (error: any) {
+      throw new AppError(`Error al listar usuarios: ${error.message}`, 500);
+    }
+  }
+
+  async updateRole(id: string, role: Role) {
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: { role },
+      });
+    } catch (error: any) {
+      throw new AppError(`Error al actualizar rol del usuario: ${error.message}`, 500);
+    }
+  }
+
+  async softDelete(id: string) {
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+    } catch (error: any) {
+      throw new AppError(`Error al dar de baja al usuario: ${error.message}`, 500);
     }
   }
 }

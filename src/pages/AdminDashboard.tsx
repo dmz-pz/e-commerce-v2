@@ -14,6 +14,7 @@ import {
   ClipboardList,
   TrendingUp,
   Wallet,
+  Users,
 } from "lucide-react";
 import { Logo } from "../components/Logo.tsx";
 import { productService } from "../services/productService.ts";
@@ -28,11 +29,12 @@ import { PaymentsTab } from "../components/admin/PaymentsTab.tsx";
 import { AuditLogsTab } from "../components/admin/AuditLogsTab.tsx";
 import { ProductCreateModal } from "../components/admin/ProductCreateModal.tsx";
 import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
+import { StaffTab } from "../components/admin/StaffTab.tsx";
 
 export const AdminDashboard: React.FC = () => {
   // Pestañas de navegación
   const [activeTab, setActiveTab] = useState<
-    "inventory" | "payments" | "audit" | "sales" | "settlements"
+    "inventory" | "payments" | "audit" | "sales" | "settlements" | "staff"
   >("inventory");
 
   // Estados generales de datos
@@ -234,6 +236,17 @@ export const AdminDashboard: React.FC = () => {
               <ClipboardList className="w-4 h-4" />
               Trazabilidad (Logs)
             </button>
+            <button
+              onClick={() => setActiveTab("staff")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                activeTab === "staff"
+                  ? "bg-brand text-white shadow-md shadow-brand/10"
+                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Gestión de Personal
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -285,6 +298,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === "audit" && <AuditLogsTab auditLogs={auditLogs} />}
+        {activeTab === "staff" && <StaffTab />}
 
         {/* --- LOAD NEW PRODUCT POPUP MODAL --- */}
         <ProductCreateModal
