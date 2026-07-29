@@ -1,0 +1,17 @@
+# Tareas Fase 1: Gestión de Personal
+
+- `[/]` **Backend: Repositorios**
+  - Añadir métodos `getAll`, `updateRole` y `softDelete` a `userRepository.ts`.
+- `[ ]` **Backend: Servicios**
+  - Añadir métodos de empleados a `adminService.ts`.
+- `[ ]` **Backend: Controladores y Rutas**
+  - Añadir endpoints a `adminController.ts` y montarlos en `adminRoutes.ts`.
+- `[ ]` **Frontend: Servicios de API**
+  - Añadir las llamadas HTTP a `src/services/adminService.ts`.
+- `[ ]` **Frontend: UI Componentes**
+  - Crear `StaffCreateModal.tsx`.
+  - Crear `StaffTab.tsx`.
+- `[ ]` **Frontend: Dashboard**
+  - Integrar la pestaña en `AdminDashboard.tsx`.
+- `[ ]` **Verificación Final**
+  - Validar tipos con `pnpm typecheck`.
