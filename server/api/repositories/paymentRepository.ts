@@ -1,4 +1,5 @@
-import { Payment, PaymentStatus } from "../../../src/types/index.ts";
+import { Payment } from "../types/shared.types.ts";
+import { PaymentStatus } from "../../../generated/prisma/enums.ts";
 import { prisma } from "../db.ts";
 
 export class PaymentRepository {

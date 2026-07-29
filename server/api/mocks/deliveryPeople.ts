@@ -1,4 +1,4 @@
-import { DeliveryPerson } from "../../../src/types/index.ts";
+import { DeliveryPerson } from "../types/shared.types.ts";
 
 export let deliveryPeople: DeliveryPerson[] = [
   { id: "del-1", name: "Carlos Perez", status: "available", vehicle: "Moto Suzuki GN125" },

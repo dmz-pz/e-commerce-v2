@@ -1,5 +1,5 @@
 import { deliveryRepository } from "../repositories/deliveryRepository.ts";
-import { DeliveryPerson } from "../../../src/types/index.ts";
+import { DeliveryPerson } from "../types/shared.types.ts";
 
 export class DeliveryService {
   async getAvailableDeliveryPeople(): Promise<DeliveryPerson[]> {
