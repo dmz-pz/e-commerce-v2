@@ -13,7 +13,7 @@ export class DeliveryController {
 
   async getProfile(req: Request, res: Response) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
@@ -26,7 +26,7 @@ export class DeliveryController {
 
   async updateStatus(req: Request, res: Response) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { status } = req.body;
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });

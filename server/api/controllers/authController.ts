@@ -23,7 +23,7 @@ export class AuthController {
         message: "Inicio de sesión exitoso",
         user,
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       if (error.message === "Credenciales incorrectas") {
         res.status(401).json({ status: "fail", message: error.message });
         return;
@@ -44,7 +44,7 @@ export class AuthController {
         message: "Usuario registrado con éxito",
         user: newUser,
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       if (error.message === "El correo electrónico ya está en uso") {
         res.status(400).json({ status: "fail", message: error.message });
         return;
@@ -83,7 +83,7 @@ export class AuthController {
         status: "success",
         user: currentUser,
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       res.status(500).json({
         status: "error",
         message: "Error al obtener la sesión del usuario",
@@ -99,7 +99,7 @@ export class AuthController {
         status: "success",
         ...result,
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       res.status(400).json({
         status: "fail",
         message: error.message || "Error al solicitar recuperación de contraseña",
@@ -115,7 +115,7 @@ export class AuthController {
         status: "success",
         ...result,
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       res.status(400).json({
         status: "fail",
         message: error.message || "Error al restablecer la contraseña",

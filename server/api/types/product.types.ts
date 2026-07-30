@@ -11,7 +11,7 @@ export interface ProductResponse {
   brand: string | null | undefined;
   rating: number;
   reviewCount: number;
-  specifications: Record<string, any> | null;
+  specifications: Record<string, unknown> | null;
   imageUrl: string;
   unit: string;
   isRecommended: boolean;

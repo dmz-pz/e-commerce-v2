@@ -8,14 +8,14 @@ export class OrderController {
       const todayOnly = req.query.todayOnly === 'true' || req.query.today === 'true';
       const orders = await orderService.getAllOrders({ todayOnly });
       res.json(orders);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
 
   async getMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw new AppError(
           "Operación no autorizada. Falta la identidad del usuario.",
@@ -24,14 +24,14 @@ export class OrderController {
       }
       const orders = await orderService.getUserOrders(userId);
       res.json(orders);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
 
   async getById(req: Request, res: Response, next: NextFunction) {
     const orderId = req.params.orderId;
-    const user = (req as any).user;
+    const user = req.user;
     try {
       const order = await orderService.getOrderById(orderId);
       if (!order) {
@@ -52,14 +52,14 @@ export class OrderController {
       }
 
       res.json(order);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw new AppError(
           "Operación no autorizada. Falta la identidad del usuario.",
@@ -70,7 +70,7 @@ export class OrderController {
 
       const order = await orderService.createOrder(userId, items);
       res.status(201).json(order);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
@@ -88,11 +88,11 @@ export class OrderController {
       paymentReceiptUrl = `/uploads/payments/${req.file.filename}`;
     }
 
-    const user = (req as any).user;
+    const user = req.user;
     try {
       if (user && user.role === "DELIVERY" && status === "DELIVERED") {
         const existingOrder = await orderService.getOrderById(orderId);
-        const activeJob = (existingOrder as any)?.deliveryJobs?.[0];
+        const activeJob = (existingOrder as unknown as { deliveryJobs?: { deliveryPersonId: string }[] })?.deliveryJobs?.[0];
         if (activeJob?.deliveryPersonId !== user.id) {
           throw new AppError("No tienes permisos para marcar como entregada esta orden.", 403);
         }
@@ -104,7 +104,7 @@ export class OrderController {
       } else {
         res.status(404).json({ error: "Order not found" });
       }
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
@@ -119,7 +119,7 @@ export class OrderController {
       } else {
         res.status(404).json({ error: "Order not found" });
       }
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
@@ -129,7 +129,7 @@ export class OrderController {
    */
   async processPicking(req: Request, res: Response, next: NextFunction) {
     const { id: orderId } = req.params; // ID de la orden obtenido de la URL
-    const pickerId = (req as any).user?.id || req.body.pickerId;
+    const pickerId = req.user?.id || req.body.pickerId;
     const { items } = req.body;
 
     try {
@@ -153,7 +153,7 @@ export class OrderController {
         items,
       );
       res.json(updatedOrder);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
@@ -161,7 +161,7 @@ export class OrderController {
   async assignDelivery(req: Request, res: Response, next: NextFunction) {
     const { id } = req.params;
     const { deliveryPersonId } = req.body;
-    const user = (req as any).user;
+    const user = req.user;
     try {
       if (user && user.role === "DELIVERY" && deliveryPersonId !== user.id) {
         throw new AppError("No puedes asignar este pedido a otro repartidor.", 403);

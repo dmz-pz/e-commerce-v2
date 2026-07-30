@@ -38,7 +38,7 @@ export class AdminController {
 
       const updated = await adminService.updatePaymentStatus(id, status as PaymentStatus, performedById);
       res.json(updated);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -54,7 +54,7 @@ export class AdminController {
     try {
       const drivers = await adminService.getDriversCash();
       res.json(drivers);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -67,7 +67,7 @@ export class AdminController {
     try {
       const history = await adminService.getSettlements();
       res.json(history);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -83,7 +83,7 @@ export class AdminController {
 
       const settlement = await adminService.settleCash(id, performedById);
       res.json(settlement);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -100,7 +100,7 @@ export class AdminController {
       const { role } = req.query;
       const users = await adminService.getUsers(role as Role | undefined);
       res.json(users);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -116,7 +116,7 @@ export class AdminController {
 
       const newUser = await adminService.createStaff(userData, performedById);
       res.status(201).json(newUser);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -133,7 +133,7 @@ export class AdminController {
 
       const updatedUser = await adminService.updateUserRole(id, role, performedById);
       res.json(updatedUser);
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -149,7 +149,7 @@ export class AdminController {
 
       await adminService.deleteUser(id, performedById);
       res.json({ message: "Usuario dado de baja exitosamente." });
-    } catch (error: unknown) {
+    } catch (e: unknown) { const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {

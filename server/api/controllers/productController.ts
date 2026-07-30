@@ -13,7 +13,7 @@ export class ProductController {
       const subcategoryId = req.query.subcategoryId as string | undefined;
       const categoryId = req.query.categoryId as string | undefined;
       const search = req.query.search as string | undefined;
-      const sortBy = req.query.sortBy as any;
+      const sortBy = req.query.sortBy as "relevance" | "price_asc" | "price_desc" | "name_asc" | undefined;
       const isRecommended = req.query.isRecommended === "true";
       const hasDiscount = req.query.hasDiscount === "true";
 
@@ -92,7 +92,7 @@ export class ProductController {
       );
 
       res.status(201).json(product);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
@@ -115,7 +115,7 @@ export class ProductController {
       );
 
       res.json(product);
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       next(error);
     }
   }
