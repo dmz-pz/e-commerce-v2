@@ -19,7 +19,16 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "typeRoots": ["./server/api/types", "./node_modules/@types"]
+    "typeRoots": ["./server/api/types", "./node_modules/@types"],
+    
+    /* Best Practices & Strictness */
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": ["server/**/*", "src/**/*", "prisma/seed.ts"]
 }
