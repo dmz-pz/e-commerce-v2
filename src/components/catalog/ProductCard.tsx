@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Plus, Minus, ShoppingBasket } from "lucide-react";
-import { Product, Category } from "../../types";
+import { Product } from "../../types";
 import { useCart } from "../../context/CartContext.tsx";
 import { parseAndFormatPrice } from "../../utils/formatPrice.ts";
 

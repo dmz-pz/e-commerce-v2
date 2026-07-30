@@ -27,6 +27,21 @@ export interface GetProductsParams {
   all?: boolean;
 }
 
+export interface CreateProductPayload {
+  name: string;
+  description: string;
+  price: number;
+  discountPrice?: number;
+  stock: number;
+  subcategoryId: string;
+  brand?: string;
+  barcode?: string;
+  imageUrl: string;
+  unit: string;
+  isRecommended: boolean;
+  isActive: boolean;
+}
+
 export const productService = {
   getProducts: async (params: GetProductsParams = {}): Promise<PaginatedProductsResponse> => {
     const queryParams = new URLSearchParams();
@@ -67,10 +82,10 @@ export const productService = {
   },
 
   createProduct: async (
-    formData: FormData,
+    payload: CreateProductPayload | FormData,
     userId = "admin-dashboard",
   ): Promise<Product> => {
-    return apiClient.post<Product>("/api/products", formData, {
+    return apiClient.post<Product>("/api/products", payload, {
       headers: { "x-user-id": userId },
     });
   },

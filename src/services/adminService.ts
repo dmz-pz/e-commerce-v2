@@ -17,6 +17,21 @@ export interface CreateStaffPayload {
   role: string;
 }
 
+export interface DriverCashDTO {
+  id: string;
+  name: string;
+  status: string;
+  cashInHand: number;
+}
+
+export interface SettlementDTO {
+  id: string;
+  driverName: string;
+  reviewedByName: string;
+  createdAt: string;
+  amount: number;
+}
+
 export const adminService = {
   /**
    * Obtiene la lista de todos los depósitos / pagos registrados en el sistema.
@@ -46,16 +61,16 @@ export const adminService = {
   // MÉTODOS DE LIQUIDACIÓN DE MOTORIZADOS
   // ==========================================
   
-  getDriversCash: async (): Promise<any[]> => {
-    return apiClient.get<any[]>('/api/admin/drivers/cash');
+  getDriversCash: async (): Promise<DriverCashDTO[]> => {
+    return apiClient.get<DriverCashDTO[]>('/api/admin/drivers/cash');
   },
 
-  getSettlements: async (): Promise<any[]> => {
-    return apiClient.get<any[]>('/api/admin/settlements');
+  getSettlements: async (): Promise<SettlementDTO[]> => {
+    return apiClient.get<SettlementDTO[]>('/api/admin/settlements');
   },
 
-  settleCash: async (driverId: string): Promise<any> => {
-    return apiClient.post<any>(`/api/admin/drivers/${driverId}/settle`, {});
+  settleCash: async (driverId: string): Promise<unknown> => {
+    return apiClient.post<unknown>(`/api/admin/drivers/${driverId}/settle`, {});
   },
 
   // ==========================================

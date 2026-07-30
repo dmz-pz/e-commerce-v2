@@ -9,7 +9,7 @@ interface OrderCardReadyProps {
 }
 
 export const OrderCardReady: React.FC<OrderCardReadyProps> = ({ order, onTakeOrder }) => {
-  const paymentMethod = order.payment?.method || (order as any).paymentMethod;
+  const paymentMethod = order.payment?.method || (order as unknown as { paymentMethod?: string }).paymentMethod;
   const isOnlinePayment = paymentMethod && paymentMethod !== 'EFECTIVO_DELIVERY' && paymentMethod !== 'PUNTO_DELIVERY';
   return (
     <motion.div
@@ -44,7 +44,7 @@ export const OrderCardReady: React.FC<OrderCardReadyProps> = ({ order, onTakeOrd
         <div className="flex items-center justify-between py-3 px-1 border-t border-b border-slate-100 mb-6">
           <div>
             <span className="text-[8px] text-slate-400 font-bold uppercase block">Método</span>
-            <span className="text-[11px] font-black text-brand uppercase">{order.payment?.method || (order as any).paymentMethod || 'Efectivo'}</span>
+            <span className="text-[11px] font-black text-brand uppercase">{order.payment?.method || (order as unknown as { paymentMethod?: string }).paymentMethod || 'Efectivo'}</span>
           </div>
           <div className="text-right">
             <span className="text-[8px] text-slate-400 font-bold uppercase block">

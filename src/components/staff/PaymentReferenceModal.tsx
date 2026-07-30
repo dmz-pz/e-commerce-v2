@@ -33,7 +33,8 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
       await onSubmit(reference.trim(), file);
       setReference('');
       setFile(undefined);
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setError(err.message || 'Error al validar el pago.');
     } finally {
       setIsSubmitting(false);

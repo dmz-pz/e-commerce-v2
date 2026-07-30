@@ -6,7 +6,6 @@ import {
   DollarSign,
   Image as ImageIcon,
   Barcode,
-  Layers,
 } from "lucide-react";
 import { Category, Subcategory } from "../../types/index.ts";
 import { categoryService } from "../../services/categoryService.ts";
@@ -14,7 +13,7 @@ import { categoryService } from "../../services/categoryService.ts";
 interface ProductCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (productPayload: any) => Promise<void>;
+  onSubmit: (productPayload: Parameters<typeof import('../../services/productService.ts').productService.createProduct>[0]) => Promise<void>;
 }
 
 export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
@@ -52,16 +51,19 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     if (isOpen) {
       categoryService
         .getCategories()
-        .then((data: any) => {
+        .then((data: import('../../types/index.ts').Category[]) => {
           setCategories(data);
           if (data.length > 0) {
-            setSelectedCategoryId(data[0].id);
-            setAvailableSubcategories(data[0].subcategories || []);
-            if (data[0].subcategories && data[0].subcategories.length > 0) {
-              setNewProduct((prev) => ({
-                ...prev,
-                subcategoryId: data[0].subcategories[0].id,
-              }));
+            const firstCat = data[0];
+            if (firstCat) {
+              setSelectedCategoryId(firstCat.id);
+              setAvailableSubcategories(firstCat.subcategories || []);
+              if (firstCat.subcategories && firstCat.subcategories.length > 0) {
+                setNewProduct((prev) => ({
+                  ...prev,
+                  subcategoryId: firstCat.subcategories![0]?.id || "",
+                }));
+              }
             }
           }
         })
@@ -77,7 +79,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setAvailableSubcategories(subs);
     setNewProduct((prev) => ({
       ...prev,
-      subcategoryId: subs.length > 0 ? subs[0].id : "",
+      subcategoryId: subs.length > 0 ? (subs[0]?.id || "") : "",
     }));
   };
 
@@ -133,7 +135,8 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
         isActive: true,
       });
       onClose();
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setFormError(err.message || "No se pudo crear el producto.");
     } finally {
       setIsMutating(false);

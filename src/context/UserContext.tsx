@@ -18,6 +18,8 @@ interface User {
   phone?: string;
   addresses: Address[];
   role?: Role;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface UserContextType {
@@ -112,7 +114,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     birthdate?: string;
   }) => {
     // 1. Llamar a la API del backend para registrarse de forma segura
-    await apiClient.post<{ status: string; user: any }>('auth/register', data);
+    await apiClient.post<{ status: string; user: unknown }>('auth/register', data);
     // 2. Loguearse automáticamente usando las credenciales recién creadas
     await login(data.email, data.password);
   };
@@ -150,7 +152,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(updatedUser);
       }
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.warn("Falla al actualizar perfil en servidor, actualizando localmente:", err);
       const updatedUser = { ...user, ...data };
       setUser(updatedUser);

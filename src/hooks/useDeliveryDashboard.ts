@@ -36,7 +36,7 @@ export const useDeliveryDashboard = () => {
     try {
       const profile = await orderService.getDriverProfile();
       if (profile) {
-        setDriverStatus((profile.status as any) || 'offline');
+        setDriverStatus((profile.status as 'available' | 'busy' | 'offline') || 'offline');
         setCashInHand(profile.cashInHand ?? 0);
       }
     } catch (err) {
@@ -79,7 +79,8 @@ export const useDeliveryDashboard = () => {
       // await handleStatusChange('busy');
       await Promise.all([loadOrders(), loadDriverProfile()]);
       setActiveTab('assigned');
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Error al tomar orden:", err);
       setActionError("No se pudo iniciar el reparto. Intente nuevamente.");
     }
@@ -107,7 +108,8 @@ export const useDeliveryDashboard = () => {
         await handleStatusChange('available');
       }
       setOrderToComplete(null);
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Error al completar entrega:", err);
       setActionError("No se pudo marcar la entrega como completada.");
     } finally {
@@ -158,7 +160,7 @@ export const useDeliveryDashboard = () => {
 
   const readyOrders = orders.filter(o => 
     (o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID) && 
-    (!o.deliveryJobs || o.deliveryJobs.length === 0 || o.deliveryJobs[0].status === 'FAILED')
+    (!o.deliveryJobs || o.deliveryJobs.length === 0 || o.deliveryJobs[0]?.status === 'FAILED')
   );
 
   const historyOrders = orders.filter(o => {

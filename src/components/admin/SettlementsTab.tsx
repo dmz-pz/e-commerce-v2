@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Banknote, CheckCircle2, History, User, Wallet, Search } from 'lucide-react';
-import { adminService } from '../../services/adminService.ts';
+import { adminService, DriverCashDTO, SettlementDTO } from '../../services/adminService.ts';
 
 export const SettlementsTab: React.FC = () => {
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<DriverCashDTO[]>([]);
+  const [history, setHistory] = useState<SettlementDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
@@ -35,7 +35,8 @@ export const SettlementsTab: React.FC = () => {
       try {
         await adminService.settleCash(driverId);
         loadData();
-      } catch (err: any) {
+      } catch (error) {
+        const err = error as Error;
         alert(err.message || "Error al liquidar el efectivo.");
       }
     }

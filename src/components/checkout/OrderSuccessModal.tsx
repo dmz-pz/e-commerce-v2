@@ -64,7 +64,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
           <div className="p-8">
             <div className="text-center mb-8">
               <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Nro. de Pedido</p>
-              <p className="text-3xl font-black text-slate-800 tracking-tight">#{orderId.split('-')[0].toUpperCase()}</p>
+              <p className="text-3xl font-black text-slate-800 tracking-tight">#{orderId.split('-')[0]?.toUpperCase()}</p>
             </div>
 
             <div className="space-y-4 mb-8">

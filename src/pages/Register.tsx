@@ -54,7 +54,8 @@ const Register: React.FC = () => {
         birthdate: birthdate || undefined
       });
       navigate('/profile');
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setError(err.message || 'Error al registrarse');
     } finally {
       setLoading(false);

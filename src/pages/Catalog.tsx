@@ -5,7 +5,6 @@ import {
   Tag,
   TrendingUp,
   Sparkles,
-  Plus,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useGlobalCatalog } from "../context/CatalogContext.tsx";
@@ -165,7 +164,7 @@ export const Catalog: React.FC = () => {
                   <select
                     id="sort-select"
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
+                    onChange={(e) => setSortBy(e.target.value as "relevance" | "price_asc" | "price_desc" | "name_asc")}
                     className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 cursor-pointer"
                   >
                     <option value="relevance">Relevancia</option>

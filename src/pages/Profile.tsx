@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from '../context/UserContext.tsx';
-import { User, MapPin, Phone, Mail, LogOut, Plus, Trash2, Edit2, Check, X, ChevronRight, ShoppingBag, Package, Clock, CheckCircle2, Truck } from 'lucide-react';
+import { User, MapPin, LogOut, Plus, Trash2, Edit2, Check, X, ShoppingBag, Package, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo.tsx';
 import { orderService } from '../services/orderService.ts';
 import { Order, OrderStatus } from '../types/index.ts';
 
 const Profile: React.FC = () => {
-  const { user, logout, updateProfile, addAddress, updateAddress, deleteAddress } = useUser();
+  const { user, logout, updateProfile, addAddress, deleteAddress } = useUser();
   const navigate = useNavigate();
   
   const [isEditingInfo, setIsEditingInfo] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { 
   Clock, CheckCircle2, Smartphone, CreditCard, IdCard, Bike, Check, 
@@ -72,14 +72,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   modifyingOrderId,
   errorMessage,
   assigningId,
-  isDirty = false,
   setAssigningId,
   onUpdateStatus,
   onAssignDelivery,
   onUpdateItemQuantity,
   onRemoveItem,
-  onSaveOrderItems,
-  onDiscardOrderChanges,
   onSetSubstitutingItem,
   onOpenCancelModal,
   onAddProduct,
@@ -195,7 +192,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 bg-brand/5 text-brand rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">
-                      {item.requestedQuantity ?? (item as any).quantity ?? 1}
+                      {item.requestedQuantity ?? item.quantity ?? 1}
                     </div>
                     <span className="text-slate-700 font-bold text-xs tracking-tight leading-snug">{item.name}</span>
                   </div>
@@ -219,7 +216,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-[11px] font-bold text-slate-600 w-4 text-center">
-                        {item.requestedQuantity ?? (item as any).quantity ?? 1}
+                        {item.requestedQuantity ?? item.quantity ?? 1}
                       </span>
                       <button
                         type="button"

@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './apiClient.ts';
-import { Order, OrderStatus, DeliveryPerson, CartItem } from '../types/index.ts';
+import { Order, OrderStatus, DeliveryPerson } from '../types/index.ts';
 
 export interface CreateOrderPayload {
   deliveryAddress?: string;

@@ -31,7 +31,7 @@ export const OrderCardHistory: React.FC<OrderCardHistoryProps> = ({ order }) => 
       <div className="mt-auto bg-green-50/45 border border-green-100/50 p-4 rounded-xl flex justify-between items-center text-[10px] font-bold text-slate-600">
         <div>
           <span className="text-[8px] text-green-700/60 font-black uppercase tracking-widest block">Liquidado</span>
-          <span className="font-black text-brand uppercase">{order.payment?.method || (order as any).paymentMethod || 'Efectivo'}</span>
+          <span className="font-black text-brand uppercase">{order.payment?.method || (order as unknown as { paymentMethod?: string }).paymentMethod || 'Efectivo'}</span>
         </div>
         <div className="text-right">
           <span className="text-[8px] text-green-700/60 font-black uppercase tracking-widest block">Monto Entregado</span>

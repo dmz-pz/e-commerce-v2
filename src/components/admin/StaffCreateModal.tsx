@@ -48,7 +48,8 @@ export function StaffCreateModal({ isOpen, onClose, onSuccess }: StaffCreateModa
         password: '',
         role: Role.STAFF_PICKER,
       });
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error & { response?: { data?: { error?: string } } };
       // Manejar error estructurado
       if (err.response?.data?.error) {
         setError(err.response.data.error);

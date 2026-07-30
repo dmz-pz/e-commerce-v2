@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
   ChevronRight,
   Star,
@@ -18,7 +18,6 @@ import { parseAndFormatPrice } from "../utils/formatPrice.ts";
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { products, loading } = useGlobalCatalog();
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
@@ -48,7 +47,7 @@ export const ProductDetail: React.FC = () => {
   // 2. Evaluaciones seguras (Aquí TypeScript YA SABE que product no es null)
   const imageUrl =
     product.images && product.images.length > 0
-      ? product.images[0].url
+      ? product.images[0]?.url || "https://via.placeholder.com/600"
       : "https://via.placeholder.com/600";
 
   const numPrice = Number(String(product.price));
@@ -114,8 +113,8 @@ export const ProductDetail: React.FC = () => {
             )}
             {!imageError ? (
               <img
-                src={imageUrl}
-                alt={product.name}
+                src={product.images && product.images.length > 0 ? product.images[0]?.url : "/placeholder-image.jpg"}
+                alt={product?.name ?? "Producto sin imagen"}
                 className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-110"
                 onError={() => setImageError(true)}
               />
@@ -156,11 +155,10 @@ export const ProductDetail: React.FC = () => {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star
                     key={i}
-                    className={`w-3 h-3 md:w-4 md:h-4 ${
-                      i <= Math.round(product.rating || 5)
+                    className={`w-3 h-3 md:w-4 md:h-4 ${i <= Math.round(product.rating || 5)
                         ? "text-accent fill-accent"
                         : "text-slate-200"
-                    }`}
+                      }`}
                   />
                 ))}
                 <span className="text-[10px] md:text-xs font-bold text-slate-400 ml-2">
@@ -312,7 +310,7 @@ export const ProductDetail: React.FC = () => {
             .map((p) => {
               const relImg =
                 p.images && p.images.length > 0
-                  ? p.images[0].url
+                  ? p.images[0]?.url || "https://via.placeholder.com/300"
                   : "https://via.placeholder.com/300";
 
               return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, ShieldAlert, CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { Coins, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
 import { Payment } from '../../types/index.ts';
 
 interface PaymentsTabProps {

@@ -49,7 +49,8 @@ export const ResetPassword: React.FC = () => {
       });
 
       setSuccess(true);
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setError(err.message || 'No se pudo restablecer la contraseña');
     } finally {
       setLoading(false);

@@ -170,6 +170,7 @@ export interface OrderItem {
   name: string; // Nombre congelado en el momento de la compra
   price: number;
   requestedQuantity: number;
+  quantity?: number; // Compatibilidad temporal con items del carrito o data legacy
   pickedQuantity: number;
   status: ItemStatus;
   substitutedWithId?: string;

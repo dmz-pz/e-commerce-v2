@@ -28,7 +28,8 @@ export const ForgotPassword: React.FC = () => {
       if (res.resetCode) {
         setResetCode(res.resetCode);
       }
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setError(err.message || 'No se pudo procesar la solicitud');
     } finally {
       setLoading(false);

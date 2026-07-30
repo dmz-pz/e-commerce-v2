@@ -115,7 +115,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Envío del modal para crear producto
-  const handleCreateProductSubmit = async (productPayload: any) => {
+  const handleCreateProductSubmit = async (productPayload: Parameters<typeof productService.createProduct>[0]) => {
     await productService.createProduct(productPayload, "admin-dashboard");
     fetchInventory();
     fetchAuditLogs();

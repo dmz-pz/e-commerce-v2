@@ -7,7 +7,7 @@ import { useUser } from '../../context/UserContext.tsx';
 import { useNavigate } from 'react-router-dom';
 
 export const CartDrawer: React.FC = () => {
-  const { showCart, setShowCart, checkoutLoading, handleCheckout } = useGlobalCatalog();
+  const { showCart, setShowCart, checkoutLoading } = useGlobalCatalog();
   const { items, total, removeItem } = useCart();
   const { user } = useUser();
   const navigate = useNavigate();

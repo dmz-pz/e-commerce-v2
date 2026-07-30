@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   ShoppingCart,
   Package,
@@ -28,15 +28,7 @@ export const Navbar: React.FC = () => {
     setShowCart,
   } = useGlobalCatalog();
   const { user } = useUser();
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const handleCategoryClick = (cat: string) => {
-    setSelectedCategory(cat);
-    if (location.pathname !== "/") {
-      navigate("/");
-    }
-  };
 
   const [isVisible, setIsVisible] = useState(true);
   const { scrollY } = useScroll();
@@ -115,31 +107,28 @@ export const Navbar: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Link
                       to="/admin"
-                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
-                        location.pathname === "/admin"
+                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/admin"
                           ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
                           : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
-                      }`}
+                        }`}
                     >
                       Admin
                     </Link>
                     <Link
                       to="/staff"
-                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
-                        location.pathname === "/staff"
+                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/staff"
                           ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
                           : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
-                      }`}
+                        }`}
                     >
                       Operaciones
                     </Link>
                     <Link
                       to="/delivery"
-                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${
-                        location.pathname === "/delivery"
+                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/delivery"
                           ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
                           : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
-                      }`}
+                        }`}
                     >
                       Repartos
                     </Link>
@@ -334,11 +323,10 @@ export const Navbar: React.FC = () => {
                       <button
                         key={categoryId}
                         onClick={() => setSelectedCategory(categoryId)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          isSelected
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
                             ? "bg-brand text-white shadow-md shadow-brand/20"
                             : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
+                          }`}
                       >
                         {categoryName}
                       </button>

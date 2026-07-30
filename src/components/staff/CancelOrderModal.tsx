@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, X, Ban, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, X, Ban } from 'lucide-react';
 
 interface CancelOrderModalProps {
   cancelingOrder: { id: string; customerName: string; isLastItem?: boolean } | null;
@@ -23,7 +23,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
   onConfirmCancel,
   errorMessage,
 }) => {
-  const [selectedReason, setSelectedReason] = useState<string>(PREDEFINED_REASONS[0]);
+  const [selectedReason, setSelectedReason] = useState<string>(PREDEFINED_REASONS[0] || "");
   const [customDetail, setCustomDetail] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 

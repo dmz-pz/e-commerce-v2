@@ -199,14 +199,15 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         })),
       });
 
-      const customerDisplayName = (user as any).firstName || (user as any).name || "";
+      const customerDisplayName = user.firstName || user.name || "";
       alert(
         `¡Gracias ${customerDisplayName}! Pedido realizado con éxito. El personal ya está preparando tu compra.`,
       );
       clearCart();
       setShowCart(false);
       fetchProducts();
-    } catch (e: any) {
+    } catch (error) {
+      const e = error as Error;
       alert(e.message || "Error al procesar el pedido");
     } finally {
       setCheckoutLoading(false);

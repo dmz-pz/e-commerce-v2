@@ -11,7 +11,7 @@ interface OrderCardActiveProps {
 
 export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onSetCancel, onSetComplete }) => {
   const clientAddress = order.deliveryAddress || 'Dirección de envío del cliente';
-  const paymentMethod = order.payment?.method || (order as any).paymentMethod;
+  const paymentMethod = order.payment?.method || (order as unknown as { paymentMethod?: string }).paymentMethod;
   const isOnlinePayment = paymentMethod && paymentMethod !== 'EFECTIVO_DELIVERY' && paymentMethod !== 'PUNTO_DELIVERY';
   const paymentDisplay = paymentMethod || 'Efectivo / En Entrega';
 
@@ -61,7 +61,7 @@ export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onSetCa
           {order.items.map((it, idx) => (
             <div key={idx} className="flex justify-between text-[11px] font-bold text-slate-700">
               <span className="truncate max-w-[200px]">
-                <span className="text-brand mr-1 font-black">{it.requestedQuantity ?? (it as any).quantity ?? 1}x</span> {it.name}
+                <span className="text-brand mr-1 font-black">{it.requestedQuantity ?? it.quantity ?? 1}x</span> {it.name}
               </span>
               <span className="text-slate-400 font-mono text-[10px]">${Number(it.price).toFixed(2)}</span>
             </div>

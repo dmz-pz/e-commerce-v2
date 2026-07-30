@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext.tsx';
 import { useUser } from '../context/UserContext.tsx';
@@ -6,7 +6,7 @@ import { apiClient } from '../services/apiClient.ts';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, ShoppingBasket, Trash2, MapPin, Truck, Store,
-  CreditCard, Banknote, Smartphone, Receipt, ChevronRight, CheckCircle2
+  CreditCard, Banknote, Smartphone, ChevronRight, CheckCircle2
 } from 'lucide-react';
 import { OrderSuccessModal } from '../components/checkout/OrderSuccessModal.tsx';
 
@@ -37,8 +37,8 @@ export const Checkout: React.FC = () => {
     if (!user) {
       navigate('/login?redirect=/checkout');
     } else if (user.addresses && user.addresses.length > 0) {
-      const address = user.addresses[0] as any;
-      setSelectedAddress(address.line1 || address.street || address.address || 'Mi Dirección');
+      const address = user.addresses[0] as unknown as Record<string, unknown>;
+      setSelectedAddress((address.line1 || address.street || address.address || 'Mi Dirección') as string);
     }
   }, [user, navigate]);
 
@@ -77,13 +77,14 @@ export const Checkout: React.FC = () => {
         paymentMethod
       };
 
-      const response = (await apiClient.post('/api/orders', orderPayload)) as any;
+      const response = await apiClient.post<{ id: string }>('/api/orders', orderPayload);
 
       setGeneratedOrderId(response.id);
       clearCart();
       setShowSuccessModal(true);
 
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error & { response?: { data?: { error?: string } } };
       setError(err.message || err.response?.data?.error || 'Ocurrió un error al procesar el pedido. Intenta nuevamente.');
     } finally {
       setIsProcessing(false);

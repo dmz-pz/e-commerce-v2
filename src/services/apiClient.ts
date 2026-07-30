@@ -49,7 +49,7 @@ class ApiClient {
 
   async post<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit,
   ): Promise<T> {
     return this.request<T>(endpoint, {
@@ -61,7 +61,7 @@ class ApiClient {
 
   async patch<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit,
   ): Promise<T> {
     return this.request<T>(endpoint, {
@@ -73,7 +73,7 @@ class ApiClient {
 
   async put<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit,
   ): Promise<T> {
     return this.request<T>(endpoint, {

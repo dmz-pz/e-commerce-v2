@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Order, OrderStatus, DeliveryPerson, Product } from '../types/index.ts';
+import { Order, OrderStatus, DeliveryPerson, Product, OrderItem } from '../types/index.ts';
 import { orderService } from '../services/orderService.ts';
 import { productService } from '../services/productService.ts';
 
@@ -85,7 +85,7 @@ export const useStaffDashboard = () => {
       if (order.id !== orderId) return order;
 
       const updatedItems = order.items.map(item => {
-        const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const currentQty = Number(item.requestedQuantity ?? item.quantity ?? 1);
         if (item.productId === productId) {
           const newQty = Math.max(1, currentQty + delta);
           return { ...item, requestedQuantity: newQty };
@@ -94,7 +94,7 @@ export const useStaffDashboard = () => {
       });
 
       const newTotal = updatedItems.reduce((acc, item) => {
-        const qty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const qty = Number(item.requestedQuantity ?? item.quantity ?? 1);
         const price = Number(item.price || 0);
         return acc + (price * qty);
       }, 0);
@@ -120,7 +120,7 @@ export const useStaffDashboard = () => {
 
       const updatedItems = o.items.filter(item => item.productId !== productId);
       const newTotal = updatedItems.reduce((acc, item) => {
-        const qty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const qty = Number(item.requestedQuantity ?? item.quantity ?? 1);
         const price = Number(item.price || 0);
         return acc + (price * qty);
       }, 0);
@@ -135,11 +135,12 @@ export const useStaffDashboard = () => {
     setModifyingOrderId(orderId);
     setErrorMessage(null);
     try {
-      await orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED, reason as any);
+      await orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED, reason);
       setCancelingOrder(null);
       setDirtyOrders(prev => ({ ...prev, [orderId]: false }));
       fetchOrders();
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Error canceling order:", err);
       setErrorMessage(err.message || "No se pudo cancelar la orden.");
       setTimeout(() => setErrorMessage(null), 4000);
@@ -156,7 +157,7 @@ export const useStaffDashboard = () => {
       if (order.id !== orderId) return order;
 
       const oldItem = order.items.find(i => i.productId === oldProductId);
-      const qty = oldItem ? Number(oldItem.requestedQuantity ?? (oldItem as any).quantity ?? 1) : 1;
+      const qty = oldItem ? Number(oldItem.requestedQuantity ?? oldItem.quantity ?? 1) : 1;
 
       const remainingItems = order.items.filter(item => item.productId !== oldProductId);
       const existingInOrder = remainingItems.find(item => item.productId === replacementProduct.id);
@@ -165,7 +166,7 @@ export const useStaffDashboard = () => {
       if (existingInOrder) {
         updatedItems = remainingItems.map(item => {
           if (item.productId === replacementProduct.id) {
-            const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+            const currentQty = Number(item.requestedQuantity ?? item.quantity ?? 1);
             return { ...item, requestedQuantity: currentQty + qty };
           }
           return item;
@@ -177,11 +178,11 @@ export const useStaffDashboard = () => {
           price: replacementProduct.discountPrice || replacementProduct.price,
           requestedQuantity: qty,
         };
-        updatedItems = [...remainingItems, newItem as any];
+        updatedItems = [...remainingItems, newItem as unknown as OrderItem];
       }
 
       const newTotal = updatedItems.reduce((acc, item) => {
-        const itemQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const itemQty = Number(item.requestedQuantity ?? item.quantity ?? 1);
         const itemPrice = Number(item.price || 0);
         return acc + (itemPrice * itemQty);
       }, 0);
@@ -206,7 +207,7 @@ export const useStaffDashboard = () => {
       if (existingInOrder) {
         updatedItems = order.items.map(item => {
           if (item.productId === product.id) {
-            const currentQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+            const currentQty = Number(item.requestedQuantity ?? item.quantity ?? 1);
             return { ...item, requestedQuantity: currentQty + 1 };
           }
           return item;
@@ -218,11 +219,11 @@ export const useStaffDashboard = () => {
           price: product.discountPrice || product.price,
           requestedQuantity: 1,
         };
-        updatedItems = [...order.items, newItem as any];
+        updatedItems = [...order.items, newItem as unknown as OrderItem];
       }
 
       const newTotal = updatedItems.reduce((acc, item) => {
-        const itemQty = Number(item.requestedQuantity ?? (item as any).quantity ?? 1);
+        const itemQty = Number(item.requestedQuantity ?? item.quantity ?? 1);
         const itemPrice = Number(item.price || 0);
         return acc + (itemPrice * itemQty);
       }, 0);
@@ -243,13 +244,14 @@ export const useStaffDashboard = () => {
 
       const payload = order.items.map(item => ({
         productId: item.productId,
-        requestedQuantity: Number(item.requestedQuantity ?? (item as any).quantity ?? 1)
+        requestedQuantity: Number(item.requestedQuantity ?? item.quantity ?? 1)
       }));
 
       const updatedOrder = await orderService.updateOrderItems(orderId, payload);
       setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
       setDirtyOrders(prev => ({ ...prev, [orderId]: false }));
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Error saving order items:", err);
       setErrorMessage(err.message || "No se pudieron guardar los cambios. Verifique el stock.");
       setTimeout(() => setErrorMessage(null), 4000);
@@ -316,7 +318,8 @@ export const useStaffDashboard = () => {
 
       setValidatingPaymentOrderId(null);
       fetchOrders();
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Error confirming payment:", err);
       setErrorMessage(err.message || 'Ocurrió un error al procesar el pago.');
     } finally {

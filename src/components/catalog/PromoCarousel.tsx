@@ -65,8 +65,8 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onCategorySelect }
         >
           <div className="absolute inset-0 bg-gradient-to-r from-brand/80 via-brand/40 to-transparent z-10" />
           <img 
-            src={PROMO_SLIDES[current].image} 
-            alt={PROMO_SLIDES[current].title}
+            src={PROMO_SLIDES[current]?.image} 
+            alt={PROMO_SLIDES[current]?.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 z-20 flex flex-col justify-center px-8 md:px-16 lg:px-24">
@@ -84,7 +84,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onCategorySelect }
               transition={{ delay: 0.3 }}
               className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter max-w-xl leading-none"
             >
-              {PROMO_SLIDES[current].title}
+              {PROMO_SLIDES[current]?.title}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -92,16 +92,16 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onCategorySelect }
               transition={{ delay: 0.4 }}
               className="text-white/80 text-sm md:text-lg max-w-md mb-8 font-medium"
             >
-              {PROMO_SLIDES[current].subtitle}
+              {PROMO_SLIDES[current]?.subtitle}
             </motion.p>
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
-              onClick={() => onCategorySelect(PROMO_SLIDES[current].category)}
+              onClick={() => { const cat = PROMO_SLIDES[current]?.category; if (cat) onCategorySelect(cat); }}
               className="w-fit px-8 py-3 bg-white text-brand rounded-full font-bold text-sm hover:bg-accent hover:text-brand transition-all flex items-center gap-2 group shadow-xl"
             >
-              {PROMO_SLIDES[current].cta}
+              {PROMO_SLIDES[current]?.cta}
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </motion.button>
           </div>

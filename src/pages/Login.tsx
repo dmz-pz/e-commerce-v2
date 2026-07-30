@@ -23,7 +23,8 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/profile');
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as Error;
       setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);

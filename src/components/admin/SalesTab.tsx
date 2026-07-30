@@ -58,7 +58,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
       try {
         await onUpdateOrderStatus(orderId, targetStatus);
         if (onRefreshLogs) onRefreshLogs();
-      } catch (err: any) {
+      } catch (error) {
+        const err = error as Error;
         alert(err.message || 'No se pudo actualizar el estado de la orden');
       }
     }
