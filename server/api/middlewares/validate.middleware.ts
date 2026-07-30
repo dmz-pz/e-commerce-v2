@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import * as z from "zod";
 
 export const validateResource =
-  (schema: z.ZodType) =>
+  (schema: z.ZodObject<any, any>) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const result = await schema.safeParseAsync({
       body: req.body,
@@ -12,9 +12,10 @@ export const validateResource =
 
     if (result.success) {
       // opcional: reemplazar con lo parseado (incluye coerciones/transforms)
-      req.body = (result.data as any).body;
-      req.query = (result.data as any).query;
-      req.params = (result.data as any).params;
+      const data = result.data as z.infer<typeof schema>;
+      if (data.body) req.body = data.body;
+      if (data.query) req.query = data.query as unknown as Record<string, string | string[] | undefined>;
+      if (data.params) req.params = data.params as unknown as Record<string, string>;
       return next();
     }
 
@@ -22,6 +23,6 @@ export const validateResource =
       status: "fail",
       message: "Datos inválidos",
       issues: result.error.issues,
-      errors: z.treeifyError(result.error),
+      errors: result.error.format(),
     });
   };

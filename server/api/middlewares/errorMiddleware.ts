@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/appErrors.ts";
 
 export const globalErrorHandler = (
-  err: any,
+  err: Error | unknown,
   req: Request,
   res: Response,
   next: NextFunction,

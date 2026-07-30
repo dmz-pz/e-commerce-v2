@@ -27,7 +27,7 @@ export function verifyToken(req: Request, res: Response, next: NextFunction) {
     req.user = decoded;
 
     next(); // Continuamos a la ruta protegida
-  } catch (error: any) {
+  } catch (e: unknown) { const error = e as Error;
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         code: "TOKEN_EXPIRADO",

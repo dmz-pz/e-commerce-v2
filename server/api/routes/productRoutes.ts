@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { productController } from "../controllers/productController.ts";
 import { uploadImage } from "../middlewares/upload.middleware.ts";
 import { validateResource } from "../middlewares/validate.middleware.ts";
@@ -14,7 +14,7 @@ import {
 const router = Router();
 
 // Middleware validador de que exista la imagen en req.file
-const requireProductImage = (req: any, res: any, next: any) => {
+const requireProductImage = (req: Request, res: Response, next: NextFunction) => {
   if (!req.file) {
     return res.status(400).json({
       status: "fail",
@@ -25,7 +25,7 @@ const requireProductImage = (req: any, res: any, next: any) => {
 };
 
 // Middleware mapeador de la imagen
-const parseRouteImage = (req: any, res: any, next: any) => {
+const parseRouteImage = (req: Request, res: Response, next: NextFunction) => {
   if (req.file) {
     req.body.imageUrl = `/uploads/products/${req.file.filename}`;
   }

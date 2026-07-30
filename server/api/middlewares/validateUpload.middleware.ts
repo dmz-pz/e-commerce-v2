@@ -2,12 +2,12 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodObject, ZodError } from "zod";
 
-export const validateBody = (schema: ZodObject) => {
+export const validateBody = (schema: ZodObject<any, any>) => {
   return async (
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<any> => {
+  ) => {
     try {
       // Si el schema usa transforms/refinements async, parseAsync es el correcto
       req.body = await schema.parseAsync(req.body);
