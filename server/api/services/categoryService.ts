@@ -63,9 +63,9 @@ export class CategoryService {
         name.trim(),
         categoryId,
       );
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       // Captura de duplicado por la restricción @@unique([name, categoryId]) de Prisma
-      if (error.code === "P2002") {
+      if ((error as { code?: string }).code === "P2002") {
         throw new AppError(
           "Ya existe una subcategoría con este nombre en esta categoría.",
           409,

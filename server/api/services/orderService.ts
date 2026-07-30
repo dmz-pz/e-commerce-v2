@@ -3,7 +3,7 @@ import { userRepository } from "../repositories/userRepository.ts";
 import { productRepository } from "../repositories/productRepository.ts";
 import { deliveryRepository } from "../repositories/deliveryRepository.ts";
 import { productService } from "./productService.ts"; //
-import { OrderStatus, ItemStatus, PaymentStatus } from "../../../generated/prisma/enums.ts"; //
+import { OrderStatus, ItemStatus, PaymentStatus, PaymentMethod } from "../../../generated/prisma/enums.ts"; //
 import { paymentRepository } from "../repositories/paymentRepository.ts";
 import { CreateOrderInput } from "../schemas/orderSchema.ts";
 import { AppError } from "../utils/appErrors.ts";
@@ -120,8 +120,8 @@ export class OrderService {
       await paymentRepository.create({
         orderId: newOrder.id,
         amount: calculatedTotal,
-        method: orderData.paymentMethod as any, // Hacemos cast temporal por el enum
-        status: PaymentStatus.PENDING as any,
+        method: orderData.paymentMethod as unknown as PaymentMethod, // Hacemos cast a enum de Prisma
+        status: PaymentStatus.PENDING,
         reference: orderData.paymentReference || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -163,9 +163,12 @@ export class OrderService {
     if (status === OrderStatus.READY_TO_PAY && paymentReference) {
       const updatedPayment = await paymentRepository.updateReference(id, paymentReference, paymentReceiptUrl);
       if (updatedOrder.payment && updatedPayment) {
-        (updatedOrder.payment as any).reference = updatedPayment.reference;
-        (updatedOrder.payment as any).receiptUrl = updatedPayment.receiptUrl;
-        (updatedOrder.payment as any).updatedAt = updatedPayment.updatedAt;
+        updatedOrder.payment = {
+          ...updatedOrder.payment,
+          reference: updatedPayment.reference || null,
+          receiptUrl: updatedPayment.receiptUrl || null,
+          updatedAt: updatedPayment.updatedAt as unknown as Date,
+        };
       }
     }
 
@@ -368,7 +371,7 @@ export class OrderService {
 
     // Consultar los precios oficiales vigentes en la base de datos
     const dbProducts = await productRepository.getByIds(finalProductIds, true);
-    const pricesMap = new Map(dbProducts.map((p: any) => [p.id, Number(p.price)]));
+    const pricesMap = new Map(dbProducts.map((p) => [p.id, Number(p.price)]));
 
     let calculatedSubtotal = 0;
 

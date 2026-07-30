@@ -1,4 +1,4 @@
-import { productRepository } from "../repositories/productRepository.ts";
+import { productRepository, type ProductQueryOptions } from "../repositories/productRepository.ts";
 import type { ProductWithRelations } from "../repositories/productRepository.ts";
 import type { CreateProductInput } from "../schemas/productSchema.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
@@ -15,7 +15,7 @@ export class ProductService {
     return await productRepository.getAll(includeInactive);
   }
 
-  async getPaginatedProducts(options: any) {
+  async getPaginatedProducts(options: ProductQueryOptions) {
     return await productRepository.getPaginated(options);
   }
 
@@ -61,7 +61,7 @@ export class ProductService {
       });
 
       return product;
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw error;
     }
   }
