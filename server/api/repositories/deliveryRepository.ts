@@ -17,7 +17,7 @@ export class DeliveryRepository {
       id: p.userId,
       name: `${p.user.firstName} ${p.user.lastName}`.trim(),
       phone: p.user.phone,
-      status: p.status.toLowerCase() as any,
+      status: p.status.toLowerCase() as 'available' | 'busy' | 'offline',
       vehicle: p.vehiclePlate || "Moto / Vehículo Asignado",
     }));
   }
@@ -53,7 +53,7 @@ export class DeliveryRepository {
   }
 
   async updateStatus(id: string, status: 'available' | 'busy' | 'offline'): Promise<DeliveryPerson | undefined> {
-    const uppercaseStatus = status.toUpperCase() as any;
+    const uppercaseStatus = status.toUpperCase() as "AVAILABLE" | "BUSY" | "OFFLINE";
     
     // First ensure the user has a profile
     const user = await prisma.user.findUnique({ where: { id } });
@@ -77,7 +77,7 @@ export class DeliveryRepository {
       id: profile.userId,
       name: `${profile.user.firstName} ${profile.user.lastName}`.trim(),
       phone: profile.user.phone,
-      status: profile.status.toLowerCase() as any,
+      status: profile.status.toLowerCase() as 'available' | 'busy' | 'offline',
       vehicle: profile.vehiclePlate || "Moto / Vehículo Asignado",
     };
   }

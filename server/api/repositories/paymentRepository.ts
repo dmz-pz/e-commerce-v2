@@ -7,29 +7,31 @@ export class PaymentRepository {
     const results = await prisma.payment.findMany({
       orderBy: { createdAt: "desc" }
     });
-    return results.map((r: any) => ({
+    return results.map((r) => ({
       ...r,
       amount: Number(r.amount),
-      createdAt: r.createdAt.getTime()
-    })) as any;
+      createdAt: r.createdAt.getTime(),
+      updatedAt: r.updatedAt.getTime()
+    })) as Payment[];
   }
 
   async getByOrderId(orderId: string): Promise<Payment | undefined> {
-    const r: any = await prisma.payment.findUnique({
+    const r = await prisma.payment.findUnique({
       where: { orderId }
     });
     if (r) {
       return {
         ...r,
         amount: Number(r.amount),
-        createdAt: r.createdAt.getTime()
+        createdAt: r.createdAt.getTime(),
+        updatedAt: r.updatedAt.getTime()
       } as Payment;
     }
     return undefined;
   }
 
   async create(paymentData: Omit<Payment, 'id'>): Promise<Payment> {
-    const created: any = await prisma.payment.create({
+    const created = await prisma.payment.create({
       data: {
         orderId: paymentData.orderId,
         amount: paymentData.amount,
@@ -42,24 +44,26 @@ export class PaymentRepository {
     return {
       ...created,
       amount: Number(created.amount),
-      createdAt: created.createdAt.getTime()
+      createdAt: created.createdAt.getTime(),
+      updatedAt: created.updatedAt.getTime()
     } as Payment;
   }
 
   async updateStatus(id: string, status: PaymentStatus): Promise<Payment | undefined> {
-    const updated: any = await prisma.payment.update({
+    const updated = await prisma.payment.update({
       where: { id },
       data: { status }
     });
     return {
       ...updated,
       amount: Number(updated.amount),
-      createdAt: updated.createdAt.getTime()
+      createdAt: updated.createdAt.getTime(),
+      updatedAt: updated.updatedAt.getTime()
     } as Payment;
   }
 
   async updateReference(orderId: string, reference: string, receiptUrl?: string): Promise<Payment | undefined> {
-    const updated: any = await prisma.payment.update({
+    const updated = await prisma.payment.update({
       where: { orderId },
       data: {
         reference,
@@ -69,7 +73,8 @@ export class PaymentRepository {
     return {
       ...updated,
       amount: Number(updated.amount),
-      createdAt: updated.createdAt.getTime()
+      createdAt: updated.createdAt.getTime(),
+      updatedAt: updated.updatedAt.getTime()
     } as Payment;
   }
 }

@@ -11,8 +11,8 @@ export interface CreateAuditLogInput {
   action: string;
   performedById: string;
   orderId?: string;
-  previousState?: any;
-  newState?: any;
+  previousState?: Record<string, unknown>;
+  newState?: Record<string, unknown>;
 }
 
 export class AuditLogRepository {

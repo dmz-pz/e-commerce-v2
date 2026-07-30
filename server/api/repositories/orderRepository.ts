@@ -25,7 +25,7 @@ export class OrderRepository {
    */
 
   async getAll(options?: { todayOnly?: boolean }) {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (options?.todayOnly) {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);

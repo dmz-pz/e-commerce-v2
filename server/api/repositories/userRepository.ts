@@ -15,7 +15,7 @@ export class UserRepository {
         data,
       });
       return newUser;
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(
         `Error al crear el usuario en la base de datos: ${error.message}`,
         500
@@ -43,7 +43,7 @@ export class UserRepository {
       return await prisma.user.findUnique({
         where: { id },
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al buscar usuario por ID: ${error.message}`, 500);
     }
   }
@@ -54,7 +54,7 @@ export class UserRepository {
         where: { id },
         data: { passwordHash },
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al actualizar contraseña del usuario: ${error.message}`, 500);
     }
   }
@@ -68,7 +68,7 @@ export class UserRepository {
         },
         orderBy: { createdAt: "desc" },
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al listar usuarios: ${error.message}`, 500);
     }
   }
@@ -79,7 +79,7 @@ export class UserRepository {
         where: { id },
         data: { role },
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al actualizar rol del usuario: ${error.message}`, 500);
     }
   }
@@ -90,7 +90,7 @@ export class UserRepository {
         where: { id },
         data: { deletedAt: new Date() },
       });
-    } catch (error: any) {
+    } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al dar de baja al usuario: ${error.message}`, 500);
     }
   }
