@@ -132,7 +132,7 @@ export class OrderRepository {
     });
   }
 
-  async updateStatus(id: string, status: OrderStatus, pickerId?: string, actionUserId?: string) {
+  async updateStatus(id: string, status: OrderStatus, pickerId?: string, _actionUserId?: string) {
     return await prisma.$transaction(async (tx) => {
       // 1. Update the order status
       const updatedOrder = await tx.order.update({

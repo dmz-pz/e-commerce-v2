@@ -1,7 +1,6 @@
 import { orderRepository } from "../repositories/orderRepository.ts";
 import { userRepository } from "../repositories/userRepository.ts";
 import { productRepository } from "../repositories/productRepository.ts";
-import { deliveryRepository } from "../repositories/deliveryRepository.ts";
 import { productService } from "./productService.ts"; //
 import { OrderStatus, ItemStatus, PaymentStatus, PaymentMethod } from "../../../generated/prisma/enums.ts"; //
 import { paymentRepository } from "../repositories/paymentRepository.ts";

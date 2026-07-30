@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { productService } from "../services/productService.ts";
+import { AppError } from "../utils/appErrors.ts";
 
 export class ProductController {
   /**
@@ -58,6 +59,9 @@ export class ProductController {
   ): Promise<void> {
     try {
       const { id } = req.params;
+      if (!id) {
+        throw new AppError("El ID del producto es requerido.", 400);
+      }
       const product = await productService.getProductById(id);
       res.json(product);
     } catch (error) {
@@ -92,7 +96,8 @@ export class ProductController {
       );
 
       res.status(201).json(product);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -103,6 +108,9 @@ export class ProductController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
+      if (!id) {
+        throw new AppError("El ID del producto es requerido.", 400);
+      }
       const performedByUserId =
         (req.headers["x-user-id"] as string) ||
         "8341bc73-f2c7-4f96-a7df-a97003f18b74";
@@ -115,7 +123,8 @@ export class ProductController {
       );
 
       res.json(product);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -130,6 +139,10 @@ export class ProductController {
   ): Promise<void> {
     try {
       const { barcode } = req.params;
+      if (!barcode) {
+        throw new AppError("El código de barras es requerido.", 400);
+      }
+
       const product = await productService.getProductByBarcode(barcode);
       res.json(product);
     } catch (error) {

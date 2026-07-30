@@ -57,7 +57,7 @@ export class AuthController {
     }
   }
 
-  async logout(req: Request, res: Response) {
+  async logout(_req: Request, res: Response) {
     res.clearCookie("access_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -70,7 +70,7 @@ export class AuthController {
     });
   }
 
-  async getMe(req: Request, res: Response) {
+  async getProfile(req: Request, res: Response) {
     try {
       const currentUser = req.user;
 
@@ -83,7 +83,7 @@ export class AuthController {
         status: "success",
         user: currentUser,
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
       res.status(500).json({
         status: "error",
         message: "Error al obtener la sesión del usuario",

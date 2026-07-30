@@ -8,7 +8,7 @@ const RoleEnum = z.enum([
   "STAFF_PICKER",
 ]); // Ajusta los nombres exactos de tus roles
 
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+
 
 export const registerSchema = z.object({
   body: z.object({

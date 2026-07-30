@@ -1,6 +1,5 @@
 import { DeliveryPerson } from "../types/shared.types.ts";
 import { prisma } from "../db.ts";
-import { Role } from "../../../generated/prisma/enums.ts";
 import { AppError } from "../utils/appErrors.ts";
 
 export class DeliveryRepository {

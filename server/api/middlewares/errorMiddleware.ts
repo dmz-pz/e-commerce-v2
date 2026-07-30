@@ -3,9 +3,9 @@ import { AppError } from "../utils/appErrors.ts";
 
 export const globalErrorHandler = (
   err: Error | unknown,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void => {
   // Caso A: Errores operativos controlados por ti (400, 404, 409, etc.)
   if (err instanceof AppError) {

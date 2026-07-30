@@ -14,18 +14,19 @@ import {
 const router = Router();
 
 // Middleware validador de que exista la imagen en req.file
-const requireProductImage = (req: Request, res: Response, next: NextFunction) => {
+const requireProductImage = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.file) {
-    return res.status(400).json({
+    res.status(400).json({
       status: "fail",
       message: "La imagen del producto es obligatoria.",
     });
+    return;
   }
   next();
 };
 
 // Middleware mapeador de la imagen
-const parseRouteImage = (req: Request, res: Response, next: NextFunction) => {
+const parseRouteImage = (req: Request, _res: Response, next: NextFunction): void => {
   if (req.file) {
     req.body.imageUrl = `/uploads/products/${req.file.filename}`;
   }

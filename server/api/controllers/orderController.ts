@@ -8,7 +8,8 @@ export class OrderController {
       const todayOnly = req.query.todayOnly === 'true' || req.query.today === 'true';
       const orders = await orderService.getAllOrders({ todayOnly });
       res.json(orders);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -24,7 +25,8 @@ export class OrderController {
       }
       const orders = await orderService.getUserOrders(userId);
       res.json(orders);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -33,7 +35,7 @@ export class OrderController {
     const orderId = req.params.orderId;
     const user = req.user;
     try {
-      const order = await orderService.getOrderById(orderId);
+      const order = await orderService.getOrderById(orderId || "");
       if (!order) {
         throw new AppError("La orden solicitada no fue encontrada", 404);
       }
@@ -52,7 +54,8 @@ export class OrderController {
       }
 
       res.json(order);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -70,7 +73,8 @@ export class OrderController {
 
       const order = await orderService.createOrder(userId, items);
       res.status(201).json(order);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -90,6 +94,9 @@ export class OrderController {
 
     const user = req.user;
     try {
+      if (!orderId) {
+        throw new AppError("El ID de la orden es requerido.", 400);
+      }
       if (user && user.role === "DELIVERY" && status === "DELIVERED") {
         const existingOrder = await orderService.getOrderById(orderId);
         const activeJob = (existingOrder as unknown as { deliveryJobs?: { deliveryPersonId: string }[] })?.deliveryJobs?.[0];
@@ -104,7 +111,8 @@ export class OrderController {
       } else {
         res.status(404).json({ error: "Order not found" });
       }
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -113,13 +121,17 @@ export class OrderController {
     const { id } = req.params;
     const { items } = req.body;
     try {
+      if (!id) {
+        throw new AppError("El ID de la orden es requerido.", 400);
+      }
       const order = await orderService.updateItems(id, items);
       if (order) {
         res.json(order);
       } else {
         res.status(404).json({ error: "Order not found" });
       }
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -148,12 +160,13 @@ export class OrderController {
       }
 
       const updatedOrder = await orderService.processPicking(
-        orderId,
+        orderId || "",
         pickerId,
         items,
       );
       res.json(updatedOrder);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       next(error);
     }
   }
@@ -163,6 +176,9 @@ export class OrderController {
     const { deliveryPersonId } = req.body;
     const user = req.user;
     try {
+      if (!id) {
+        throw new AppError("El ID de la orden es requerido.", 400);
+      }
       if (user && user.role === "DELIVERY" && deliveryPersonId !== user.id) {
         throw new AppError("No puedes asignar este pedido a otro repartidor.", 403);
       }

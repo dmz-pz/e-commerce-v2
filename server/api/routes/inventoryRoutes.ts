@@ -10,7 +10,7 @@ router.use(verifyToken);
 router.use(authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER));
 
 // Route to check global inventory status
-router.get("/status", async (req, res) => {
+router.get("/status", async (_req, res) => {
   try {
     const products = await productService.getAllProducts();
     const summary = products.map(p => ({

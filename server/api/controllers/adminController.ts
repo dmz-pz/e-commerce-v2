@@ -4,7 +4,7 @@ import { AppError } from "../utils/appErrors.ts";
 import { Role, PaymentStatus } from "../../../generated/prisma/enums.ts";
 
 export class AdminController {
-  async getAllPayments(req: Request, res: Response) {
+  async getAllPayments(_req: Request, res: Response) {
     try {
       const payments = await adminService.getAllPayments();
       res.json(payments);
@@ -17,7 +17,7 @@ export class AdminController {
     }
   }
 
-  async getAuditLogs(req: Request, res: Response) {
+  async getAuditLogs(_req: Request, res: Response) {
     try {
       const logs = await adminService.getAuditLogs();
       res.json(logs);
@@ -34,11 +34,15 @@ export class AdminController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const performedById = req.user!.id;
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new AppError("Usuario no autenticado.", 401);
+      }
 
-      const updated = await adminService.updatePaymentStatus(id, status as PaymentStatus, performedById);
+      const updated = await adminService.updatePaymentStatus(id as string, status as PaymentStatus, performedById);
       res.json(updated);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -50,11 +54,12 @@ export class AdminController {
   // ==========================================
   // MÉTODOS DE LIQUIDACIÓN DE MOTORIZADOS
   // ==========================================
-  async getDriversCash(req: Request, res: Response) {
+  async getDriversCash(_req: Request, res: Response) {
     try {
       const drivers = await adminService.getDriversCash();
       res.json(drivers);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -63,11 +68,12 @@ export class AdminController {
     }
   }
 
-  async getSettlements(req: Request, res: Response) {
+  async getSettlements(_req: Request, res: Response) {
     try {
       const history = await adminService.getSettlements();
       res.json(history);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -79,11 +85,15 @@ export class AdminController {
   async settleCash(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const performedById = req.user!.id;
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new AppError("Usuario no autenticado.", 401);
+      }
 
-      const settlement = await adminService.settleCash(id, performedById);
+      const settlement = await adminService.settleCash(id as string, performedById);
       res.json(settlement);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -100,7 +110,8 @@ export class AdminController {
       const { role } = req.query;
       const users = await adminService.getUsers(role as Role | undefined);
       res.json(users);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -112,11 +123,15 @@ export class AdminController {
   async createStaff(req: Request, res: Response) {
     try {
       const userData = req.body;
-      const performedById = req.user!.id;
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new AppError("Usuario no autenticado.", 401);
+      }
 
       const newUser = await adminService.createStaff(userData, performedById);
       res.status(201).json(newUser);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -129,11 +144,15 @@ export class AdminController {
     try {
       const { id } = req.params;
       const { role } = req.body;
-      const performedById = req.user!.id;
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new AppError("Usuario no autenticado.", 401);
+      }
 
-      const updatedUser = await adminService.updateUserRole(id, role, performedById);
+      const updatedUser = await adminService.updateUserRole(id as string, role, performedById);
       res.json(updatedUser);
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -145,11 +164,15 @@ export class AdminController {
   async deleteUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const performedById = req.user!.id;
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new AppError("Usuario no autenticado.", 401);
+      }
 
-      await adminService.deleteUser(id, performedById);
+      await adminService.deleteUser(id as string, performedById);
       res.json({ message: "Usuario dado de baja exitosamente." });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {

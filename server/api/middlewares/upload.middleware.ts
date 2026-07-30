@@ -3,10 +3,10 @@ import path from "path";
 import fs from "fs";
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, "uploads/products/");
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     // Mantiene la extensión original (.jpg, .webp, etc)
     cb(null, `product-${uniqueSuffix}${path.extname(file.originalname)}`);
@@ -18,7 +18,7 @@ export const uploadImage = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 🔒 Límite de 5MB
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase(),
@@ -35,14 +35,14 @@ export const uploadImage = multer({
 });
 
 const paymentStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     const dir = "uploads/payments/";
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     cb(null, dir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, `receipt-${uniqueSuffix}${path.extname(file.originalname)}`);
   },
@@ -53,7 +53,7 @@ export const uploadPaymentReceipt = multer({
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp|pdf/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase(),

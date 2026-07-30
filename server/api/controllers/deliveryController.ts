@@ -1,43 +1,46 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { deliveryService } from "../services/deliveryService.ts";
 
 export class DeliveryController {
-  async getAvailable(req: Request, res: Response) {
+  async getAvailable(_req: Request, res: Response, next: NextFunction) {
     try {
       const available = await deliveryService.getAvailableDeliveryPeople();
       res.json(available);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch delivery people" });
+      next(error);
     }
   }
 
-  async getProfile(req: Request, res: Response) {
+  async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: "Unauthorized" });
+        return;
       }
       const profile = await deliveryService.getProfile(userId);
       res.json(profile);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch delivery profile" });
+      next(error);
     }
   }
 
-  async updateStatus(req: Request, res: Response) {
+  async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user?.id;
       const { status } = req.body;
       if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: "Unauthorized" });
+        return;
       }
       if (!status || !["available", "busy", "offline"].includes(status)) {
-        return res.status(400).json({ error: "Invalid status value" });
+        res.status(400).json({ error: "Invalid status value" });
+        return;
       }
       const updated = await deliveryService.setStatus(userId, status);
       res.json(updated);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update driver status" });
+      next(error);
     }
   }
 }

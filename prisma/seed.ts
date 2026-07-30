@@ -32,7 +32,7 @@ async function main() {
     console.log("♻️ Categoría y Subcategoría de Alimentos ya existen.");
   }
 
-  const subcategoryId = category.subcategories[0].id;
+  const subcategoryId = category?.subcategories?.[0]?.id || "";
 
   // ==========================================
   // 2. CREACIÓN DE USUARIOS (Vía HTTP Loopback / registerSchema de Zod)
