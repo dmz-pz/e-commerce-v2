@@ -1,0 +1,33 @@
+# Implementación Completada: Importador Automático de Catálogo y ODBC
+
+¡Hemos finalizado la creación y configuración del sistema de importación masiva de productos!
+
+## Cambios Realizados
+
+1. **Migración de Prisma:**
+   * Se crearon los nuevos modelos `TaxRate` y `ExchangeRate`.
+   * Se agregó el campo `externalId` (llave primaria del supermercado) y `taxRateId` (relación al impuesto) al modelo `Product`.
+   * Se aplicó exitosamente la migración en tu base de datos de desarrollo.
+
+2. **Librerías de Conexión:**
+   * Se instaló la librería `odbc` nativa de Node.js, configurada para interpretar el mismo DSN `Conexion_Mine` que utilizabas en tu script de Python.
+
+3. **Script de Importación (`scripts/syncCatalog.ts`):**
+   * Se tradujo la consulta masiva SQL de Sybase para traer los miles de productos en una sola petición.
+   * Se configuró el importador para usar un UPSERT utilizando el `externalId` del producto.
+   * **Manejo de Imágenes Implementado:** Se incorporó la lógica recursiva que extrae la imagen desde `C:\Users\DMZ\Videos\scraping-imagenes-plansuarez\catalogo_productos`, determina la categoría/subcategoría basándose en las carpetas, copia la imagen físicamente a la carpeta pública del e-commerce (`public/uploads/products`), y actualiza el producto.
+
+## ¿Cómo ejecutar el Script?
+
+Cuando desees correr la importación, abre una terminal en la raíz de tu proyecto y ejecuta este comando para compilar y ejecutar el script en TypeScript:
+
+```bash
+pnpm ts-node scripts/syncCatalog.ts
+```
+
+*(Si utilizas `tsx` o similares en tu proyecto, puedes correr `pnpm tsx scripts/syncCatalog.ts`)*.
+
+> [!TIP]
+> Recuerda que el script lee el DSN de ODBC directamente de tu sistema Windows. Asegúrate de tener conexión con el servidor del supermercado cuando corras el comando.
+
+¡Todo el sistema quedó adaptado a la lógica real de tu cliente! Si necesitas realizar algún ajuste posterior a las categorías o a la lectura ODBC, ya tienes el archivo base y estructurado para hacerlo.

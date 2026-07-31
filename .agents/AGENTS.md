@@ -1,9 +1,5 @@
 # Reglas del Proyecto (Workspace Rules)
 
-- **Confirmación Previa de Edición de Archivos:** Para cualquier modificación de código en el proyecto, siempre presentar la propuesta detallada al usuario y solicitar su validación previa antes de modificar los archivos.
-
----
-
 ## 1. Visión General & Stack
 Sistema Full-Stack de e-commerce y gestión de pedidos.
 - **Backend:** Node.js, Express, TypeScript, Prisma ORM, PostgreSQL.
@@ -14,7 +10,7 @@ Sistema Full-Stack de e-commerce y gestión de pedidos.
 
 ## 2. Comandos Obligatorios
 - **Desarrollo:** `pnpm run dev`
-- **Migraciones DB:** `npx prisma migrate dev`
+- **Migraciones DB:** `pnpx prisma migrate dev`
 - **Verificación de Tipos:** `pnpm typecheck`
 
 ---

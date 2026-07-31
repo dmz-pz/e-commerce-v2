@@ -1,0 +1,79 @@
+# Sincronización del Catálogo: Plan de Implementación Final
+
+Gracias a la consulta SQL y al código Python que proporcionaste, tenemos la certeza absoluta de la estructura de la base de datos externa (Sybase SQL Anywhere conectada vía ODBC con DSN). 
+
+## 1. Modificaciones en el Esquema (Prisma)
+
+Añadiremos los modelos que diseñamos a nuestro archivo `prisma/schema.prisma`:
+
+### [MODIFY] `prisma/schema.prisma`
+* Añadir modelo `ExchangeRate` (moneda y tasa).
+* Añadir modelo `TaxRate` (código, nombre y porcentaje).
+* Actualizar el modelo `Product` agregando los campos: `price` (Decimal), `taxRateId` (String), y un nuevo campo **`externalId`** (String, `@unique`) para almacenar el `cod_interno`.
+
+> [!WARNING]
+> Dado que estamos agregando campos obligatorios (`price`, `taxRateId`) a la tabla `Product` que ya podría tener registros de prueba, Prisma nos pedirá resetear la base de datos de desarrollo. Si tienes datos críticos en desarrollo, avísame.
+
+## 2. Dependencias del Proyecto
+
+Para replicar tu conexión Python en Node.js, utilizaremos el paquete oficial de ODBC.
+
+### [NEW] Dependencias de pnpm
+Instalaremos el paquete necesario usando el gestor oficial del proyecto:
+* `pnpm install odbc`
+* `pnpm install -D @types/odbc`
+
+## 3. Script de Importación
+
+Crearemos el script de TypeScript que ejecutará la carga inicial y la sincronización.
+
+### [NEW] `scripts/syncCatalog.ts`
+El script utilizará el DSN que ya tienes configurado en Windows (`Conexion_Mine`), se conectará por ODBC, y ejecutará una versión adaptada de tu consulta SQL para traer el catálogo masivo y las tasas.
+
+**La consulta SQL masiva será así:**
+```sql
+SELECT 
+    p.cod_interno,
+    b.cod_barra,
+    p.txt_descripcion_corta,
+    p.txt_descripcion_larga,
+    p.ind_inactivo,
+    p.ind_pesado, 
+    imp.cod_impuesto,
+    imp.porc_impuesto,
+    pre.mto_moneda AS precio_usd,
+    mon.tasa_vig
+FROM DBA.tv_producto AS p
+INNER JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
+INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
+/* Obtenemos el último precio en USD activo y su equivalente en Bs */
+OUTER APPLY (
+    SELECT TOP 1 mto_precio, mto_moneda 
+    FROM DBA.ta_precio_producto 
+    WHERE cod_interno = p.cod_interno AND mto_precio > 0
+    ORDER BY fecha_cambio DESC
+) AS pre
+/* Obtenemos la tasa vigente del día */
+CROSS JOIN (
+    SELECT tasa_vig FROM DBA.tb_moneda WHERE cod_internacional = 'USD'
+) AS mon
+```
+
+**Flujo del Script:**
+1. Lee las variables de entorno para DSN (`DSN=Conexion_Mine`, `UID=lector`, `PWD=DsI2018`).
+2. Obtiene los tipos de impuesto y crea/actualiza la tabla `TaxRate` en Prisma.
+3. Actualiza el modelo `ExchangeRate` con la `tasa_vig` del día.
+4. Obtiene los productos mediante la consulta SQL masiva de arriba.
+5. Los inserta/actualiza en la tabla `Product` mapeando los campos (el precio en USD directo, estado `A`, pesado `1`, etc.) en la categoría comodín ("Sin Categorizar").
+6. Explora tu carpeta local de imágenes y asigna la categoría real copiando la imagen a `public/uploads/products`.
+
+## Verification Plan
+
+1. **Pruebas de Compilación:** Ejecutar `pnpm typecheck` para asegurar que las dependencias y tipos de TypeScript están correctos.
+2. **Migración de Base de Datos:** Ejecutar `pnpx prisma migrate dev --name add_taxes_and_exchange` para impactar la base de datos y regenerar el cliente.
+3. **Ejecución del Script (Simulada):** Ejecutar el script inicialmente con un "dry-run" (modo prueba que imprime lo que hará sin insertar a la BD) para verificar la conexión ODBC.
+
+## Open Questions
+
+Todo está listo para implementarlo, pero necesito tu aprobación. 
+**¿Estás de acuerdo con este plan para que empiece a escribir el código y realizar la migración en Prisma?**

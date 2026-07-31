@@ -156,6 +156,7 @@ model Subcategory {
 
 model Product {
   id             String   @id @default(uuid())
+  externalId     String?  @unique
   name           String
   description    String   @db.Text
   barcode        String?  @unique
@@ -173,6 +174,8 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  taxRateId          String
+  taxRate            TaxRate        @relation(fields: [taxRateId], references: [id])
   images             ProductImage[]
   subcategoryId      String
   subcategory        Subcategory    @relation(fields: [subcategoryId], references: [id])
@@ -328,4 +331,27 @@ model AuditLog {
 
   @@index([orderId])
   @@map("audit_logs")
+}
+
+// ==========================================
+// MÓDULO 6: IMPUESTOS Y FINANZAS
+// ==========================================
+
+model ExchangeRate {
+  id        String   @id @default(uuid())
+  rate      Decimal  @db.Decimal(10, 4)
+  currency  String   @default("VES")
+  updatedAt DateTime @updatedAt
+
+  @@map("exchange_rates")
+}
+
+model TaxRate {
+  id         String    @id @default(uuid())
+  code       String    @unique
+  name       String
+  percentage Decimal   @db.Decimal(5, 2)
+  products   Product[]
+
+  @@map("tax_rates")
 }

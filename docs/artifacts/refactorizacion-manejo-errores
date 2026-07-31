@@ -1,0 +1,42 @@
+# Walkthrough - Implementación de catchAsync en Controladores y Rutas
+
+Hemos completado exitosamente la refactorización e integración del wrapper asíncrono (`catchAsync`) en toda la API del backend. Esto elimina las aserciones de tipo `as Error` y los bloques `try/catch` duplicados en las capas de controladores, centralizando el control en el manejador global de errores.
+
+## Cambios Realizados
+
+### Utilidades Centrales
+* **[NEW]** Creación del helper [catchAsync.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/utils/catchAsync.ts) para capturar automáticamente promesas rechazadas en Express y redirigirlas a `next(error)`.
+
+### Módulos Refactorizados (Controladores y Rutas)
+En cada uno de los siguientes módulos, se simplificaron las firmas de los métodos eliminando `try/catch`, se migraron las respuestas de error manuales (`res.status().json()`) al uso de la clase `AppError`, y se envolvieron las llamadas de las rutas con `catchAsync`:
+
+* **Categorías:**
+  * Modificación de [categoryController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/categoryController.ts)
+  * Modificación de [categoryRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/categoryRoutes.ts)
+* **Repartos (Delivery):**
+  * Modificación de [deliveryController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/deliveryController.ts)
+  * Modificación de [deliveryRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/deliveryRoutes.ts)
+* **Autenticación (Auth):**
+  * Modificación de [authController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/authController.ts)
+  * Modificación de [authRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/authRoutes.ts)
+* **Catálogo/Productos:**
+  * Modificación de [productController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/productController.ts)
+  * Modificación de [productRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/productRoutes.ts) (además se corrigió el middleware local `requireProductImage` usando `_res` para evitar advertencias de variables no usadas).
+* **Órdenes:**
+  * Modificación de [orderController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/orderController.ts)
+  * Modificación de [orderRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/orderRoutes.ts)
+* **Administración (Admin):**
+  * Modificación de [adminController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/adminController.ts)
+  * Modificación de [adminRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/adminRoutes.ts)
+  * Modificación de [adminService.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/services/adminService.ts) (corrigiendo el tipado del parámetro `role` a `Role` nativo para resolver un error de tipos).
+
+---
+
+## Verificación
+
+### Validación de Tipos
+* Se ejecutó el verificador estático de TypeScript en el workspace:
+  ```bash
+  pnpm typecheck
+  ```
+  **Resultado:** `tsc --noEmit` completado exitosamente con **0 errores de compilación**.
