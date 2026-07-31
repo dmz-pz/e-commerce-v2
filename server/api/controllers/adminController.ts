@@ -9,11 +9,8 @@ export class AdminController {
       const payments = await adminService.getAllPayments();
       res.json(payments);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Failed to retrieve payment records." });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError("Failed to retrieve payment records.", 500);
     }
   }
 
@@ -22,11 +19,8 @@ export class AdminController {
       const logs = await adminService.getAuditLogs();
       res.json(logs);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Failed to query system audit logs." });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError("Failed to query system audit logs.", 500);
     }
   }
 
@@ -41,13 +35,9 @@ export class AdminController {
 
       const updated = await adminService.updatePaymentStatus(id as string, status as PaymentStatus, performedById);
       res.json(updated);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Internal Server Error" });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Internal Server Error", 500);
     }
   }
 
@@ -58,13 +48,9 @@ export class AdminController {
     try {
       const drivers = await adminService.getDriversCash();
       res.json(drivers);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "No se pudo obtener el efectivo pendiente de los motorizados." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("No se pudo obtener el efectivo pendiente de los motorizados.", 500);
     }
   }
 
@@ -72,13 +58,9 @@ export class AdminController {
     try {
       const history = await adminService.getSettlements();
       res.json(history);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "No se pudo obtener el historial de liquidaciones." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("No se pudo obtener el historial de liquidaciones.", 500);
     }
   }
 
@@ -92,13 +74,9 @@ export class AdminController {
 
       const settlement = await adminService.settleCash(id as string, performedById);
       res.json(settlement);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Internal Server Error" });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Internal Server Error", 500);
     }
   }
 
@@ -110,13 +88,9 @@ export class AdminController {
       const { role } = req.query;
       const users = await adminService.getUsers(role as Role | undefined);
       res.json(users);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "No se pudo obtener la lista de personal." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("No se pudo obtener la lista de personal.", 500);
     }
   }
 
@@ -130,13 +104,9 @@ export class AdminController {
 
       const newUser = await adminService.createStaff(userData, performedById);
       res.status(201).json(newUser);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Error interno al crear el empleado." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Error interno al crear el empleado.", 500);
     }
   }
 
@@ -151,13 +121,9 @@ export class AdminController {
 
       const updatedUser = await adminService.updateUserRole(id as string, role, performedById);
       res.json(updatedUser);
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Error interno al actualizar el rol." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Error interno al actualizar el rol.", 500);
     }
   }
 
@@ -171,13 +137,9 @@ export class AdminController {
 
       await adminService.deleteUser(id as string, performedById);
       res.json({ message: "Usuario dado de baja exitosamente." });
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Error interno al dar de baja al empleado." });
-      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Error interno al dar de baja al empleado.", 500);
     }
   }
 }

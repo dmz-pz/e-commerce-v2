@@ -5,6 +5,8 @@ import { validateResource } from "../middlewares/validate.middleware.ts";
 import { verifyToken } from "../middlewares/auth.middleware.ts";
 import { authorizeRoles } from "../middlewares/role.middleware.ts";
 import { Role } from "../../../generated/prisma/enums.ts";
+import { catchAsync } from "../utils/catchAsync.ts";
+import { AppError } from "../utils/appErrors.ts";
 
 import {
   createProductRequestSchema,
@@ -13,14 +15,10 @@ import {
 
 const router = Router();
 
-// Middleware validador de que exista la imagen en req.file
-const requireProductImage = (req: Request, res: Response, next: NextFunction): void => {
+// Middleware validador de que exista la imagen en req.file (convertido a AppError)
+const requireProductImage = (req: Request, _res: Response, next: NextFunction): void => {
   if (!req.file) {
-    res.status(400).json({
-      status: "fail",
-      message: "La imagen del producto es obligatoria.",
-    });
-    return;
+    throw new AppError("La imagen del producto es obligatoria.", 400);
   }
   next();
 };
@@ -34,9 +32,9 @@ const parseRouteImage = (req: Request, _res: Response, next: NextFunction): void
 };
 
 // 🔍 RUTAS DE LECTURA (PÚBLICAS)
-router.get("/", productController.getAll);
-router.get("/barcode/:barcode", productController.getByBarcode);
-router.get("/:id", productController.getById);
+router.get("/", catchAsync(productController.getAll));
+router.get("/barcode/:barcode", catchAsync(productController.getByBarcode));
+router.get("/:id", catchAsync(productController.getById));
 
 // 🚀 RUTAS DE ESCRITURA (CON CADENA DE MIDDLEWARES CORREGIDA Y RBAC)
 router.post(
@@ -47,7 +45,7 @@ router.post(
   requireProductImage,
   validateResource(createProductRequestSchema), // 2. Valida la existencia física del archivo binario
   parseRouteImage, // 4. Adjunta de forma segura la imageUrl al body limpio
-  productController.create, // 5. Envía el control al método de tu servicio
+  catchAsync(productController.create), // 5. Envía el control al método de tu servicio
 );
 
 router.patch(
@@ -57,7 +55,7 @@ router.patch(
   uploadImage.single("image"),
   validateResource(updateProductRequestSchema),
   parseRouteImage,
-  productController.update,
+  catchAsync(productController.update),
 );
 
 export default router;

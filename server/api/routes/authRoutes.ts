@@ -8,20 +8,21 @@ import {
   resetPasswordSchema
 } from "../schemas/authSchema.ts";
 import { verifyToken } from "../middlewares/auth.middleware.ts";
+import { catchAsync } from "../utils/catchAsync.ts";
 
 const router = Router();
 
 // Endpoint para iniciar sesión
-router.post("/login", validateResource(loginSchema), authController.login);
+router.post("/login", validateResource(loginSchema), catchAsync(authController.login));
 router.post(
   "/register",
   validateResource(registerSchema),
-  authController.register,
+  catchAsync(authController.register),
 );
-router.post("/forgot-password", validateResource(forgotPasswordSchema), authController.forgotPassword);
-router.post("/reset-password", validateResource(resetPasswordSchema), authController.resetPassword);
+router.post("/forgot-password", validateResource(forgotPasswordSchema), catchAsync(authController.forgotPassword));
+router.post("/reset-password", validateResource(resetPasswordSchema), catchAsync(authController.resetPassword));
 
-router.get("/me", verifyToken, authController.getProfile);
-router.post("/logout", authController.logout);
+router.get("/me", verifyToken, catchAsync(authController.getProfile));
+router.post("/logout", catchAsync(authController.logout));
 
 export default router;

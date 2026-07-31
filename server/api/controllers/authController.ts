@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { authService } from "../services/authService";
+import { AppError } from "../utils/appErrors.ts";
 
 export class AuthController {
   async login(req: Request, res: Response) {
@@ -23,15 +24,12 @@ export class AuthController {
         message: "Inicio de sesión exitoso",
         user,
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error.message === "Credenciales incorrectas") {
-        res.status(401).json({ status: "fail", message: error.message });
-        return;
+        throw new AppError(error.message, 401);
       }
-
-      res
-        .status(500)
-        .json({ status: "error", message: "Error interno del servidor" });
+      throw error;
     }
   }
 
@@ -44,16 +42,12 @@ export class AuthController {
         message: "Usuario registrado con éxito",
         user: newUser,
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       if (error.message === "El correo electrónico ya está en uso") {
-        res.status(400).json({ status: "fail", message: error.message });
-        return;
+        throw new AppError(error.message, 400);
       }
-
-      res.status(500).json({
-        status: "error",
-        message: `Error interno al registrar usuario: ${error.message}`,
-      });
+      throw error;
     }
   }
 
@@ -71,24 +65,16 @@ export class AuthController {
   }
 
   async getProfile(req: Request, res: Response) {
-    try {
-      const currentUser = req.user;
+    const currentUser = req.user;
 
-      if (!currentUser) {
-        res.status(401).json({ status: "fail", message: "No autenticado" });
-        return;
-      }
-
-      res.status(200).json({
-        status: "success",
-        user: currentUser,
-      });
-    } catch (e: unknown) {
-      res.status(500).json({
-        status: "error",
-        message: "Error al obtener la sesión del usuario",
-      });
+    if (!currentUser) {
+      throw new AppError("No autenticado", 401);
     }
+
+    res.status(200).json({
+      status: "success",
+      user: currentUser,
+    });
   }
 
   async forgotPassword(req: Request, res: Response) {
@@ -99,11 +85,9 @@ export class AuthController {
         status: "success",
         ...result,
       });
-    } catch (e: unknown) { const error = e as Error;
-      res.status(400).json({
-        status: "fail",
-        message: error.message || "Error al solicitar recuperación de contraseña",
-      });
+    } catch (e: unknown) {
+      const error = e as Error;
+      throw new AppError(error.message || "Error al solicitar recuperación de contraseña", 400);
     }
   }
 
@@ -115,11 +99,9 @@ export class AuthController {
         status: "success",
         ...result,
       });
-    } catch (e: unknown) { const error = e as Error;
-      res.status(400).json({
-        status: "fail",
-        message: error.message || "Error al restablecer la contraseña",
-      });
+    } catch (e: unknown) {
+      const error = e as Error;
+      throw new AppError(error.message || "Error al restablecer la contraseña", 400);
     }
   }
 }
