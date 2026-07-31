@@ -99,7 +99,7 @@ export class AdminService {
     }
 
     const pass = userData.password || "123456";
-    const hashedPassword = (await bcrypt.hash(pass, 10)) as string;
+    const hashedPassword = (await bcrypt.hash(pass, 10));
 
     const newUser = await userRepository.create({
       cedula: userData.cedula,
@@ -108,7 +108,7 @@ export class AdminService {
       phone: userData.phone,
       email: userData.email,
       passwordHash: hashedPassword,
-      role: userData.role as Role,
+      role: userData.role,
     });
 
     if (userData.role === Role.DELIVERY) {
@@ -129,11 +129,11 @@ export class AdminService {
     return newUser;
   }
 
-  async updateUserRole(id: string, role: string, performedById: string) {
+  async updateUserRole(id: string, role: Role, performedById: string) {
     const user = await userRepository.getById(id);
     if (!user) throw new AppError("Usuario no encontrado.", 404);
 
-    const updatedUser = await userRepository.updateRole(id, role as Role);
+    const updatedUser = await userRepository.updateRole(id, role);
 
     if (role === Role.DELIVERY) {
       // Verificar si ya tiene perfil, de lo contrario crearlo
