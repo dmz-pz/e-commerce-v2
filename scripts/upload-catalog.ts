@@ -16,7 +16,7 @@ const r2Client = new S3Client({
 });
 
 // Ruta local donde tienes guardadas las 3,000 imágenes optimizadas
-const LOCAL_FOLDER = path.join(__dirname, "..", "uploads", "products_optimized");
+const LOCAL_FOLDER = path.join(process.cwd(), "uploads", "products_optimized");
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
 async function uploadSingleFile(fileName: string) {

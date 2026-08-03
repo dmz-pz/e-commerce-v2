@@ -12,7 +12,7 @@ const connectionString = `DSN=${DSN};UID=${UID};PWD=${PWD}`;
 
 const IMAGES_DIR = process.env.IMAGES_DIR || 'C:\\Users\\DMZ\\Videos\\scraping-imagenes-plansuarez\\catalogo_productos';
 // Usaremos este directorio para guardar las versiones optimizadas antes de subirlas manualmente a R2
-const OPTIMIZED_DIR = path.join(__dirname, '..', 'uploads', 'products_optimized');
+const OPTIMIZED_DIR = path.join(process.cwd(), 'uploads', 'products_optimized');
 
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://images.minegociosup.com';
 
