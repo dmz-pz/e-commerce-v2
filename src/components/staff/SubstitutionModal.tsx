@@ -106,7 +106,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <img
-                    src={product.images?.[0]?.url}
+                    src={product.images?.[0]?.thumbUrl || product.images?.[0]?.url}
                     alt={product.name}
                     referrerPolicy="no-referrer"
                     className="w-9 h-9 object-cover rounded-lg bg-slate-50 border border-slate-100 shrink-0"

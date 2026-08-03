@@ -126,6 +126,7 @@ export class ProductRepository {
   async create(
     input: CreateProductInput,
     imageUrl: string,
+    thumbUrl?: string,
   ): Promise<ProductWithRelations> {
     return await prisma.product.create({
       data: {
@@ -141,6 +142,7 @@ export class ProductRepository {
         isRecommended: input.isRecommended,
         isActive: input.isActive,
         subcategoryId: input.subcategoryId,
+        taxRateId: input.taxRateId,
         barcode: input.barcode || null,
         specifications: input.specifications as Prisma.InputJsonValue,
 
@@ -148,6 +150,7 @@ export class ProductRepository {
           create: [
             {
               url: imageUrl,
+              thumbUrl: thumbUrl,
               order: 1,
             },
           ],
@@ -186,6 +189,7 @@ export class ProductRepository {
         isRecommended: input.isRecommended,
         isActive: input.isActive,
         subcategoryId: input.subcategoryId,
+        taxRateId: input.taxRateId,
         barcode: input.barcode,
         specifications:
           input.specifications !== undefined

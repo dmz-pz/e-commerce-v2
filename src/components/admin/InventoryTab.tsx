@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, Package, Eye, EyeOff } from 'lucide-react';
 import { Product } from '../../types/index.ts';
+import { OptimizedImage } from '../ui/OptimizedImage.tsx';
 
 interface InventoryTabProps {
   products: Product[];
@@ -81,14 +82,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                 <td className="py-4.5 px-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
-                      <img 
-                        src={p.images?.[0]?.url} 
+                      <OptimizedImage 
+                        src={p.images?.[0]?.thumbUrl || p.images?.[0]?.url} 
                         alt={p.name}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover" 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=150&auto=format&fit=crop';
-                        }}
+                        containerClassName="w-full h-full bg-transparent"
                       />
                     </div>
                     <div>
@@ -159,14 +158,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
             <div key={p.id} className="p-5 flex flex-col gap-3.5 hover:bg-slate-50/40 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
-                  <img 
-                    src={p.images?.[0]?.url} 
+                  <OptimizedImage 
+                    src={p.images?.[0]?.thumbUrl || p.images?.[0]?.url} 
                     alt={p.name}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover" 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=150&auto=format&fit=crop';
-                    }}
+                    containerClassName="w-full h-full bg-transparent"
                   />
                 </div>
                 <div className="flex-1 min-w-0">

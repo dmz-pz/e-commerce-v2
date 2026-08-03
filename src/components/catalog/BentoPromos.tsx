@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { OptimizedImage } from '../ui/OptimizedImage.tsx';
 
 export const BentoPromos: React.FC = () => {
   return (
@@ -8,7 +9,7 @@ export const BentoPromos: React.FC = () => {
       <div className="row-span-2 bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col relative overflow-hidden group">
         <div className="bg-accent text-brand self-start px-2 py-1 rounded-lg text-[9px] font-black uppercase mb-3">Hasta 35%</div>
         <h3 className="text-sm font-black text-slate-900 leading-tight mb-2 pr-4">Hasta 35% Dcto. en tu Canasta Básica</h3>
-        <img 
+        <OptimizedImage 
           src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=400&auto=format&fit=crop" 
           alt="" 
           className="w-full aspect-[4/5] object-cover rounded-xl mt-auto transition-transform group-hover:scale-110"
@@ -24,10 +25,11 @@ export const BentoPromos: React.FC = () => {
           <div className="bg-accent text-brand self-start px-2 py-0.5 rounded-lg text-[8px] font-black uppercase mb-2">20%</div>
           <h3 className="text-[11px] font-black text-slate-900 leading-tight">20% Dcto. en Dulces y Snacks</h3>
         </div>
-        <img 
+        <OptimizedImage 
           src="https://images.unsplash.com/photo-1581798459219-318e76aecc7b?q=80&w=200&auto=format&fit=crop" 
           alt="" 
           className="w-12 h-12 object-cover rounded-lg group-hover:rotate-12 transition-transform"
+          containerClassName="w-12 h-12 shrink-0 bg-transparent"
         />
       </div>
 
@@ -37,10 +39,11 @@ export const BentoPromos: React.FC = () => {
           <div className="bg-accent text-brand self-start px-2 py-0.5 rounded-lg text-[8px] font-black uppercase mb-2">35%</div>
           <h3 className="text-[11px] font-black text-slate-900 leading-tight">Canjea tus cupones de Cuidado de la Piel</h3>
         </div>
-        <img 
+        <OptimizedImage 
           src="https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=200&auto=format&fit=crop" 
           alt="" 
           className="w-12 h-12 object-cover rounded-lg group-hover:rotate-12 transition-transform"
+          containerClassName="w-12 h-12 shrink-0 bg-transparent"
         />
       </div>
     </div>

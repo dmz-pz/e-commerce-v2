@@ -40,6 +40,7 @@ export class ProductService {
   async createProduct(
     input: CreateProductInput,
     imageUrl: string,
+    thumbUrl: string | undefined,
     performedByUserId: string,
   ): Promise<ProductWithRelations> {
     if (
@@ -52,7 +53,7 @@ export class ProductService {
       );
     }
     try {
-      const product = await productRepository.create(input, imageUrl);
+      const product = await productRepository.create(input, imageUrl, thumbUrl);
 
       await auditLogRepository.create({
         action: `Creación de producto: ${product.name}`,

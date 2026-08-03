@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { productController } from "../controllers/productController.ts";
 import { uploadImage } from "../middlewares/upload.middleware.ts";
+import { storageService } from "../services/storage.service.ts";
 import { validateResource } from "../middlewares/validate.middleware.ts";
 import { verifyToken } from "../middlewares/auth.middleware.ts";
 import { authorizeRoles } from "../middlewares/role.middleware.ts";
@@ -23,12 +24,19 @@ const requireProductImage = (req: Request, _res: Response, next: NextFunction): 
   next();
 };
 
-// Middleware mapeador de la imagen
-const parseRouteImage = (req: Request, _res: Response, next: NextFunction): void => {
-  if (req.file) {
-    req.body.imageUrl = `/uploads/products/${req.file.filename}`;
+// Middleware mapeador y subida a R2
+const parseRouteImage = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (req.file && req.file.buffer) {
+      // Subir el buffer de RAM a R2 y obtener las URLs
+      const { fullUrl, thumbUrl } = await storageService.uploadImage(req.file.buffer, "products");
+      req.body.imageUrl = fullUrl;
+      req.body.thumbUrl = thumbUrl;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 };
 
 // 🔍 RUTAS DE LECTURA (PÚBLICAS)

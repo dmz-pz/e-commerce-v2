@@ -3,6 +3,7 @@ import { prisma, shutdownDatabase } from '../server/api/db';
 import { UnitType } from '../generated/prisma/enums';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 
 const DSN = process.env.ODBC_DSN || 'Conexion_Mine';
 const UID = process.env.ODBC_UID || 'lector';
@@ -10,7 +11,10 @@ const PWD = process.env.ODBC_PWD || 'DsI2018';
 const connectionString = `DSN=${DSN};UID=${UID};PWD=${PWD}`;
 
 const IMAGES_DIR = process.env.IMAGES_DIR || 'C:\\Users\\DMZ\\Videos\\scraping-imagenes-plansuarez\\catalogo_productos';
-const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads', 'products');
+// Usaremos este directorio para guardar las versiones optimizadas antes de subirlas manualmente a R2
+const OPTIMIZED_DIR = path.join(__dirname, '..', 'uploads', 'products_optimized');
+
+const PUBLIC_URL = process.env.PUBLIC_URL || 'https://images.minegociosup.com';
 
 const SYNC_QUERY = `
 SELECT 
@@ -36,6 +40,7 @@ OUTER APPLY (
 CROSS JOIN (
     SELECT tasa_vig FROM DBA.tb_moneda WHERE cod_internacional = 'USD'
 ) AS mon
+WHERE p.ind_inactivo = 'A'
 `;
 
 async function syncCatalog() {
@@ -48,7 +53,7 @@ async function syncCatalog() {
     process.exit(1);
   }
 
-  console.log('[+] Obteniendo catálogo masivo...');
+  console.log('[+] Obteniendo catálogo masivo (todos los activos)...');
   let rows;
   try {
     rows = await connection.query(SYNC_QUERY);
@@ -157,10 +162,10 @@ async function syncCatalog() {
 
   console.log(`[+] Importación de catálogo completada: ${successCount} productos.`);
   
-  console.log('[+] Procesando imágenes y reubicando categorías reales...');
+  console.log('[+] Procesando imágenes locales con Sharp (generación offline para R2)...');
   if (fs.existsSync(IMAGES_DIR)) {
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    if (!fs.existsSync(OPTIMIZED_DIR)) {
+      fs.mkdirSync(OPTIMIZED_DIR, { recursive: true });
     }
     
     let imagesProcessed = 0;
@@ -190,15 +195,11 @@ async function syncCatalog() {
         }
 
         const imgPath = path.join(subPath, subName);
-        const images = fs.readdirSync(imgPath, { withFileTypes: true }).filter(f => f.isFile() && f.name.endsWith('.png'));
+        const images = fs.readdirSync(imgPath, { withFileTypes: true }).filter(f => f.isFile() && /\.(png|webp|jpe?g)$/i.test(f.name));
 
         for (const img of images) {
-          const barcode = img.name.replace('.png', '');
+          const barcode = path.parse(img.name).name;
           const sourceFilePath = path.join(imgPath, img.name);
-          const destFilePath = path.join(UPLOADS_DIR, img.name);
-          
-          // Copiar imagen
-          fs.copyFileSync(sourceFilePath, destFilePath);
           
           // Buscar producto usando el código de barras
           const product = await prisma.product.findUnique({ where: { barcode } });
@@ -209,11 +210,40 @@ async function syncCatalog() {
               data: { subcategoryId: subcategory.id }
             });
             
-            const url = `/uploads/products/${img.name}`;
-            const existingImg = await prisma.productImage.findFirst({ where: { productId: product.id, url } });
+            // Verificamos si ya existe la imagen asociada en BD
+            const existingImg = await prisma.productImage.findFirst({ where: { productId: product.id } });
             if (!existingImg) {
+               console.log(`[+] Optimizando y guardando imagen para: ${barcode}`);
+               
+               // Nombres de archivos optimizados (locales, listos para arrastrar a R2)
+               const fullFilename = `${barcode}-full.webp`;
+               const thumbFilename = `${barcode}-thumb.webp`;
+               
+               const fullDestPath = path.join(OPTIMIZED_DIR, fullFilename);
+               const thumbDestPath = path.join(OPTIMIZED_DIR, thumbFilename);
+
+               // Leer buffer original
+               const fileBuffer = fs.readFileSync(sourceFilePath);
+
+               // Generar Versión Full
+               await sharp(fileBuffer)
+                 .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
+                 .webp({ quality: 80 })
+                 .toFile(fullDestPath);
+
+               // Generar Versión Thumb
+               await sharp(fileBuffer)
+                 .resize({ width: 300, height: 300, fit: 'cover' })
+                 .webp({ quality: 75 })
+                 .toFile(thumbDestPath);
+               
+               // Crear registro en BD apuntando al dominio público de Cloudflare
+               // (Asumiendo que subirás estos archivos directamente en el root del bucket, bajo un folder 'products/')
+               const fullUrl = `${PUBLIC_URL}/products/${fullFilename}`;
+               const thumbUrl = `${PUBLIC_URL}/products/${thumbFilename}`;
+               
                await prisma.productImage.create({
-                 data: { productId: product.id, url }
+                 data: { productId: product.id, url: fullUrl, thumbUrl }
                });
             }
             imagesProcessed++;

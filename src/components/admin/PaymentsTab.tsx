@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Coins, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
 import { Payment } from '../../types/index.ts';
+import { OptimizedImage } from '../ui/OptimizedImage.tsx';
 
 interface PaymentsTabProps {
   payments: Payment[];
@@ -73,10 +74,11 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               >
                 {pay.receiptUrl ? (
                   <>
-                    <img
+                    <OptimizedImage
                       src={pay.receiptUrl}
                       alt="Captura comprobante"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      containerClassName="w-full h-full bg-transparent"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
                       Ver Grande
@@ -200,10 +202,11 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 </button>
               </div>
               <div className="p-4 bg-slate-100 flex items-center justify-center max-h-[70vh] overflow-hidden">
-                <img
+                <OptimizedImage
                   src={selectedReceipt}
                   alt="Receipt proof"
                   className="max-w-full max-h-[60vh] rounded-xl object-contain drop-shadow"
+                  containerClassName="max-w-full max-h-[60vh] flex items-center justify-center bg-transparent"
                 />
               </div>
             </motion.div>

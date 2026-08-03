@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { OptimizedImage } from '../ui/OptimizedImage.tsx';
 
 const PROMO_SLIDES = [
   {
@@ -64,10 +65,11 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onCategorySelect }
           className="absolute inset-0 w-full h-full"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-brand/80 via-brand/40 to-transparent z-10" />
-          <img 
+          <OptimizedImage 
             src={PROMO_SLIDES[current]?.image} 
             alt={PROMO_SLIDES[current]?.title}
             className="w-full h-full object-cover"
+            containerClassName="absolute inset-0 z-0"
           />
           <div className="absolute inset-0 z-20 flex flex-col justify-center px-8 md:px-16 lg:px-24">
             <motion.span 

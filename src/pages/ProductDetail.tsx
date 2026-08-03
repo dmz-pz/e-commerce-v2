@@ -15,6 +15,7 @@ import { useGlobalCatalog } from "../context/CatalogContext.tsx";
 import { useCart } from "../context/CartContext.tsx";
 import { Product } from "../types/index.ts";
 import { parseAndFormatPrice } from "../utils/formatPrice.ts";
+import { OptimizedImage } from "../components/ui/OptimizedImage.tsx";
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,6 @@ export const ProductDetail: React.FC = () => {
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!loading && products.length > 0) {
@@ -45,10 +45,15 @@ export const ProductDetail: React.FC = () => {
   }
 
   // 2. Evaluaciones seguras (Aquí TypeScript YA SABE que product no es null)
-  const imageUrl =
+  const mainImageUrl =
     product.images && product.images.length > 0
       ? product.images[0]?.url || "https://via.placeholder.com/600"
       : "https://via.placeholder.com/600";
+
+  const thumbImageUrl =
+    product.images && product.images.length > 0
+      ? product.images[0]?.thumbUrl || mainImageUrl
+      : mainImageUrl;
 
   const numPrice = Number(String(product.price));
   const numDiscount = product.discountPrice
@@ -92,15 +97,14 @@ export const ProductDetail: React.FC = () => {
                 key={i}
                 className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden hover:border-brand transition-all bg-white"
               >
-                {!imageError ? (
-                  <img
-                    src={imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover opacity-50 hover:opacity-100"
-                  />
-                ) : (
-                  <ShoppingBasket className="w-5 h-5 md:w-6 md:h-6 text-slate-100" />
-                )}
+                <OptimizedImage
+                  src={thumbImageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover opacity-50 hover:opacity-100"
+                  containerClassName="w-full h-full bg-transparent"
+                  fallbackIcon={<ShoppingBasket className="w-5 h-5 md:w-6 md:h-6 text-slate-300" />}
+                  fallbackText=""
+                />
               </button>
             ))}
           </div>
@@ -111,21 +115,14 @@ export const ProductDetail: React.FC = () => {
                 -{discountPercent}%
               </div>
             )}
-            {!imageError ? (
-              <img
-                src={product.images && product.images.length > 0 ? product.images[0]?.url : "/placeholder-image.jpg"}
-                alt={product?.name ?? "Producto sin imagen"}
-                className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-110"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-2 md:gap-4 text-slate-200">
-                <ShoppingBasket className="w-16 h-16 md:w-24 md:h-24" />
-                <span className="font-black text-[10px] md:text-xs uppercase tracking-[0.2em]">
-                  No disponible
-                </span>
-              </div>
-            )}
+            <OptimizedImage
+              src={mainImageUrl}
+              alt={product?.name ?? "Producto sin imagen"}
+              className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-110"
+              containerClassName="w-full h-full flex items-center justify-center bg-transparent"
+              fallbackIcon={<ShoppingBasket className="w-16 h-16 md:w-24 md:h-24 text-slate-300" />}
+              fallbackText="No disponible"
+            />
 
             <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 flex gap-2">
               <button className="w-8 h-8 md:w-10 md:h-10 bg-white border border-slate-100 rounded-lg md:rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-100 transition-all shadow-sm">
@@ -310,7 +307,7 @@ export const ProductDetail: React.FC = () => {
             .map((p) => {
               const relImg =
                 p.images && p.images.length > 0
-                  ? p.images[0]?.url || "https://via.placeholder.com/300"
+                  ? p.images[0]?.thumbUrl || p.images[0]?.url || "https://via.placeholder.com/300"
                   : "https://via.placeholder.com/300";
 
               return (
@@ -320,10 +317,12 @@ export const ProductDetail: React.FC = () => {
                   className="block group w-[160px] md:w-auto shrink-0 snap-start"
                 >
                   <div className="aspect-square bg-white rounded-2xl md:rounded-3xl border border-slate-100 mb-3 md:mb-4 overflow-hidden p-4 md:p-6 flex items-center justify-center group-hover:border-brand transition-all">
-                    <img
+                    <OptimizedImage
                       src={relImg}
                       alt={p.name}
                       className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                      containerClassName="w-full h-full flex items-center justify-center bg-transparent"
+                      fallbackIcon={<ShoppingBasket className="w-8 h-8 text-slate-300" />}
                     />
                   </div>
                   <h4 className="text-[9px] md:text-[10px] font-black text-slate-900 uppercase tracking-tight line-clamp-1 mb-1">

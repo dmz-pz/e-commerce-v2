@@ -64,7 +64,7 @@ export class ProductController {
     const performedByUserId = req.headers["x-user-id"] as string;
 
     // Separamos la URL de la imagen del resto de los datos comerciales del producto
-    const { imageUrl, ...productData } = req.body;
+    const { imageUrl, thumbUrl, ...productData } = req.body;
 
     // Validación complementaria obligatoria para asegurar el parámetro del servicio
     if (!imageUrl || typeof imageUrl !== "string") {
@@ -75,6 +75,7 @@ export class ProductController {
     const product = await productService.createProduct(
       productData,
       imageUrl,
+      thumbUrl,
       performedByUserId,
     );
 

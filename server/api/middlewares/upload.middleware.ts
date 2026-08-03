@@ -1,17 +1,7 @@
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, "uploads/products/");
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    // Mantiene la extensión original (.jpg, .webp, etc)
-    cb(null, `product-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 export const uploadImage = multer({
   storage,
@@ -34,19 +24,7 @@ export const uploadImage = multer({
   },
 });
 
-const paymentStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    const dir = "uploads/payments/";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `receipt-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
+const paymentStorage = multer.memoryStorage();
 
 export const uploadPaymentReceipt = multer({
   storage: paymentStorage,

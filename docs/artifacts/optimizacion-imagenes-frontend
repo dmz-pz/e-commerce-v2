@@ -1,0 +1,38 @@
+# Walkthrough: Optimización de Imágenes en el Frontend
+
+¡Auditoría y optimización completadas! Hemos integrado exitosamente nuestras **5 estrategias** (Carga diferida, Prevención de CLS, Skeletons, Decodificación asíncrona y Adaptabilidad) dentro de la aplicación.
+
+## 1. Componente Centralizado: `OptimizedImage`
+
+Creamos el componente [OptimizedImage.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/ui/OptimizedImage.tsx) que ahora encapsula de forma uniforme cómo la plataforma renderiza cualquier gráfico importante. 
+Este componente provee las siguientes ventajas inmediatas:
+- Muestra un *Skeleton* usando la clase `animate-pulse` de Tailwind mientras la imagen viaja por la red (evitando que el layout salte de forma imprevista, previniendo fallos en CLS).
+- Falla elegantemente gracias a su manejador `onError`, reemplazando las famosas imágenes "rotas" con íconos vectoriales modernos de `lucide-react`.
+- Añade `loading="lazy"` y `decoding="async"` de forma nativa sin que los desarrolladores tengan que preocuparse de agregarlo cada vez.
+
+## 2. Refactorización en Vistas de Usuario
+
+Se integró este componente a lo largo del frontend para asegurar una experiencia limpia, en especial reemplazando el rudimentario manejo del estado local de error:
+
+- **[ProductCard.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/catalog/ProductCard.tsx)**: Todas las tarjetas del listado principal.
+- **[ProductDetail.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/pages/ProductDetail.tsx)**: Tanto en la imagen de gran formato como en los *thumbnails* interactivos de la galería inferior y en la fila de "Productos Similares".
+- **Banners Promocionales**: Tanto el [PromoCarousel.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/catalog/PromoCarousel.tsx) principal como el Grid de ofertas secundarias en [BentoPromos.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/catalog/BentoPromos.tsx).
+
+## 3. Refactorización en Panel Administrativo (Admin)
+
+Los usuarios de tipo STAFF o ADMINISTRADOR también disfrutarán de la mejora visual en sus tablas:
+- **[InventoryTab.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/admin/InventoryTab.tsx)**: En los avatars de la tabla de inventario donde a veces los enlaces externos fallaban.
+- **[PaymentsTab.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/admin/PaymentsTab.tsx)**: En la visualización de Capturas/Recibos de transferencias enviados por los clientes.
+
+> [!TIP]
+> **Preparación para Sharp**
+> Dado que el componente ya centraliza la etiqueta `<img />`, el día de mañana cuando levantes el microservicio de optimización en el Backend (con Sharp), solo deberás modificar el archivo `OptimizedImage.tsx` para inyectar allí los atributos `srcSet` o interceptar la URL base. El cambio se propagará en cascada a todos los componentes del sistema.
+
+## 4. Corrección Imprevista en el Backend
+
+Al correr la orden estricta del proyecto de ejecutar `pnpm typecheck`, detectamos que tu API Backend presentaba un error fatal de compilación en [productRepository.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/repositories/productRepository.ts). Alguien actualizó recientemente el esquema de Prisma (agregando la tabla de `TaxRate`) pero **olvidó** pedirle ese campo obligatoriamente a Zod y en las inserciones/actualizaciones en PostgreSQL.
+
+Procedimos a solucionarlo inyectando el validador `taxRateId` dentro del `CreateProductInput` en `productSchema.ts` y mapeándolo en los métodos `create` y `update` del repositorio. Esto permitió que toda tu plataforma pasara la auditoría de tipos en verde brillante. 
+
+---
+**Status Final:** ✅ `pnpm typecheck` finalizó en 0 errores de compilación cumpliendo fielmente la Definition of Done en `AGENTS.md`.

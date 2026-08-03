@@ -58,6 +58,10 @@ export const createProductSchema = z.object({
     message: "El ID de la subcategoría debe ser un formato UUID válido",
   }),
 
+  taxRateId: z.string({ error: "La tasa de impuesto es obligatoria" }).uuid({
+    message: "El ID de la tasa de impuesto debe ser un formato UUID válido",
+  }),
+
   specifications: z
     .string()
     .nullish()

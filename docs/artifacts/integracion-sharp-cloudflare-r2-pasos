@@ -1,0 +1,47 @@
+# Walkthrough: Integración de Sharp y Cloudflare R2
+
+¡La integración del motor de procesamiento de imágenes con Sharp y la subida a Cloudflare R2 ha sido finalizada con éxito!
+
+## 1. Actualización de Base de Datos y Dependencias
+
+- **Esquema de Prisma:** Modificamos [schema.prisma](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/prisma/schema.prisma) para añadir el campo `thumbUrl: String?` en el modelo `ProductImage`. De esta manera podemos rastrear la ruta de ambas versiones generadas (la original recortada y la miniatura). Luego corrimos `pnpm prisma generate` para sincronizar los tipos en todo el proyecto.
+- **Librerías Instaladas:** Hemos instalado satisfactoriamente `sharp` (para la manipulación del buffer de imágenes) y `@aws-sdk/client-s3` (para comunicarnos con la API de R2 usando el protocolo estándar de S3).
+
+## 2. Refactorización del Pipeline de Carga (Multer)
+
+En lugar de almacenar ineficientemente en el disco del servidor, ahora capturamos todo en la RAM.
+- **[upload.middleware.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/middlewares/upload.middleware.ts)**: Cambiamos `multer.diskStorage` a `multer.memoryStorage()`. 
+
+## 3. El Motor Principal: `StorageService`
+
+Se creó el nuevo módulo central [storage.service.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/services/storage.service.ts). Este archivo es el corazón de la optimización:
+- Utiliza las credenciales de entorno que definiste (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` y `R2_BUCKET_NAME`).
+- Transforma cada imagen subida mediante **Sharp** en formato `.webp` con `quality: 80`.
+- Crea simultáneamente:
+  - Una **versión full** (máximo 1000x1000 px, conservando aspecto).
+  - Una **versión thumb** (300x300 px, `fit: cover` para avatares limpios).
+- Sube ambas versiones a R2 de manera **paralela** y retorna el dominio de acceso público que nos confirmaste: `images.minegociosup.com`.
+- Añade el header crítico `Cache-Control: public, max-age=31536000, immutable` como buena práctica.
+
+## 4. Conexión de Rutas y Repositorio
+
+- **[productRoutes.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/routes/productRoutes.ts)**: Actualizamos el middleware `parseRouteImage` (convirtiéndolo a asíncrono) para inyectarle el buffer al `storageService`. Luego toma el `fullUrl` y el `thumbUrl` y los acopla en el `req.body` antes de que lleguen al controlador.
+- **[productController.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/controllers/productController.ts)**: Extrajimos el `thumbUrl` para pasarlo hacia el `productService`.
+- **[productRepository.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/server/api/repositories/productRepository.ts)**: El repositorio ahora espera ambos atributos (`url` y `thumbUrl`) y los persiste de manera segura utilizando Prisma.
+
+> [!NOTE]
+> Todo el código backend pasó satisfactoriamente una revisión estricta de `pnpm typecheck` luego de las refactorizaciones.
+
+## 5. Implementación en Frontend (Optimización UI)
+Ya hemos completado las adaptaciones necesarias en el frontend para aprovechar al máximo este nuevo sistema:
+1. **Tipado**: Actualizamos la interfaz `ProductImage` en [src/types/index.ts](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/types/index.ts) para incluir `thumbUrl?: string | null`.
+2. **Componentes Optimizados**: Refactorizamos múltiples componentes para priorizar la carga de la miniatura antes que la versión completa, acelerando la renderización general de la UI:
+   - [ProductCard.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/catalog/ProductCard.tsx): Utilizado en todo el catálogo.
+   - [ProductDetail.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/pages/ProductDetail.tsx): Optimiza la galería de miniaturas y la fila inferior de "Productos relacionados". (La imagen principal en grande sigue usando la original escalada).
+   - [InventoryTab.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/admin/InventoryTab.tsx): La tabla de inventario del administrador ahora cargará más rápido.
+   - [SubstitutionModal.tsx](file:///c:/Users/DMZ/Documents/DSI/e-commerce-v2/src/components/staff/SubstitutionModal.tsx): Optimizado para los pickers.
+
+## Siguientes Pasos (A tu cargo)
+
+1. **Migración DB:** Dado que he alterado el `schema.prisma`, recuerda correr `pnpm prisma migrate dev` para propagar el cambio (`thumbUrl`) a tu base de datos de PostgreSQL cuando vayas a probar.
+2. **Probar localmente:** Levanta tu entorno con `pnpm run dev` y sube un producto desde la UI para verificar que la imagen genera dos URLs apuntando a `images.minegociosup.com`.

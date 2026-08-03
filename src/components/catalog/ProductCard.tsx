@@ -5,15 +5,15 @@ import { Plus, Minus, ShoppingBasket } from "lucide-react";
 import { Product } from "../../types";
 import { useCart } from "../../context/CartContext.tsx";
 import { parseAndFormatPrice } from "../../utils/formatPrice.ts";
+import { OptimizedImage } from "../ui/OptimizedImage.tsx";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const [imageError, setImageError] = React.useState(false);
   const { items, addItem, updateQuantity } = useCart();
-  const imageUrl = product.images?.[0]?.url;
+  const imageUrl = product.images?.[0]?.thumbUrl || product.images?.[0]?.url;
   const cartItem = items.find((item) => item.productId === product.id);
   const currentQuantity = cartItem?.quantity || 0;
 
@@ -31,22 +31,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           className="flex flex-col flex-1 min-h-0"
         >
           <div className="relative w-full aspect-square lg:aspect-video overflow-hidden bg-slate-50 rounded-xl flex items-center justify-center shrink-0">
-            {!imageError ? (
-              <img
-                src={imageUrl}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                referrerPolicy="no-referrer"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-slate-200">
-                <ShoppingBasket className="w-12 h-12" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
-                  Sin Imagen
-                </span>
-              </div>
-            )}
+            <OptimizedImage
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              containerClassName="absolute inset-0"
+              fallbackIcon={<ShoppingBasket className="w-12 h-12 opacity-50" />}
+              referrerPolicy="no-referrer"
+            />
             <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
               <div className="bg-brand/90 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-bold text-white border border-brand/10 uppercase tracking-wider">
                 {product.subcategory?.category?.name}
