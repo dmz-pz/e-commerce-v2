@@ -98,9 +98,24 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
           productService.getProducts({ hasDiscount: true, limit: 10 }),
         ]);
         setCategories(categoriesData);
-        setRecommendedProducts(recRes.items || []);
-        setDiscountedProducts(discRes.items || []);
-        setBestSellers((recRes.items || []).slice(0, 8));
+
+        let finalRecommended = recRes.items || [];
+        if (finalRecommended.length === 0) {
+          // Fallback a los primeros 10 productos activos
+          const fallbackRec = await productService.getProducts({ limit: 10 });
+          finalRecommended = fallbackRec.items || [];
+        }
+        setRecommendedProducts(finalRecommended);
+
+        let finalDiscounted = discRes.items || [];
+        if (finalDiscounted.length === 0) {
+          // Fallback a los 10 productos más económicos
+          const fallbackDisc = await productService.getProducts({ sortBy: "price_asc", limit: 10 });
+          finalDiscounted = fallbackDisc.items || [];
+        }
+        setDiscountedProducts(finalDiscounted);
+
+        setBestSellers(finalRecommended.slice(0, 8));
       } catch (err) {
         console.error("Error al cargar categorías y destacados de portada:", err);
       }

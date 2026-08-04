@@ -19,7 +19,13 @@ import { OptimizedImage } from "../components/ui/OptimizedImage.tsx";
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { products, loading } = useGlobalCatalog();
+  const {
+    products,
+    loading,
+    setSelectedCategory,
+    setSelectedSubcategory,
+    setSearchQuery,
+  } = useGlobalCatalog();
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -68,20 +74,44 @@ export const ProductDetail: React.FC = () => {
     <main className="max-w-[1920px] mx-auto px-4 md:px-8 py-4 md:py-8">
       {/* Breadcrumbs con jerarquía relacional Prisma */}
       <nav className="flex items-center gap-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 md:mb-8 overflow-x-auto no-scrollbar whitespace-nowrap pb-2">
-        <Link to="/" className="hover:text-brand transition-colors">
+        <Link
+          to="/"
+          onClick={() => {
+            setSelectedCategory("all");
+            setSelectedSubcategory("all");
+            setSearchQuery("");
+          }}
+          className="hover:text-brand transition-colors"
+        >
           Inicio
         </Link>
         <ChevronRight className="w-3 h-3 shrink-0" />
         <Link
           to="/"
+          onClick={() => {
+            const catId = product.subcategory?.category?.id || product.subcategory?.category?.name || "all";
+            setSelectedCategory(catId);
+            setSelectedSubcategory("all");
+            setSearchQuery("");
+          }}
           className="hover:text-brand transition-colors truncate max-w-[100px] md:max-w-none"
         >
           {product.subcategory?.category?.name || "Categoría"}
         </Link>
         <ChevronRight className="w-3 h-3 shrink-0" />
-        <span className="hover:text-brand transition-colors truncate max-w-[100px] md:max-w-none">
+        <Link
+          to="/"
+          onClick={() => {
+            const catId = product.subcategory?.category?.id || product.subcategory?.category?.name || "all";
+            const subName = product.subcategory?.name || "all";
+            setSelectedCategory(catId);
+            setSelectedSubcategory(subName);
+            setSearchQuery("");
+          }}
+          className="hover:text-brand transition-colors truncate max-w-[100px] md:max-w-none cursor-pointer"
+        >
           {product.subcategory?.name || "Subcategoría"}
-        </span>
+        </Link>
         <ChevronRight className="w-3 h-3 shrink-0" />
         <span className="text-slate-900 truncate max-w-[120px] md:max-w-none">
           {product.name}
