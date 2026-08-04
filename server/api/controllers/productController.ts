@@ -61,7 +61,7 @@ export class ProductController {
    * Coordina la creación de un nuevo producto asumiendo datos previamente validados.
    */
   async create(req: Request, res: Response): Promise<void> {
-    const performedByUserId = req.headers["x-user-id"] as string;
+    const performedByUserId = req.user?.id || (req.headers["x-user-id"] as string);
 
     // Separamos la URL de la imagen del resto de los datos comerciales del producto
     const { imageUrl, thumbUrl, ...productData } = req.body;
@@ -90,9 +90,7 @@ export class ProductController {
     if (!id) {
       throw new AppError("El ID del producto es requerido.", 400);
     }
-    const performedByUserId =
-      (req.headers["x-user-id"] as string) ||
-      "8341bc73-f2c7-4f96-a7df-a97003f18b74";
+    const performedByUserId = req.user?.id || (req.headers["x-user-id"] as string);
 
     // Transferimos los cambios directamente al servicio
     const product = await productService.updateProduct(

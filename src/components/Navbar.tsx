@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
   Package,
@@ -29,6 +29,21 @@ export const Navbar: React.FC = () => {
   } = useGlobalCatalog();
   const { user } = useUser();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (location.pathname !== "/") {
+      navigate("/");
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (location.pathname !== "/") {
+      navigate("/");
+    }
+  };
 
   const [isVisible, setIsVisible] = useState(true);
   const { scrollY } = useScroll();
@@ -179,6 +194,10 @@ export const Navbar: React.FC = () => {
 
               <Link
                 to="/"
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setSearchQuery("");
+                }}
                 className="flex items-center gap-2 md:gap-3 shrink-0 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0"
               >
                 <Logo className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
@@ -199,7 +218,7 @@ export const Navbar: React.FC = () => {
                     placeholder="¿Buscas algo en específico? (leche, pan, jabón...)"
                     className="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-800 placeholder:text-slate-300 placeholder:font-medium"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                   />
                   <button className="bg-brand text-white px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark transition-colors">
                     Buscar
@@ -274,7 +293,7 @@ export const Navbar: React.FC = () => {
                   placeholder="Busca aquí tu producto"
                   className="bg-transparent border-none outline-none w-full text-xs font-bold text-white placeholder:text-white/30 placeholder:font-medium"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </div>
             </div>
@@ -305,7 +324,7 @@ export const Navbar: React.FC = () => {
                   <ChevronDown className="w-3 h-3 text-white/50" />
                 </div>
 
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar justify-start md:justify-center">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar justify-start md:justify-center">
                   {categories.map((cat) => {
                     // Manejo seguro si el elemento es la cadena 'all' o un objeto Category
                     const isAll = typeof cat === "string" && cat === "all";
@@ -322,10 +341,10 @@ export const Navbar: React.FC = () => {
                     return (
                       <button
                         key={categoryId}
-                        onClick={() => setSelectedCategory(categoryId)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
-                            ? "bg-brand text-white shadow-md shadow-brand/20"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        onClick={() => handleCategorySelect(categoryId)}
+                        className={`px-3 py-1.5 border-b-2 text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer select-none hover:text-white ${isSelected
+                            ? "border-accent text-white"
+                            : "border-transparent text-white/70 hover:border-white/20"
                           }`}
                       >
                         {categoryName}
