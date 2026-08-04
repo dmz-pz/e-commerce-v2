@@ -8,7 +8,6 @@ import {
 } from "../types/index.ts";
 import {
   Package,
-  Plus,
   Coins,
   RefreshCw,
   ClipboardList,
@@ -28,6 +27,7 @@ import { SalesTab } from "../components/admin/SalesTab.tsx";
 import { PaymentsTab } from "../components/admin/PaymentsTab.tsx";
 import { AuditLogsTab } from "../components/admin/AuditLogsTab.tsx";
 import { ProductCreateModal } from "../components/admin/ProductCreateModal.tsx";
+import { CategoryManageModal } from "../components/admin/CategoryManageModal.tsx";
 import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
 import { StaffTab } from "../components/admin/StaffTab.tsx";
 
@@ -45,6 +45,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Estado del modal de cargas
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // Consulta de servicios desde la API
   const fetchInventory = async () => {
@@ -252,21 +253,11 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={loadAllData}
-              className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-400 hover:text-brand cursor-pointer"
+              className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-400 hover:text-brand cursor-pointer self-start md:self-auto"
               title="Refrescar Datos"
             >
               <RefreshCw className="w-4 h-4 animate-hover" />
             </button>
-
-            {activeTab === "inventory" && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 bg-brand text-white text-[11px] font-black uppercase tracking-widest px-6 h-12 rounded-xl hover:bg-brand-dark transition-all shadow-md shadow-brand/15 cursor-pointer shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                Cargar Producto
-              </button>
-            )}
           </div>
         </div>
 
@@ -275,6 +266,8 @@ export const AdminDashboard: React.FC = () => {
           <InventoryTab
             products={products}
             onToggleProductActive={toggleProductActive}
+            onCreateProduct={() => setShowCreateModal(true)}
+            onManageCategories={() => setShowCategoryModal(true)}
           />
         )}
 
@@ -305,6 +298,13 @@ export const AdminDashboard: React.FC = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateProductSubmit}
+        />
+
+        {/* --- MANAGE CATEGORIES POPUP MODAL --- */}
+        <CategoryManageModal
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          onSuccess={loadAllData}
         />
       </div>
     </main>
