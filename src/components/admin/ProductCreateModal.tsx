@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  XCircle,
-  Save,
-  DollarSign,
-  Image as ImageIcon,
-  Barcode,
-} from "lucide-react";
+import { Package, Save, DollarSign, Image as ImageIcon, Barcode, Percent } from "lucide-react";
 import { Category, Subcategory } from "../../types/index.ts";
 import { categoryService } from "../../services/categoryService.ts";
+import { productService } from "../../services/productService.ts";
+import { Input } from "../ui/Input.tsx";
+import { Select } from "../ui/Select.tsx";
+import { ModalFormLayout } from "../ui/ModalFormLayout.tsx";
 
 interface ProductCreateModalProps {
   isOpen: boolean;
@@ -24,12 +21,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const [isMutating, setIsMutating] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Carga de categorías reales desde el servicio
   const [categories, setCategories] = useState<Category[]>([]);
-  const [availableSubcategories, setAvailableSubcategories] = useState<
-    Subcategory[]
-  >([]);
+  const [availableSubcategories, setAvailableSubcategories] = useState<Subcategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [taxRates, setTaxRates] = useState<any[]>([]);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -40,18 +35,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     subcategoryId: "",
     brand: "",
     barcode: "",
-    imageUrl: "",
-    unit: "unid",
+    unit: "UNID",
     isRecommended: false,
     isActive: true,
+    taxRateId: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Cargar categorías al abrir el modal
   useEffect(() => {
     if (isOpen) {
       categoryService
         .getCategories()
-        .then((data: import('../../types/index.ts').Category[]) => {
+        .then((data: Category[]) => {
           setCategories(data);
           if (data.length > 0) {
             const firstCat = data[0];
@@ -68,10 +63,19 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
           }
         })
         .catch((err) => console.error("Error al cargar categorías:", err));
+        
+      productService
+        .getTaxRates()
+        .then((data) => {
+          setTaxRates(data);
+          if (data.length > 0) {
+            setNewProduct((prev) => ({ ...prev, taxRateId: data[0].id }));
+          }
+        })
+        .catch((err) => console.error("Error al cargar impuestos:", err));
     }
   }, [isOpen]);
 
-  // Actualizar subcategorías al cambiar categoría principal
   const handleCategoryChange = (catId: string) => {
     setSelectedCategoryId(catId);
     const category = categories.find((c) => c.id === catId);
@@ -91,35 +95,40 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     if (
       !newProduct.name ||
       !newProduct.price ||
-      !newProduct.imageUrl ||
-      !newProduct.subcategoryId
+      !imageFile ||
+      !newProduct.subcategoryId ||
+      !newProduct.taxRateId
     ) {
-      setFormError("Nombre, Precio, Imagen URL y Subcategoría son requeridos.");
+      setFormError("Nombre, Precio, Imagen, Subcategoría e Impuesto son requeridos.");
       setIsMutating(false);
       return;
     }
 
     try {
-      const productPayload = {
-        name: newProduct.name,
-        description: newProduct.description,
-        price: Number(newProduct.price),
-        discountPrice: newProduct.discountPrice
-          ? Number(newProduct.discountPrice)
-          : undefined,
-        stock: Number(newProduct.stock),
-        subcategoryId: newProduct.subcategoryId,
-        brand: newProduct.brand || undefined,
-        barcode: newProduct.barcode || undefined,
-        imageUrl: newProduct.imageUrl,
-        unit: newProduct.unit,
-        isRecommended: newProduct.isRecommended,
-        isActive: newProduct.isActive,
-      };
+      const formData = new FormData();
+      formData.append("name", newProduct.name);
+      formData.append("description", newProduct.description);
+      formData.append("price", String(newProduct.price));
+      
+      const parsedDiscount = Number(newProduct.discountPrice);
+      if (parsedDiscount > 0) {
+        formData.append("discountPrice", String(parsedDiscount));
+      }
+      
+      formData.append("stock", String(newProduct.stock));
+      formData.append("subcategoryId", newProduct.subcategoryId);
+      formData.append("taxRateId", newProduct.taxRateId);
+      if (newProduct.brand) formData.append("brand", newProduct.brand);
+      if (newProduct.barcode) formData.append("barcode", newProduct.barcode);
+      formData.append("unit", newProduct.unit);
+      formData.append("isRecommended", String(newProduct.isRecommended));
+      formData.append("isActive", String(newProduct.isActive));
+      
+      // Añadir la imagen
+      formData.append("image", imageFile);
 
-      await onSubmit(productPayload);
+      await onSubmit(formData);
 
-      // Reset del formulario
       setNewProduct({
         name: "",
         description: "",
@@ -129,11 +138,12 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
         subcategoryId: "",
         brand: "",
         barcode: "",
-        imageUrl: "",
-        unit: "unid",
+        unit: "UNID",
         isRecommended: false,
         isActive: true,
+        taxRateId: taxRates[0]?.id || "",
       });
+      setImageFile(null);
       onClose();
     } catch (error) {
       const err = error as Error;
@@ -144,347 +154,221 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
-          id="product-create-modal"
-        >
-          {/* Backdrop */}
-          <motion.button
-            type="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-default w-full h-full border-none outline-none"
-            onClick={onClose}
-            aria-label="Cerrar modal"
+    <ModalFormLayout
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      title="Cargar Nuevo Producto"
+      subtitle="Expande el catálogo de la sucursal"
+      icon={<Package className="w-5 h-5" />}
+      formError={formError}
+      isMutating={isMutating}
+      submitText="Guardar Producto"
+      submitIcon={<Save className="w-4 h-4" />}
+      showCancelButton={true}
+      cancelText="Cancelar"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Nombre Comercial */}
+        <div className="sm:col-span-2">
+          <Input
+            label="Nombre Comercial *"
+            placeholder="ej. Arroz Extra Primor 1kg"
+            required
+            value={newProduct.name}
+            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
           />
-
-          {/* Modal Content */}
-          <motion.div
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
-            className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] sm:max-h-[85vh] relative z-10"
-          >
-            {/* Encabezado */}
-            <div className="p-6 border-b border-slate-100 shrink-0 flex justify-between items-center bg-slate-50">
-              <div>
-                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
-                  Cargar Nuevo Producto
-                </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  Expande el catálogo de la sucursal
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body Form */}
-            <form
-              onSubmit={handleSubmit}
-              className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6"
-            >
-              {formError && (
-                <div className="bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold p-4 rounded-xl text-center">
-                  {formError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Nombre */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Nombre Comercial *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    placeholder="ej. Arroz Extra Primor 1kg"
-                    value={newProduct.name}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, name: e.target.value })
-                    }
-                  />
-                </div>
-
-                {/* Código de Barras */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Código de Barras
-                  </label>
-                  <div className="relative">
-                    <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                    <input
-                      type="text"
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                      placeholder="750123456789"
-                      value={newProduct.barcode}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          barcode: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Marca */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Marca
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    placeholder="ej. Primor"
-                    value={newProduct.brand}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, brand: e.target.value })
-                    }
-                  />
-                </div>
-
-                {/* Precio Unitario */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Precio Unitario ($) *
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                      placeholder="0.00"
-                      value={newProduct.price}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, price: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Precio Descuento */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Precio Oferta (Opcional)
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                      placeholder="0.00"
-                      value={newProduct.discountPrice}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          discountPrice: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Stock */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Stock Disponible *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    placeholder="0"
-                    value={newProduct.stock}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, stock: e.target.value })
-                    }
-                  />
-                </div>
-
-                {/* Categoría Principal */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Categoría Principal *
-                  </label>
-                  <select
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    value={selectedCategoryId}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Subcategoría */}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Subcategoría *
-                  </label>
-                  <select
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    value={newProduct.subcategoryId}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        subcategoryId: e.target.value,
-                      })
-                    }
-                  >
-                    {availableSubcategories.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Unidad de Medida */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Unidad de Medida
-                  </label>
-                  <select
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    value={newProduct.unit}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, unit: e.target.value })
-                    }
-                  >
-                    <option value="unid">Unidad (unid)</option>
-                    <option value="kg">Kilogramo (kg)</option>
-                    <option value="litro">Litro (l)</option>
-                    <option value="pack">Paquete (pack)</option>
-                  </select>
-                </div>
-
-                {/* Imagen URL */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Imagen URL (Unsplash o CDN) *
-                  </label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                    <input
-                      type="text"
-                      required
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-400/40 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                      placeholder="https://images.unsplash.com/..."
-                      value={newProduct.imageUrl}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          imageUrl: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Descripción */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">
-                    Descripción Comercial
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    placeholder="Describe las características principales del producto..."
-                    value={newProduct.description}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                {/* Switchees de estado */}
-                <div className="sm:col-span-2 flex items-center justify-between bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="isRecommended"
-                      className="w-4.5 h-4.5 accent-brand rounded border-slate-300 focus:ring-brand cursor-pointer"
-                      checked={newProduct.isRecommended}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          isRecommended: e.target.checked,
-                        })
-                      }
-                    />
-                    <label
-                      htmlFor="isRecommended"
-                      className="text-[10px] font-black text-slate-700 uppercase tracking-wider cursor-pointer select-none"
-                    >
-                      ¿Destacar?
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      className="w-4.5 h-4.5 accent-emerald-500 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                      checked={newProduct.isActive}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          isActive: e.target.checked,
-                        })
-                      }
-                    />
-                    <label
-                      htmlFor="isActive"
-                      className="text-[10px] font-black text-slate-700 uppercase tracking-wider cursor-pointer select-none"
-                    >
-                      ¿Vender ya?
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botones de Envío */}
-              <div className="flex items-center gap-4 pt-4 border-t border-slate-100 shrink-0">
-                <button
-                  type="submit"
-                  disabled={isMutating}
-                  className="flex-1 bg-brand text-white text-[10px] h-12 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-dark transition-all disabled:opacity-50 cursor-pointer shadow shadow-brand/15"
-                >
-                  <Save className="w-4.5 h-4.5" />
-                  {isMutating ? "Procesando..." : "Guardar Producto"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 bg-slate-50 text-slate-550 hover:text-slate-800 hover:bg-slate-100 text-[10px] h-12 rounded-xl font-black uppercase tracking-widest flex items-center justify-center border border-slate-200 transition-all cursor-pointer"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </motion.div>
         </div>
-      )}
-    </AnimatePresence>
+
+        {/* Código de Barras */}
+        <div>
+          <Input
+            label="Código de Barras"
+            placeholder="750123456789"
+            leftIcon={<Barcode className="w-4 h-4" />}
+            value={newProduct.barcode}
+            onChange={(e) => setNewProduct({ ...newProduct, barcode: e.target.value })}
+          />
+        </div>
+
+        {/* Marca */}
+        <div>
+          <Input
+            label="Marca"
+            placeholder="ej. Primor"
+            value={newProduct.brand}
+            onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
+          />
+        </div>
+
+        {/* Precio Unitario */}
+        <div>
+          <Input
+            type="number"
+            step="0.01"
+            label="Precio Unitario ($) *"
+            placeholder="0.00"
+            required
+            leftIcon={<DollarSign className="w-4 h-4" />}
+            value={newProduct.price}
+            onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+          />
+        </div>
+
+        {/* Precio Descuento */}
+        <div>
+          <Input
+            type="number"
+            step="0.01"
+            label="Precio Oferta (Opcional)"
+            placeholder="0.00"
+            leftIcon={<DollarSign className="w-4 h-4" />}
+            value={newProduct.discountPrice}
+            onChange={(e) => setNewProduct({ ...newProduct, discountPrice: e.target.value })}
+          />
+        </div>
+
+        {/* Stock */}
+        <div>
+          <Input
+            type="number"
+            label="Stock Disponible *"
+            placeholder="0"
+            required
+            value={newProduct.stock}
+            onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+          />
+        </div>
+
+        {/* Categoría Principal */}
+        <div>
+          <Select
+            label="Categoría Principal *"
+            value={selectedCategoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Subcategoría */}
+        <div>
+          <Select
+            label="Subcategoría *"
+            value={newProduct.subcategoryId}
+            onChange={(e) => setNewProduct({ ...newProduct, subcategoryId: e.target.value })}
+          >
+            {availableSubcategories.map((sub) => (
+              <option key={sub.id} value={sub.id}>
+                {sub.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Unidad de Medida */}
+        <div>
+          <Select
+            label="Unidad de Medida"
+            value={newProduct.unit}
+            onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+          >
+            <option value="UNID">Unidad (UNID)</option>
+            <option value="KG">Kilogramo (KG)</option>
+            <option value="GR">Gramo (GR)</option>
+          </Select>
+        </div>
+
+        {/* Tasa de Impuesto */}
+        <div>
+          <Select
+            label="Tasa de Impuesto *"
+            leftIcon={<Percent className="w-4 h-4" />}
+            required
+            value={newProduct.taxRateId}
+            onChange={(e) => setNewProduct({ ...newProduct, taxRateId: e.target.value })}
+          >
+            {taxRates.map((tax) => (
+              <option key={tax.id} value={tax.id}>
+                {tax.name} ({tax.percentage}%)
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Imagen URL -> File Upload */}
+        <div className="sm:col-span-2">
+          <Input
+            type="file"
+            accept="image/*"
+            label="Imagen del Producto *"
+            required
+            leftIcon={<ImageIcon className="w-4 h-4" />}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setImageFile(file || null);
+            }}
+          />
+          {imageFile && (
+            <p className="text-[10px] text-brand mt-1 ml-1 font-bold">
+              Archivo seleccionado: {imageFile.name}
+            </p>
+          )}
+        </div>
+
+        {/* Descripción */}
+        <div className="sm:col-span-2 flex flex-col gap-1.5">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+            Descripción Comercial
+          </label>
+          <textarea
+            rows={3}
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-xs font-bold text-slate-800 placeholder:text-slate-400 shadow-inner focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+            placeholder="Describe las características principales del producto..."
+            value={newProduct.description}
+            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+          />
+        </div>
+
+        {/* Switchees de estado */}
+        <div className="sm:col-span-2 flex items-center justify-between bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isRecommended"
+              className="w-4.5 h-4.5 accent-brand rounded border-slate-300 focus:ring-brand cursor-pointer"
+              checked={newProduct.isRecommended}
+              onChange={(e) => setNewProduct({ ...newProduct, isRecommended: e.target.checked })}
+            />
+            <label
+              htmlFor="isRecommended"
+              className="text-[10px] font-black text-slate-700 uppercase tracking-wider cursor-pointer select-none"
+            >
+              ¿Destacar?
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              className="w-4.5 h-4.5 accent-emerald-500 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+              checked={newProduct.isActive}
+              onChange={(e) => setNewProduct({ ...newProduct, isActive: e.target.checked })}
+            />
+            <label
+              htmlFor="isActive"
+              className="text-[10px] font-black text-slate-700 uppercase tracking-wider cursor-pointer select-none"
+            >
+              ¿Vender ya?
+            </label>
+          </div>
+        </div>
+      </div>
+    </ModalFormLayout>
   );
 };
