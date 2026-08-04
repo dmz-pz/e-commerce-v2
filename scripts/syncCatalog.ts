@@ -15,6 +15,7 @@ const IMAGES_DIR = process.env.IMAGES_DIR || 'C:\\Users\\DMZ\\Videos\\scraping-i
 const OPTIMIZED_DIR = path.join(process.cwd(), 'uploads', 'products_optimized');
 
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://images.minegociosup.com';
+const SKIP_OPTIMIZATION = process.env.SKIP_IMAGE_OPTIMIZATION === 'true';
 
 const SYNC_QUERY = `
 SELECT 
@@ -34,7 +35,7 @@ INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
 OUTER APPLY (
     SELECT TOP 1 mto_precio, mto_moneda 
     FROM DBA.ta_precio_producto 
-    WHERE cod_interno = p.cod_interno AND mto_precio > 0
+    WHERE cod_interno = p.cod_interno AND mto_moneda > 0
     ORDER BY fecha_cambio DESC
 ) AS pre
 CROSS JOIN (
@@ -164,7 +165,7 @@ async function syncCatalog() {
   
   console.log('[+] Procesando imágenes locales con Sharp (generación offline para R2)...');
   if (fs.existsSync(IMAGES_DIR)) {
-    if (!fs.existsSync(OPTIMIZED_DIR)) {
+    if (!SKIP_OPTIMIZATION && !fs.existsSync(OPTIMIZED_DIR)) {
       fs.mkdirSync(OPTIMIZED_DIR, { recursive: true });
     }
     
@@ -213,29 +214,32 @@ async function syncCatalog() {
             // Verificamos si ya existe la imagen asociada en BD
             const existingImg = await prisma.productImage.findFirst({ where: { productId: product.id } });
             if (!existingImg) {
-               console.log(`[+] Optimizando y guardando imagen para: ${barcode}`);
-               
                // Nombres de archivos optimizados (locales, listos para arrastrar a R2)
                const fullFilename = `${barcode}-full.webp`;
                const thumbFilename = `${barcode}-thumb.webp`;
                
-               const fullDestPath = path.join(OPTIMIZED_DIR, fullFilename);
-               const thumbDestPath = path.join(OPTIMIZED_DIR, thumbFilename);
+               if (!SKIP_OPTIMIZATION) {
+                 console.log(`[+] Optimizando y guardando imagen para: ${barcode}`);
+                 const fullDestPath = path.join(OPTIMIZED_DIR, fullFilename);
+                 const thumbDestPath = path.join(OPTIMIZED_DIR, thumbFilename);
 
-               // Leer buffer original
-               const fileBuffer = fs.readFileSync(sourceFilePath);
+                 // Leer buffer original
+                 const fileBuffer = fs.readFileSync(sourceFilePath);
 
-               // Generar Versión Full
-               await sharp(fileBuffer)
-                 .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
-                 .webp({ quality: 80 })
-                 .toFile(fullDestPath);
+                 // Generar Versión Full
+                 await sharp(fileBuffer)
+                   .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
+                   .webp({ quality: 80 })
+                   .toFile(fullDestPath);
 
-               // Generar Versión Thumb
-               await sharp(fileBuffer)
-                 .resize({ width: 300, height: 300, fit: 'cover' })
-                 .webp({ quality: 75 })
-                 .toFile(thumbDestPath);
+                 // Generar Versión Thumb
+                 await sharp(fileBuffer)
+                   .resize({ width: 300, height: 300, fit: 'cover' })
+                   .webp({ quality: 75 })
+                   .toFile(thumbDestPath);
+               } else {
+                 console.log(`[+] Registrando URLs en base de datos para: ${barcode} (omitiendo optimización física)`);
+               }
                
                // Crear registro en BD apuntando al dominio público de Cloudflare
                // (Asumiendo que subirás estos archivos directamente en el root del bucket, bajo un folder 'products/')
