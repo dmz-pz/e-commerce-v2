@@ -116,6 +116,17 @@ export class ProductController {
     const product = await productService.getProductByBarcode(barcode);
     res.json(product);
   }
+
+  /**
+   * Obtiene la lista de tasas de impuestos disponibles.
+   */
+  async getTaxRates(_req: Request, res: Response): Promise<void> {
+    const { prisma } = await import("../db.ts");
+    const taxRates = await prisma.taxRate.findMany({
+      orderBy: { percentage: 'desc' }
+    });
+    res.json(taxRates);
+  }
 }
 
 // Exportamos la instancia única (Singleton) para su uso en las rutas

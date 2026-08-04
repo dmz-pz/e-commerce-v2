@@ -41,6 +41,7 @@ const parseRouteImage = async (req: Request, _res: Response, next: NextFunction)
 
 // 🔍 RUTAS DE LECTURA (PÚBLICAS)
 router.get("/", catchAsync(productController.getAll));
+router.get("/tax-rates", catchAsync(productController.getTaxRates));
 router.get("/barcode/:barcode", catchAsync(productController.getByBarcode));
 router.get("/:id", catchAsync(productController.getById));
 

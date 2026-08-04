@@ -118,4 +118,8 @@ export const productService = {
       headers: { "x-user-id": userId },
     });
   },
+
+  getTaxRates: async (): Promise<any[]> => {
+    return apiClient.get<any[]>("/api/products/tax-rates");
+  },
 };

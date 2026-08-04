@@ -54,7 +54,7 @@ class ApiClient {
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "POST",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
       ...options,
     });
   }
@@ -66,7 +66,7 @@ class ApiClient {
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "PATCH",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
       ...options,
     });
   }
@@ -78,7 +78,7 @@ class ApiClient {
   ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "PUT",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
       ...options,
     });
   }
