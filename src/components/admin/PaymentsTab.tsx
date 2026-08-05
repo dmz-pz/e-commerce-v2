@@ -1,24 +1,40 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
-import { Payment } from '../../types/index.ts';
+import { Coins, ShieldAlert, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { adminService } from '../../services/adminService.ts';
 import { OptimizedImage } from '../ui/OptimizedImage.tsx';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pagination } from '../ui/Pagination.tsx';
 
-interface PaymentsTabProps {
-  payments: Payment[];
-  onReviewPayment: (id: string, status: 'APPROVED' | 'REJECTED') => Promise<void>;
-}
-
-export const PaymentsTab: React.FC<PaymentsTabProps> = ({
-  payments,
-  onReviewPayment,
-}) => {
+export const PaymentsTab: React.FC = () => {
+  const queryClient = useQueryClient();
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
+  // Polling habilitado solo en pagos (cada 15s)
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['admin-payments', page],
+    queryFn: () => adminService.getPayments({ page, limit }),
+    refetchInterval: 15000,
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'APPROVED' | 'REJECTED' }) => 
+      adminService.reviewPayment(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
+    },
+  });
+
+  const payments = data?.items || [];
   const filteredPayments = payments.filter((p) =>
     paymentFilter === 'ALL' ? true : p.status === paymentFilter
   );
+
+  const totalPages = data?.totalPages || 1;
 
   return (
     <motion.div
@@ -29,32 +45,48 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
       className="space-y-6"
       id="payments-tab-panel"
     >
-      {/* Payment Filter Selector */}
-      <div className="flex bg-white p-1 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1 self-start">
-        {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((filterVal) => (
-          <button
-            key={filterVal}
-            onClick={() => setPaymentFilter(filterVal)}
-            className={`px-4.5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-              paymentFilter === filterVal
-                ? 'bg-slate-900 text-white shadow'
-                : 'text-slate-400 hover:text-slate-800'
-            }`}
-          >
-            {filterVal === 'ALL'
-              ? 'Todos'
-              : filterVal === 'PENDING'
-              ? 'Pendientes Verificación'
-              : filterVal === 'APPROVED'
-              ? 'Aprobados'
-              : 'Rechazados'}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Payment Filter Selector */}
+        <div className="flex bg-white p-1 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1">
+          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((filterVal) => (
+            <button
+              key={filterVal}
+              onClick={() => {
+                setPaymentFilter(filterVal);
+                setPage(1); // Volver a la primera página al cambiar filtro (esto idealmente se paginaría en backend pero por simplicidad de UI lo reseteamos)
+              }}
+              className={`px-4.5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                paymentFilter === filterVal
+                  ? 'bg-slate-900 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-800'
+              }`}
+            >
+              {filterVal === 'ALL'
+                ? 'Todos'
+                : filterVal === 'PENDING'
+                ? 'Pendientes Verificación'
+                : filterVal === 'APPROVED'
+                ? 'Aprobados'
+                : 'Rechazados'}
+            </button>
+          ))}
+        </div>
+        
+        {isFetching && (
+          <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest">
+            <RefreshCw className="w-3 h-3 animate-spin" />
+            Actualizando...
+          </div>
+        )}
       </div>
 
       {/* Transactions List */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {filteredPayments.length === 0 ? (
+        {isLoading ? (
+          <div className="col-span-full py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+            Cargando transacciones...
+          </div>
+        ) : filteredPayments.length === 0 ? (
           <div className="col-span-full py-28 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
             <Coins className="w-16 h-16 text-slate-200 mx-auto mb-4" />
             <p className="font-bold text-slate-500 text-lg">No hay transacciones registradas</p>
@@ -146,15 +178,17 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 {pay.status === 'PENDING' ? (
                   <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-100">
                     <button
-                      onClick={() => onReviewPayment(pay.id, 'APPROVED')}
-                      className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                      onClick={() => reviewMutation.mutate({ id: pay.id, status: 'APPROVED' })}
+                      disabled={reviewMutation.isPending}
+                      className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Aprobar Pago
                     </button>
                     <button
-                      onClick={() => onReviewPayment(pay.id, 'REJECTED')}
-                      className="flex-1 bg-rose-50 text-rose-500 hover:bg-rose-100 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors border border-rose-100"
+                      onClick={() => reviewMutation.mutate({ id: pay.id, status: 'REJECTED' })}
+                      disabled={reviewMutation.isPending}
+                      className="flex-1 bg-rose-50 text-rose-500 hover:bg-rose-100 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors border border-rose-100 disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4" />
                       Rechazar
@@ -171,6 +205,12 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
           ))
         )}
       </div>
+
+      <Pagination 
+        currentPage={page} 
+        totalPages={totalPages} 
+        onPageChange={setPage} 
+      />
 
       {/* --- RECEIPT MODAL OVERLAY --- */}
       <AnimatePresence>

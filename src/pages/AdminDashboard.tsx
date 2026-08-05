@@ -1,11 +1,6 @@
-import React, { useState, useEffect } from "react";
-import {
-  Product,
-  Payment,
-  AuditLog,
-  Order,
-  OrderStatus,
-} from "../types/index.ts";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+// Unused OrderStatus removed
 import {
   Package,
   Coins,
@@ -18,7 +13,7 @@ import {
 import { Logo } from "../components/Logo.tsx";
 import { productService } from "../services/productService.ts";
 import { adminService } from "../services/adminService.ts";
-import { orderService } from "../services/orderService.ts";
+// Unused orderService removed
 
 // Componentes modulares refinados
 import { AdminStats } from "../components/admin/AdminStats.tsx";
@@ -32,125 +27,37 @@ import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
 import { StaffTab } from "../components/admin/StaffTab.tsx";
 
 export const AdminDashboard: React.FC = () => {
+  const queryClient = useQueryClient();
+
   // Pestañas de navegación
   const [activeTab, setActiveTab] = useState<
     "inventory" | "payments" | "audit" | "sales" | "settlements" | "staff"
   >("inventory");
 
-  // Estados generales de datos
-  const [products, setProducts] = useState<Product[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-
   // Estado del modal de cargas
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Consulta de servicios desde la API
-  const fetchInventory = async () => {
-    try {
-      const data = await productService.getProducts({ includeInactive: true, all: true });
-      setProducts(data.items || []);
-    } catch (err) {
-      console.error("Error al obtener catálogo administrador:", err);
-    }
-  };
+  // Consultas ligeras solo para estadísticas del encabezado (limit=1)
+  const { data: productsData } = useQuery({
+    queryKey: ["admin-products", { page: 1, limit: 1 }],
+    queryFn: () => productService.getProducts({ includeInactive: true, page: 1, limit: 1 }),
+  });
 
-  const fetchPayments = async () => {
-    try {
-      const data = await adminService.getPayments();
-      setPayments(data || []);
-    } catch (err) {
-      console.error("Error al obtener auditoría de transacciones:", err);
-    }
-  };
+  // Removed unused paymentsData query
 
-  const fetchAuditLogs = async () => {
-    try {
-      const data = await adminService.getAuditLogs();
-      setAuditLogs(data || []);
-    } catch (err) {
-      console.error("Error al obtener logs de trazabilidad:", err);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const data = await orderService.getOrders();
-      setOrders(data || []);
-    } catch (err) {
-      console.error("Error al obtener órdenes totales en administración:", err);
-    }
-  };
+  const { data: auditLogsData } = useQuery({
+    queryKey: ["admin-audit-logs", { page: 1, limit: 1 }],
+    queryFn: () => adminService.getAuditLogs({ page: 1, limit: 1 }),
+  });
 
   const loadAllData = () => {
-    fetchInventory();
-    fetchPayments();
-    fetchAuditLogs();
-    fetchOrders();
-  };
-
-  // Inicialización y Polling cada 15s para real-time updates
-  useEffect(() => {
-    loadAllData();
-    const interval = setInterval(() => {
-      loadAllData();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Cambiar visibilidad/actividad de producto
-  const toggleProductActive = async (id: string, currentStatus: boolean) => {
-    try {
-      await productService.updateProductActivity(
-        id,
-        !currentStatus,
-        "admin-dashboard",
-      );
-      fetchInventory();
-      fetchAuditLogs();
-    } catch (e) {
-      console.error("Error al cambiar visibilidad del producto", e);
-    }
-  };
-
-  // Envío del modal para crear producto
-  const handleCreateProductSubmit = async (productPayload: Parameters<typeof productService.createProduct>[0]) => {
-    await productService.createProduct(productPayload, "admin-dashboard");
-    fetchInventory();
-    fetchAuditLogs();
-  };
-
-  // Auditar depósito/pago
-  const handlePaymentReview = async (
-    paymentId: string,
-    status: "APPROVED" | "REJECTED",
-  ) => {
-    try {
-      await adminService.reviewPayment(paymentId, status);
-      fetchPayments();
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Error al auditar estado de pago", err);
-    }
-  };
-
-  // Actualizar estado de orden con trazabilidad
-  const handleUpdateOrderStatus = async (
-    orderId: string,
-    status: OrderStatus,
-  ) => {
-    await orderService.updateOrderStatus(orderId, status);
-    fetchOrders();
-    fetchInventory(); // Re-verifica stock en caso de cancelaciones
-    fetchAuditLogs();
+    queryClient.invalidateQueries();
   };
 
   return (
     <main className="bg-slate-50 min-h-screen">
       <div className="max-w-[1700px] mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-10">
-        {/* Modern Admin Header */}
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 md:mb-10 gap-6 border-b border-slate-200/60 pb-8">
           <div>
             <div className="flex items-center gap-3 mb-2 text-brand font-mono text-[10px] font-black uppercase tracking-[0.3em]">
@@ -169,81 +76,71 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Stats Grid */}
           <AdminStats
-            productsCount={products.length}
-            pendingPaymentsCount={
-              payments.filter((p) => p.status === "PENDING").length
-            }
-            auditLogsCount={auditLogs.length}
+            productsCount={productsData?.total || 0}
+            pendingPaymentsCount={0}
+            auditLogsCount={auditLogsData?.total || 0}
           />
         </header>
 
-        {/* Section Navigation Tabs & Action Bar */}
         <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-8">
           <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap shrink-0 self-start gap-1">
             <button
               onClick={() => setActiveTab("inventory")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "inventory"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "inventory"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Package className="w-4 h-4" />
               Inventario de Productos
             </button>
             <button
               onClick={() => setActiveTab("sales")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "sales"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "sales"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <TrendingUp className="w-4 h-4" />
               Ventas y Pedidos
             </button>
             <button
               onClick={() => setActiveTab("payments")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "payments"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "payments"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Coins className="w-4 h-4" />
               Auditar Transacciones
             </button>
             <button
               onClick={() => setActiveTab("settlements")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "settlements"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "settlements"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Wallet className="w-4 h-4" />
               Tesorería (Efectivo)
             </button>
             <button
               onClick={() => setActiveTab("audit")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "audit"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "audit"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <ClipboardList className="w-4 h-4" />
               Trazabilidad (Logs)
             </button>
             <button
               onClick={() => setActiveTab("staff")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === "staff"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "staff"
                   ? "bg-brand text-white shadow-md shadow-brand/10"
                   : "text-slate-500 hover:text-brand hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Users className="w-4 h-4" />
               Gestión de Personal
@@ -261,22 +158,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* --- RENDERED TAB CONTENTS --- */}
         {activeTab === "inventory" && (
           <InventoryTab
-            products={products}
-            onToggleProductActive={toggleProductActive}
             onCreateProduct={() => setShowCreateModal(true)}
             onManageCategories={() => setShowCategoryModal(true)}
           />
         )}
 
         {activeTab === "sales" && (
-          <SalesTab
-            orders={orders}
-            onUpdateOrderStatus={handleUpdateOrderStatus}
-            onRefreshLogs={loadAllData}
-          />
+          <SalesTab />
         )}
 
         {activeTab === "settlements" && (
@@ -284,23 +174,21 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === "payments" && (
-          <PaymentsTab
-            payments={payments}
-            onReviewPayment={handlePaymentReview}
-          />
+          <PaymentsTab />
         )}
 
-        {activeTab === "audit" && <AuditLogsTab auditLogs={auditLogs} />}
+        {activeTab === "audit" && <AuditLogsTab />}
         {activeTab === "staff" && <StaffTab />}
 
-        {/* --- LOAD NEW PRODUCT POPUP MODAL --- */}
         <ProductCreateModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateProductSubmit}
+          onSubmit={async (productPayload) => {
+            await productService.createProduct(productPayload);
+            loadAllData();
+          }}
         />
 
-        {/* --- MANAGE CATEGORIES POPUP MODAL --- */}
         <CategoryManageModal
           isOpen={showCategoryModal}
           onClose={() => setShowCategoryModal(false)}

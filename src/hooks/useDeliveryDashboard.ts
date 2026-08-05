@@ -25,8 +25,8 @@ export const useDeliveryDashboard = () => {
   // Carga inicial de datos desde el backend
   const loadOrders = async () => {
     try {
-      const allOrders = await orderService.getOrders();
-      setOrders(allOrders || []);
+      const allOrders = await orderService.getOrders({ limit: 1000 }); // limit 1000 for dashboard processing
+      setOrders(allOrders.items || []);
     } catch (err) {
       console.error("Error al cargar órdenes de reparto:", err);
     }

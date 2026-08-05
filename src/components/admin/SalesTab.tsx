@@ -2,28 +2,37 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   TrendingUp, Coins, Search, MessageCircle, CheckCircle2, 
-  XCircle, ShoppingBag, ClipboardList 
+  XCircle, ShoppingBag, ClipboardList, RefreshCw 
 } from 'lucide-react';
 import { Order, OrderStatus } from '../../types/index.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { orderService } from '../../services/orderService.ts';
 
-interface SalesTabProps {
-  orders: Order[];
-  onUpdateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
-  onRefreshLogs?: () => void;
-}
-
-export const SalesTab: React.FC<SalesTabProps> = ({
-  orders,
-  onUpdateOrderStatus,
-  onRefreshLogs,
-}) => {
+export const SalesTab: React.FC = () => {
+  const queryClient = useQueryClient();
   const [salesSearch, setSalesSearch] = useState('');
   const [salesFilter, setSalesFilter] = useState<'ALL' | OrderStatus>('ALL');
 
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['admin-orders', 'all'],
+    queryFn: () => orderService.getOrders({ limit: 1000 }),
+  });
+
+  const orders = data?.items || [];
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string, status: OrderStatus }) => 
+      orderService.updateOrderStatus(orderId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
+    }
+  });
+
   // Filter orders according to status and query
   const filteredOrders = orders
-    .filter(o => salesFilter === 'ALL' ? true : o.status === salesFilter)
-    .filter(o => {
+    .filter((o: Order) => salesFilter === 'ALL' ? true : o.status === salesFilter)
+    .filter((o: Order) => {
       const query = salesSearch.toLowerCase();
       return o.customerName.toLowerCase().includes(query) ||
              (o.cedula && o.cedula.toLowerCase().includes(query)) ||
@@ -33,35 +42,29 @@ export const SalesTab: React.FC<SalesTabProps> = ({
 
   // KPI calculations
   const totalCompletedAmount = orders
-    .filter(o => o.status === OrderStatus.DELIVERED)
-    .reduce((sum, o) => sum + o.total, 0);
+    .filter((o: Order) => o.status === OrderStatus.DELIVERED)
+    .reduce((sum: number, o: Order) => sum + o.total, 0);
 
-  const completedCount = orders.filter(o => o.status === OrderStatus.DELIVERED).length;
+  const completedCount = orders.filter((o: Order) => o.status === OrderStatus.DELIVERED).length;
 
   const activeAmount = orders
-    .filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED)
-    .reduce((sum, o) => sum + o.total, 0);
+    .filter((o: Order) => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED)
+    .reduce((sum: number, o: Order) => sum + o.total, 0);
 
-  const activeCount = orders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED).length;
+  const activeCount = orders.filter((o: Order) => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED).length;
 
   const cancelledAmount = orders
-    .filter(o => o.status === OrderStatus.CANCELLED)
-    .reduce((sum, o) => sum + o.total, 0);
+    .filter((o: Order) => o.status === OrderStatus.CANCELLED)
+    .reduce((sum: number, o: Order) => sum + o.total, 0);
 
-  const cancelledCount = orders.filter(o => o.status === OrderStatus.CANCELLED).length;
+  const cancelledCount = orders.filter((o: Order) => o.status === OrderStatus.CANCELLED).length;
 
-  const cumulativeAmount = orders.reduce((sum, o) => sum + o.total, 0);
+  const cumulativeAmount = orders.reduce((sum: number, o: Order) => sum + o.total, 0);
 
   // Status handler with alert popups
   const handleUpdateStatus = async (orderId: string, label: string, targetStatus: OrderStatus) => {
     if (window.confirm(`¿Desea marcar de forma manual esta orden como ${label}? Esto actualizará su estado inmediatamente.`)) {
-      try {
-        await onUpdateOrderStatus(orderId, targetStatus);
-        if (onRefreshLogs) onRefreshLogs();
-      } catch (error) {
-        const err = error as Error;
-        alert(err.message || 'No se pudo actualizar el estado de la orden');
-      }
+      updateStatusMutation.mutate({ orderId, status: targetStatus });
     }
   };
 
@@ -76,7 +79,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
     >
       {/* KPIs de Ventas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
+          {isFetching && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wider block mb-1">Ventas Completadas</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
@@ -90,7 +94,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
+          {isFetching && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-brand uppercase tracking-wider block mb-1">Ventas Activas/Trámite</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
@@ -151,8 +156,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
               {(() => {
                 const salesByDate: Record<string, number> = {};
                 orders
-                  .filter(o => o.status === OrderStatus.DELIVERED)
-                  .forEach(o => {
+                  .filter((o: Order) => o.status === OrderStatus.DELIVERED)
+                  .forEach((o: Order) => {
                     const dateObj = new Date(o.createdAt);
                     const lbl = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
                     salesByDate[lbl] = (salesByDate[lbl] || 0) + o.total;
@@ -209,7 +214,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
           <div className="space-y-4">
             {(() => {
               const payMethods: Record<string, number> = {};
-              orders.forEach(o => {
+              orders.forEach((o: Order) => {
                 const method = o.payment?.method || 'No especificado';
                 payMethods[method] = (payMethods[method] || 0) + 1;
               });
@@ -279,7 +284,17 @@ export const SalesTab: React.FC<SalesTabProps> = ({
 
         {/* Listado de Pedidos */}
         <div className="divide-y divide-slate-100">
-          {filteredOrders.map((order) => (
+          {isLoading ? (
+            <div className="py-24 text-center text-slate-400 animate-pulse font-bold uppercase tracking-widest text-xs">
+              Cargando ventas...
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-24 text-center text-slate-400">
+              <ShoppingBag className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+              <p className="font-bold text-base">No hay pedidos registrados en esta sección</p>
+              <p className="text-xs text-slate-400 mt-1">Cuando los clientes compren o utilices un filtro diferente aparecerán aquí.</p>
+            </div>
+          ) : filteredOrders.map((order: Order) => (
             <div key={order.id} className="p-6 md:p-8 hover:bg-slate-50/20 transition-all">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5">
                 <div>
@@ -354,8 +369,9 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                   <>
                     <button
                       type="button"
+                      disabled={updateStatusMutation.isPending}
                       onClick={() => handleUpdateStatus(order.id, 'ENTREGADA', OrderStatus.DELIVERED)}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm border border-slate-900"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm border border-slate-900 disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Completar Orden (Fuerza)
@@ -363,8 +379,9 @@ export const SalesTab: React.FC<SalesTabProps> = ({
 
                     <button
                       type="button"
+                      disabled={updateStatusMutation.isPending}
                       onClick={() => handleUpdateStatus(order.id, 'CANCELADA', OrderStatus.CANCELLED)}
-                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50"
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       Cancelar Orden (Anular)
@@ -374,14 +391,6 @@ export const SalesTab: React.FC<SalesTabProps> = ({
               </div>
             </div>
           ))}
-
-          {filteredOrders.length === 0 && (
-            <div className="py-24 text-center text-slate-400">
-              <ShoppingBag className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-              <p className="font-bold text-base">No hay pedidos registrados en esta sección</p>
-              <p className="text-xs text-slate-400 mt-1">Cuando los clientes compren o utilices un filtro diferente aparecerán aquí.</p>
-            </div>
-          )}
         </div>
       </div>
     </motion.div>

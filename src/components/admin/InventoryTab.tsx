@@ -1,36 +1,43 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Package, Eye, EyeOff, Plus, FolderPlus } from 'lucide-react';
+import { Search, Package, Eye, EyeOff, Plus, FolderPlus, RefreshCw } from 'lucide-react';
 import { Product } from '../../types/index.ts';
 import { OptimizedImage } from '../ui/OptimizedImage.tsx';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { productService } from '../../services/productService.ts';
+import { Pagination } from '../ui/Pagination.tsx';
 
 interface InventoryTabProps {
-  products: Product[];
-  onToggleProductActive: (id: string, currentStatus: boolean) => Promise<void>;
   onCreateProduct?: () => void;
   onManageCategories?: () => void;
 }
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({
-  products,
-  onToggleProductActive,
   onCreateProduct,
   onManageCategories,
 }) => {
+  const queryClient = useQueryClient();
   const [inventorySearch, setInventorySearch] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 12;
 
-  // Filter Inventory
-  const filteredProducts = products.filter(p => {
-    const search = inventorySearch.toLowerCase();
-    const categoryName = p.subcategory?.category?.name?.toLowerCase() ?? '';
-    const subcategoryName = p.subcategory?.name?.toLowerCase() ?? '';
-    return (
-      p.name.toLowerCase().includes(search) ||
-      categoryName.includes(search) ||
-      subcategoryName.includes(search) ||
-      (p.brand && p.brand.toLowerCase().includes(search))
-    );
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['admin-products', page, inventorySearch],
+    queryFn: () => productService.getProducts({ includeInactive: true, page, limit, search: inventorySearch || undefined }),
   });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      productService.updateProductActivity(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
+    }
+  });
+
+  const products = data?.items || [];
+  const totalPages = data?.totalPages || 1;
+  const totalItems = data?.total || 0;
 
   return (
     <motion.div
@@ -50,13 +57,17 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
             placeholder="Filtrar catálogo por nombre, marca, categoría, o subcategoría..."
             className="w-full h-11 bg-white border border-slate-200 rounded-xl pl-11 pr-4 text-xs font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand"
             value={inventorySearch}
-            onChange={(e) => setInventorySearch(e.target.value)}
+            onChange={(e) => {
+              setInventorySearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         
         <div className="flex flex-row items-center gap-3 justify-end shrink-0">
-          <div className="text-[11px] font-mono font-bold text-slate-400 py-2.5 px-3 bg-white border border-slate-200 rounded-xl">
-            Mostrando {filteredProducts.length} productos
+          <div className="text-[11px] font-mono font-bold text-slate-400 py-2.5 px-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2">
+            {isFetching && <RefreshCw className="w-3 h-3 animate-spin text-brand" />}
+            Mostrando {totalItems} productos
           </div>
           {onManageCategories && (
             <button
@@ -94,7 +105,13 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="py-24 text-center text-slate-400 font-bold tracking-widest text-xs uppercase animate-pulse">
+                  Cargando catálogo...
+                </td>
+              </tr>
+            ) : products.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-24 text-center text-slate-400">
                   <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
@@ -102,7 +119,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                   <p className="text-xs text-slate-400 mt-1">Prueba refinando la búsqueda o carga un nuevo producto</p>
                 </td>
               </tr>
-            ) : filteredProducts.map((p) => (
+            ) : products.map((p: Product) => (
               <tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors">
                 <td className="py-4.5 px-6">
                   <div className="flex items-center gap-4">
@@ -150,8 +167,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                 </td>
                 <td className="py-4.5 px-6 text-center">
                   <button
-                    onClick={() => onToggleProductActive(p.id, p.isActive !== false)}
-                    className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all border ${p.isActive !== false
+                    onClick={() => toggleMutation.mutate({ id: p.id, isActive: p.isActive === false })}
+                    disabled={toggleMutation.isPending}
+                    className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all border disabled:opacity-50 ${p.isActive !== false
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/50'
                         : 'bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100/50'
                       }`}
@@ -171,13 +189,17 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
 
       {/* Mobile Product Cards list */}
       <div className="md:hidden divide-y divide-slate-100">
-        {filteredProducts.length === 0 ? (
+        {isLoading ? (
+          <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+            Cargando catálogo...
+          </div>
+        ) : products.length === 0 ? (
           <div className="py-20 text-center text-slate-400 px-4">
             <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
             <p className="font-bold tracking-tight text-sm">Sin coincidencia de productos</p>
           </div>
         ) : (
-          filteredProducts.map((p) => (
+          products.map((p: Product) => (
             <div key={p.id} className="p-5 flex flex-col gap-3.5 hover:bg-slate-50/40 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
@@ -225,8 +247,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
               <div className="flex items-center justify-between gap-3 pt-1">
                 <span className="text-[9px] font-mono text-slate-300 font-semibold">ID: {p.id.slice(0, 8)}...</span>
                 <button
-                  onClick={() => onToggleProductActive(p.id, p.isActive !== false)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all border ${p.isActive !== false
+                  onClick={() => toggleMutation.mutate({ id: p.id, isActive: p.isActive === false })}
+                  disabled={toggleMutation.isPending}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all border disabled:opacity-50 ${p.isActive !== false
                       ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/50'
                       : 'bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100/50'
                     }`}
@@ -239,6 +262,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           ))
         )}
       </div>
+
+      <Pagination 
+        currentPage={page} 
+        totalPages={totalPages} 
+        onPageChange={setPage} 
+      />
     </motion.div>
   );
 };

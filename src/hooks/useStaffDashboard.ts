@@ -28,9 +28,9 @@ export const useStaffDashboard = () => {
   }, [dirtyOrders]);
 
   const fetchOrders = () => {
-    orderService.getOrders({ todayOnly: true })
+    orderService.getOrders({ todayOnly: true, limit: 1000 }) // limit 1000 for dashboard processing
       .then(data => {
-        setOrders(data);
+        setOrders(data.items || []);
         setLoading(false);
       })
       .catch(err => {
@@ -57,10 +57,10 @@ export const useStaffDashboard = () => {
     fetchProducts();
 
     const interval = setInterval(() => {
-      orderService.getOrders({ todayOnly: true })
+      orderService.getOrders({ todayOnly: true, limit: 1000 })
         .then(data => {
           setOrders(prevOrders => {
-            return data.map(serverOrder => {
+            return (data.items || []).map((serverOrder: Order) => {
               if (dirtyOrdersRef.current[serverOrder.id]) {
                 const localDraft = prevOrders.find(o => o.id === serverOrder.id);
                 return localDraft || serverOrder;
