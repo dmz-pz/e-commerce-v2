@@ -24,7 +24,7 @@ export class OrderRepository {
    * 1. Obtiene todas las órdenes de la base de datos con sus items asociados.
    */
 
-  async getAll(options?: { todayOnly?: boolean }) {
+  async getAll(options?: { todayOnly?: boolean; page?: number; limit?: number }) {
     const where: Record<string, unknown> = {};
     if (options?.todayOnly) {
       const startOfToday = new Date();
@@ -34,21 +34,38 @@ export class OrderRepository {
       };
     }
 
-    return await prisma.order.findMany({
-      where,
-      include: {
-        items: true,
-        payment: true,
-        deliveryJobs: { 
-          orderBy: { assignedAt: "desc" }, 
-          take: 1,
-          include: { deliveryPerson: true }
+    const page = Math.max(1, options?.page || 1);
+    const limit = options?.limit ? Math.max(1, options.limit) : undefined;
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const [items, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: limit,
+        skip,
+        include: {
+          items: true,
+          payment: true,
+          deliveryJobs: { 
+            orderBy: { assignedAt: "desc" }, 
+            take: 1,
+            include: { deliveryPerson: true }
+          },
         },
-      },
-      orderBy: {
-        createdAt: "desc", // Ordena las órdenes de la más nueva a la más antigua
-      },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit: limit || total,
+      totalPages: limit ? Math.ceil(total / limit) || 1 : 1,
+    };
   }
 
   /**

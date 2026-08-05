@@ -4,6 +4,24 @@
  */
 
 // ==========================================
+// INTERFACES GENÉRICAS
+// ==========================================
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  metadata?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  total?: number; // Compatibilidad temporal
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+}
+
+// ==========================================
 // ENUMS (Sincronizados con Prisma)
 // ==========================================
 

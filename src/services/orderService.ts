@@ -19,9 +19,24 @@ export const orderService = {
   /**
    * Obtiene la lista de todos los pedidos activos (Para Administradores, Staff y Delivery).
    */
-  getOrders: async (params?: { todayOnly?: boolean }): Promise<Order[]> => {
-    const query = params?.todayOnly ? '?todayOnly=true' : '';
-    return apiClient.get<Order[]>(`/api/orders${query}`);
+  getOrders: async (params?: { todayOnly?: boolean; page?: number; limit?: number }): Promise<import('../types/index.ts').PaginatedResponse<Order>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.todayOnly) queryParams.append('todayOnly', 'true');
+    if (params?.page) queryParams.append('page', String(params.page));
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    const queryString = queryParams.toString();
+    
+    const res = await apiClient.get<import('../types/index.ts').PaginatedResponse<Order> | Order[]>(`/api/orders${queryString ? `?${queryString}` : ''}`);
+    if (Array.isArray(res)) {
+      return {
+        items: res,
+        total: res.length,
+        page: 1,
+        limit: res.length || 10,
+        totalPages: 1
+      };
+    }
+    return res;
   },
 
   /**

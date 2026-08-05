@@ -16,10 +16,27 @@ export interface CreateAuditLogInput {
 }
 
 export class AuditLogRepository {
-  async getAll() {
-    return await prisma.auditLog.findMany({
-      orderBy: { timestamp: "desc" },
-    });
+  async getAll(options?: { page?: number; limit?: number }) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = options?.limit ? Math.max(1, options.limit) : undefined;
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const [items, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        orderBy: { timestamp: "desc" },
+        take: limit,
+        skip,
+      }),
+      prisma.auditLog.count(),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit: limit || total,
+      totalPages: limit ? Math.ceil(total / limit) || 1 : 1,
+    };
   }
 
   /**

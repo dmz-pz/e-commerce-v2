@@ -5,7 +5,9 @@ import { AppError } from "../utils/appErrors.ts";
 export class OrderController {
   async getAll(req: Request, res: Response) {
     const todayOnly = req.query.todayOnly === 'true' || req.query.today === 'true';
-    const orders = await orderService.getAllOrders({ todayOnly });
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const orders = await orderService.getAllOrders({ todayOnly, page, limit });
     res.json(orders);
   }
 

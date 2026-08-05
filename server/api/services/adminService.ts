@@ -20,17 +20,17 @@ export interface CreateStaffDTO {
 }
 
 export class AdminService {
-  async getAllPayments() {
-    return await paymentRepository.getAll();
+  async getAllPayments(options?: { page?: number; limit?: number }) {
+    return await paymentRepository.getAll(options);
   }
 
-  async getAuditLogs() {
-    return await auditLogRepository.getAll();
+  async getAuditLogs(options?: { page?: number; limit?: number }) {
+    return await auditLogRepository.getAll(options);
   }
 
   async updatePaymentStatus(id: string, status: PaymentStatus, performedById: string) {
-    const previousPayments = await paymentRepository.getAll();
-    const currentPay = previousPayments.find(p => p.id === id);
+    const previousPayments = await paymentRepository.getAll({ limit: 1000 }); // Obtenemos hasta 1000 para validar o idealmente buscar por ID
+    const currentPay = previousPayments.items.find(p => p.id === id);
 
     if (!currentPay) {
       throw new AppError("Pago no encontrado.", 404);

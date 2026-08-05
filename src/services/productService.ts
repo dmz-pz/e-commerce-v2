@@ -83,21 +83,17 @@ export const productService = {
 
   createProduct: async (
     payload: CreateProductPayload | FormData,
-    userId = "admin-dashboard",
+
   ): Promise<Product> => {
-    return apiClient.post<Product>("/api/products", payload, {
-      headers: { "x-user-id": userId },
-    });
+    return apiClient.post<Product>("/api/products", payload);
   },
 
   updateProduct: async (
     id: string,
     formData: FormData,
-    userId = "admin-dashboard",
+
   ): Promise<Product> => {
-    return apiClient.patch<Product>(`/api/products/${id}`, formData, {
-      headers: { "x-user-id": userId },
-    });
+    return apiClient.patch<Product>(`/api/products/${id}`, formData);
   },
 
   /**
@@ -109,14 +105,12 @@ export const productService = {
   updateProductActivity: async (
     id: string,
     isActive: boolean,
-    userId = "admin-dashboard",
+
   ): Promise<Product> => {
     const formData = new FormData();
     formData.append("isActive", String(isActive));
 
-    return apiClient.patch<Product>(`/api/products/${id}`, formData, {
-      headers: { "x-user-id": userId },
-    });
+    return apiClient.patch<Product>(`/api/products/${id}`, formData);
   },
 
   getTaxRates: async (): Promise<any[]> => {

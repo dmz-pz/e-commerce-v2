@@ -4,9 +4,11 @@ import { AppError } from "../utils/appErrors.ts";
 import { Role, PaymentStatus } from "../../../generated/prisma/enums.ts";
 
 export class AdminController {
-  async getAllPayments(_req: Request, res: Response) {
+  async getAllPayments(req: Request, res: Response) {
     try {
-      const payments = await adminService.getAllPayments();
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const payments = await adminService.getAllPayments({ page, limit });
       res.json(payments);
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -14,9 +16,11 @@ export class AdminController {
     }
   }
 
-  async getAuditLogs(_req: Request, res: Response) {
+  async getAuditLogs(req: Request, res: Response) {
     try {
-      const logs = await adminService.getAuditLogs();
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const logs = await adminService.getAuditLogs({ page, limit });
       res.json(logs);
     } catch (error) {
       if (error instanceof AppError) throw error;
