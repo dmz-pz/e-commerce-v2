@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/Navbar.tsx';
 import { BottomNav } from './components/BottomNav.tsx';
 import { Catalog } from './pages/Catalog.tsx';
@@ -21,6 +22,16 @@ import { DeliveryDashboard } from './pages/DeliveryDashboard.tsx';
 import { Checkout } from './pages/Checkout.tsx';
 
 import { Role } from './types/index.ts';
+
+// Configuración global de React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // Redirecciona a usuarios con roles operativos/administrativos lejos de la tienda pública
 const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -59,9 +70,10 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export default function App() {
   return (
-    <UserProvider>
-      <CartProvider>
-      <CatalogProvider>
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <CartProvider>
+        <CatalogProvider>
         <Router>
         <div className="min-h-screen bg-slate-50 flex flex-col pb-16 md:pb-0">
           <Navbar />
@@ -146,5 +158,6 @@ export default function App() {
       </CatalogProvider>
       </CartProvider>
     </UserProvider>
+    </QueryClientProvider>
   );
 }
