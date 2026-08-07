@@ -84,12 +84,23 @@ export const createProductRequestSchema = z.object({
 
 export const updateProductRequestSchema = z.object({
   params: z.object({
-    barcode: emptyStringToUndefined(
-      z
-        .string()
-        .min(5, "El código de barras es demasiado corto")
-        .max(50, "El código de barras es demasiado largo"),
-    ).nullish(),
+    id: z.string({ error: "El ID del producto es requerido" }).uuid({
+      message: "El ID del producto debe ser un formato UUID válido",
+    }),
   }),
   body: createProductSchema.partial(), // Anidamos la versión parcial aquí
+});
+
+export const updateProductActivitySchema = z.object({
+  params: z.object({
+    id: z.string({ error: "El ID del producto es requerido" }).uuid({
+      message: "El ID del producto debe ser un formato UUID válido",
+    }),
+  }),
+  body: z.object({
+    isActive: z.boolean({
+      message: "El estado de activación 'isActive' es obligatorio",
+
+    }),
+  }),
 });

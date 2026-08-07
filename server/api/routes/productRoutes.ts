@@ -12,6 +12,7 @@ import { AppError } from "../utils/appErrors.ts";
 import {
   createProductRequestSchema,
   updateProductRequestSchema,
+  updateProductActivitySchema,
 } from "../schemas/productSchema.ts";
 
 const router = Router();
@@ -65,6 +66,14 @@ router.patch(
   validateResource(updateProductRequestSchema),
   parseRouteImage,
   catchAsync(productController.update),
+);
+
+router.patch(
+  "/:id/activity",
+  verifyToken,
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  validateResource(updateProductActivitySchema),
+  catchAsync(productController.updateActivity),
 );
 
 export default router;

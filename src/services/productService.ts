@@ -105,12 +105,8 @@ export const productService = {
   updateProductActivity: async (
     id: string,
     isActive: boolean,
-
   ): Promise<Product> => {
-    const formData = new FormData();
-    formData.append("isActive", String(isActive));
-
-    return apiClient.patch<Product>(`/api/products/${id}`, formData);
+    return apiClient.patch<Product>(`/api/products/${id}/activity`, { isActive });
   },
 
   getTaxRates: async (): Promise<any[]> => {

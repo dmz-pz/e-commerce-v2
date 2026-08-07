@@ -103,6 +103,29 @@ export class ProductController {
   }
 
   /**
+   * Actualiza el estado de activación (isActive) de un producto.
+   */
+  async updateActivity(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError("El ID del producto es requerido.", 400);
+    }
+    const { isActive } = req.body;
+    if (isActive === undefined) {
+      throw new AppError("El estado de activación 'isActive' es requerido.", 400);
+    }
+    const performedByUserId = req.user?.id || (req.headers["x-user-id"] as string);
+
+    const product = await productService.updateProduct(
+      id,
+      { isActive },
+      performedByUserId,
+    );
+
+    res.json(product);
+  }
+
+  /**
    * Obtiene un producto utilizando el código de barras escaneado.
    */
   async getByBarcode(req: Request, res: Response): Promise<void> {
