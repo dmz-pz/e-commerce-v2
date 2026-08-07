@@ -1,46 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Banknote, CheckCircle2, History, User, Wallet, Search } from 'lucide-react';
-import { adminService, DriverCashDTO, SettlementDTO } from '../../services/adminService.ts';
+import { Banknote, CheckCircle2, History, User, Wallet, Search, RefreshCw } from 'lucide-react';
+import { adminService } from '../../services/adminService.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const SettlementsTab: React.FC = () => {
-  const [drivers, setDrivers] = useState<DriverCashDTO[]>([]);
-  const [history, setHistory] = useState<SettlementDTO[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [historySearch, setHistorySearch] = useState('');
 
-  const loadData = async () => {
-    try {
-      const [driversData, historyData] = await Promise.all([
-        adminService.getDriversCash(),
-        adminService.getSettlements()
-      ]);
-      setDrivers(Array.isArray(driversData) ? driversData : []);
-      setHistory(Array.isArray(historyData) ? historyData : []);
-    } catch (err) {
-      console.error("Error cargando liquidaciones:", err);
-    } finally {
-      setIsLoading(false);
+  // Consulta 1: Efectivo en mano de motorizados (polling de 15s)
+  const { data: driversData, isLoading: isDriversLoading, isFetching: isDriversFetching } = useQuery({
+    queryKey: ['admin-drivers-cash'],
+    queryFn: () => adminService.getDriversCash(),
+    refetchInterval: 15000,
+  });
+
+  // Consulta 2: Historial de liquidaciones realizadas (polling de 15s)
+  const { data: settlementsData, isLoading: isSettlementsLoading } = useQuery({
+    queryKey: ['admin-settlements'],
+    queryFn: () => adminService.getSettlements(),
+    refetchInterval: 15000,
+  });
+
+  const drivers = driversData || [];
+  const history = settlementsData || [];
+  const isLoading = isDriversLoading || isSettlementsLoading;
+
+  // Mutación para liquidar efectivo de un motorizado
+  const settleMutation = useMutation({
+    mutationFn: (driverId: string) => adminService.settleCash(driverId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-drivers-cash'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-settlements'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
     }
-  };
-
-  useEffect(() => {
-    loadData();
-    // Auto-refresh cada 15 segundos
-    const interval = setInterval(loadData, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  });
 
   const handleSettle = async (driverId: string, driverName: string, amount: number) => {
     if (window.confirm(`¿Confirmas que recibiste físicamente $${amount.toFixed(2)} USD en efectivo del motorizado ${driverName}?`)) {
       try {
-        await adminService.settleCash(driverId);
-        loadData();
+        await settleMutation.mutateAsync(driverId);
       } catch (error) {
         const err = error as Error;
         alert(err.message || "Error al liquidar el efectivo.");
       }
     }
   };
+
+  // Filtrado reactivo en el cliente del historial de auditoría
+  const filteredHistory = history.filter((record) =>
+    record.driverName.toLowerCase().includes(historySearch.toLowerCase())
+  );
 
   return (
     <motion.div
@@ -51,7 +61,9 @@ export const SettlementsTab: React.FC = () => {
     >
       {/* Columna Izquierda */}
       <div className="space-y-6">
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm relative">
+          {isDriversFetching && <RefreshCw className="absolute top-6 right-6 w-4 h-4 animate-spin text-slate-300" />}
+          
           <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
               <Wallet className="w-5 h-5" />
@@ -99,7 +111,8 @@ export const SettlementsTab: React.FC = () => {
                     </div>
                     <button
                       onClick={() => handleSettle(driver.id, driver.name, driver.cashInHand)}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 shadow-sm"
+                      disabled={settleMutation.isPending}
+                      className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
                     >
                       <Banknote className="w-4 h-4" />
                       Recibir
@@ -135,14 +148,16 @@ export const SettlementsTab: React.FC = () => {
               type="text"
               placeholder="Buscar por motorizado..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-slate-300 transition-colors"
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
             />
           </div>
 
           <div className="overflow-y-auto max-h-[500px] pr-2 no-scrollbar space-y-3">
-            {history.length === 0 && !isLoading ? (
+            {filteredHistory.length === 0 && !isLoading ? (
               <div className="text-center py-10 text-slate-400 text-xs font-medium">No hay registros de liquidaciones aún.</div>
             ) : (
-              history.map((record) => (
+              filteredHistory.map((record) => (
                 <div key={record.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
                   <div>
                     <p className="text-sm font-bold text-slate-800">{record.driverName}</p>
