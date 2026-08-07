@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-// Unused OrderStatus removed
+import React from "react";
 import {
   Package,
   Coins,
@@ -11,9 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { Logo } from "../components/Logo.tsx";
-import { productService } from "../services/productService.ts";
-import { adminService } from "../services/adminService.ts";
-// Unused orderService removed
+import { useAdminDashboard } from "../hooks/useAdminDashboard.ts";
 
 // Componentes modulares refinados
 import { AdminStats } from "../components/admin/AdminStats.tsx";
@@ -27,33 +23,21 @@ import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
 import { StaffTab } from "../components/admin/StaffTab.tsx";
 
 export const AdminDashboard: React.FC = () => {
-  const queryClient = useQueryClient();
-
-  // Pestañas de navegación
-  const [activeTab, setActiveTab] = useState<
-    "inventory" | "payments" | "audit" | "sales" | "settlements" | "staff"
-  >("inventory");
-
-  // Estado del modal de cargas
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-
-  // Consultas ligeras solo para estadísticas del encabezado (limit=1)
-  const { data: productsData } = useQuery({
-    queryKey: ["admin-products", { page: 1, limit: 1 }],
-    queryFn: () => productService.getProducts({ includeInactive: true, page: 1, limit: 1 }),
-  });
-
-  // Removed unused paymentsData query
-
-  const { data: auditLogsData } = useQuery({
-    queryKey: ["admin-audit-logs", { page: 1, limit: 1 }],
-    queryFn: () => adminService.getAuditLogs({ page: 1, limit: 1 }),
-  });
-
-  const loadAllData = () => {
-    queryClient.invalidateQueries();
-  };
+  const {
+    activeTab,
+    showCreateModal,
+    showCategoryModal,
+    productsCount,
+    auditLogsCount,
+    pendingPaymentsCount,
+    setActiveTab,
+    openCreateModal,
+    closeCreateModal,
+    openCategoryModal,
+    closeCategoryModal,
+    refreshData,
+    handleCreateProduct,
+  } = useAdminDashboard();
 
   return (
     <main className="bg-slate-50 min-h-screen">
@@ -77,9 +61,9 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <AdminStats
-            productsCount={productsData?.total || 0}
-            pendingPaymentsCount={0}
-            auditLogsCount={auditLogsData?.total || 0}
+            productsCount={productsCount}
+            pendingPaymentsCount={pendingPaymentsCount}
+            auditLogsCount={auditLogsCount}
           />
         </header>
 
@@ -88,8 +72,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("inventory")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "inventory"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <Package className="w-4 h-4" />
@@ -98,8 +82,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("sales")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "sales"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <TrendingUp className="w-4 h-4" />
@@ -108,8 +92,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("payments")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "payments"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <Coins className="w-4 h-4" />
@@ -118,8 +102,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("settlements")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "settlements"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <Wallet className="w-4 h-4" />
@@ -128,8 +112,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("audit")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "audit"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <ClipboardList className="w-4 h-4" />
@@ -138,8 +122,8 @@ export const AdminDashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab("staff")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "staff"
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "text-slate-500 hover:text-brand hover:bg-slate-50"
+                ? "bg-brand text-white shadow-md shadow-brand/10"
+                : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
               <Users className="w-4 h-4" />
@@ -149,7 +133,7 @@ export const AdminDashboard: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={loadAllData}
+              onClick={refreshData}
               className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-400 hover:text-brand cursor-pointer self-start md:self-auto"
               title="Refrescar Datos"
             >
@@ -160,39 +144,30 @@ export const AdminDashboard: React.FC = () => {
 
         {activeTab === "inventory" && (
           <InventoryTab
-            onCreateProduct={() => setShowCreateModal(true)}
-            onManageCategories={() => setShowCategoryModal(true)}
+            onCreateProduct={openCreateModal}
+            onManageCategories={openCategoryModal}
           />
         )}
 
-        {activeTab === "sales" && (
-          <SalesTab />
-        )}
+        {activeTab === "sales" && <SalesTab />}
 
-        {activeTab === "settlements" && (
-          <SettlementsTab />
-        )}
+        {activeTab === "settlements" && <SettlementsTab />}
 
-        {activeTab === "payments" && (
-          <PaymentsTab />
-        )}
+        {activeTab === "payments" && <PaymentsTab />}
 
         {activeTab === "audit" && <AuditLogsTab />}
         {activeTab === "staff" && <StaffTab />}
 
         <ProductCreateModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={async (productPayload) => {
-            await productService.createProduct(productPayload);
-            loadAllData();
-          }}
+          onClose={closeCreateModal}
+          onSubmit={handleCreateProduct}
         />
 
         <CategoryManageModal
           isOpen={showCategoryModal}
-          onClose={() => setShowCategoryModal(false)}
-          onSuccess={loadAllData}
+          onClose={closeCategoryModal}
+          onSuccess={refreshData}
         />
       </div>
     </main>
