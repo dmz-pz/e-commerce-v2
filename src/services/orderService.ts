@@ -19,11 +19,19 @@ export const orderService = {
   /**
    * Obtiene la lista de todos los pedidos activos (Para Administradores, Staff y Delivery).
    */
-  getOrders: async (params?: { todayOnly?: boolean; page?: number; limit?: number }): Promise<import('../types/index.ts').PaginatedResponse<Order>> => {
+  getOrders: async (params?: {
+    todayOnly?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }): Promise<import('../types/index.ts').PaginatedResponse<Order>> => {
     const queryParams = new URLSearchParams();
     if (params?.todayOnly) queryParams.append('todayOnly', 'true');
     if (params?.page) queryParams.append('page', String(params.page));
     if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
     const queryString = queryParams.toString();
     
     const res = await apiClient.get<import('../types/index.ts').PaginatedResponse<Order> | Order[]>(`/api/orders${queryString ? `?${queryString}` : ''}`);
@@ -37,6 +45,26 @@ export const orderService = {
       };
     }
     return res;
+  },
+
+  /**
+   * Obtiene estadísticas agregadas de pedidos e históricos de ventas para el panel.
+   */
+  getOrderStats: async (): Promise<{
+    kpis: {
+      totalCompletedAmount: number;
+      completedCount: number;
+      activeAmount: number;
+      activeCount: number;
+      cancelledAmount: number;
+      cancelledCount: number;
+      cumulativeAmount: number;
+      totalCount: number;
+    };
+    salesByDate: Record<string, number>;
+    paymentMethodsStats: Record<string, number>;
+  }> => {
+    return apiClient.get<any>('/api/orders/stats');
   },
 
   /**

@@ -12,8 +12,101 @@ export class OrderService {
   /**
    * 1. Obtiene todas las órdenes del repositorio real de la base de datos.
    */
-  async getAllOrders(options?: { todayOnly?: boolean; page?: number; limit?: number }) {
+  async getAllOrders(options?: {
+    todayOnly?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: OrderStatus;
+  }) {
     return await orderRepository.getAll(options);
+  }
+
+  /**
+   * Obtiene estadísticas agregadas y métricas globales de todos los pedidos.
+   */
+  async getOrderStats() {
+    const { prisma } = await import("../db.ts");
+
+    // Traemos campos mínimos de todos los pedidos para hacer agregaciones eficientes
+    const orders = await prisma.order.findMany({
+      select: {
+        total: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    const totalCompletedAmount = orders
+      .filter((o) => o.status === OrderStatus.DELIVERED)
+      .reduce((sum, o) => sum + Number(o.total), 0);
+
+    const completedCount = orders.filter(
+      (o) => o.status === OrderStatus.DELIVERED,
+    ).length;
+
+    const activeAmount = orders
+      .filter(
+        (o) =>
+          o.status !== OrderStatus.DELIVERED &&
+          o.status !== OrderStatus.CANCELLED,
+      )
+      .reduce((sum, o) => sum + Number(o.total), 0);
+
+    const activeCount = orders.filter(
+      (o) =>
+        o.status !== OrderStatus.DELIVERED &&
+        o.status !== OrderStatus.CANCELLED,
+    ).length;
+
+    const cancelledAmount = orders
+      .filter((o) => o.status === OrderStatus.CANCELLED)
+      .reduce((sum, o) => sum + Number(o.total), 0);
+
+    const cancelledCount = orders.filter(
+      (o) => o.status === OrderStatus.CANCELLED,
+    ).length;
+
+    const cumulativeAmount = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalCount = orders.length;
+
+    // Ventas acumuladas agrupadas por fecha (para gráfico SVG)
+    const salesByDate: Record<string, number> = {};
+    orders
+      .filter((o) => o.status === OrderStatus.DELIVERED)
+      .forEach((o) => {
+        const dateObj = new Date(o.createdAt);
+        const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+        salesByDate[dateStr] = (salesByDate[dateStr] || 0) + Number(o.total);
+      });
+
+    // Distribución por métodos de pago
+    const payments = await prisma.payment.findMany({
+      select: {
+        method: true,
+      },
+    });
+
+    const paymentMethodsStats: Record<string, number> = {};
+    payments.forEach((p) => {
+      const method = p.method || "No especificado";
+      paymentMethodsStats[method] = (paymentMethodsStats[method] || 0) + 1;
+    });
+
+    return {
+      kpis: {
+        totalCompletedAmount,
+        completedCount,
+        activeAmount,
+        activeCount,
+        cancelledAmount,
+        cancelledCount,
+        cumulativeAmount,
+        totalCount,
+      },
+      salesByDate,
+      paymentMethodsStats,
+    };
   }
 
   /**

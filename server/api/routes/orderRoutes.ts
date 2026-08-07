@@ -31,6 +31,13 @@ router.get(
   catchAsync(orderController.getAll),
 );
 
+// 3.5 Obtener las estadísticas y KPIs globales de ventas (Administradores)
+router.get(
+  "/stats",
+  authorizeRoles(Role.ADMINISTRADOR),
+  catchAsync(orderController.getStats),
+);
+
 // 4. Obtener detalle de una orden específica por ID
 router.get("/:orderId", catchAsync(orderController.getById));
 

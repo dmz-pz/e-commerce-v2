@@ -7,8 +7,22 @@ export class OrderController {
     const todayOnly = req.query.todayOnly === 'true' || req.query.today === 'true';
     const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
-    const orders = await orderService.getAllOrders({ todayOnly, page, limit });
+    const search = req.query.search as string | undefined;
+    const status = req.query.status as any | undefined;
+    
+    const orders = await orderService.getAllOrders({
+      todayOnly,
+      page,
+      limit,
+      search,
+      status,
+    });
     res.json(orders);
+  }
+
+  async getStats(_req: Request, res: Response) {
+    const stats = await orderService.getOrderStats();
+    res.json(stats);
   }
 
   async getMyOrders(req: Request, res: Response) {

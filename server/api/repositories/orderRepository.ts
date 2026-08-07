@@ -24,14 +24,34 @@ export class OrderRepository {
    * 1. Obtiene todas las órdenes de la base de datos con sus items asociados.
    */
 
-  async getAll(options?: { todayOnly?: boolean; page?: number; limit?: number }) {
-    const where: Record<string, unknown> = {};
+  async getAll(options?: {
+    todayOnly?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: OrderStatus;
+  }) {
+    const where: any = {};
     if (options?.todayOnly) {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
       where.createdAt = {
         gte: startOfToday,
       };
+    }
+
+    if (options?.status) {
+      where.status = options.status;
+    }
+
+    if (options?.search) {
+      const query = options.search;
+      where.OR = [
+        { customerName: { contains: query, mode: "insensitive" } },
+        { cedula: { contains: query, mode: "insensitive" } },
+        { customerPhone: { contains: query } },
+        { id: { contains: query, mode: "insensitive" } },
+      ];
     }
 
     const page = Math.max(1, options?.page || 1);
@@ -46,10 +66,10 @@ export class OrderRepository {
         include: {
           items: true,
           payment: true,
-          deliveryJobs: { 
-            orderBy: { assignedAt: "desc" }, 
+          deliveryJobs: {
+            orderBy: { assignedAt: "desc" },
             take: 1,
-            include: { deliveryPerson: true }
+            include: { deliveryPerson: true },
           },
         },
         orderBy: {

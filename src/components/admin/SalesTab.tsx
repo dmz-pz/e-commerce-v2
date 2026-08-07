@@ -7,59 +7,57 @@ import {
 import { Order, OrderStatus } from '../../types/index.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderService } from '../../services/orderService.ts';
+import { Pagination } from '../ui/Pagination.tsx';
 
 export const SalesTab: React.FC = () => {
   const queryClient = useQueryClient();
   const [salesSearch, setSalesSearch] = useState('');
   const [salesFilter, setSalesFilter] = useState<'ALL' | OrderStatus>('ALL');
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['admin-orders', 'all'],
-    queryFn: () => orderService.getOrders({ limit: 1000 }),
+  // Consulta 1: Listado paginado y filtrado en el servidor
+  const { data: listData, isLoading, isFetching: isListFetching } = useQuery({
+    queryKey: ['admin-orders-list', page, salesSearch, salesFilter],
+    queryFn: () => orderService.getOrders({ 
+      page, 
+      limit, 
+      search: salesSearch || undefined,
+      status: salesFilter === 'ALL' ? undefined : salesFilter
+    }),
   });
 
-  const orders = data?.items || [];
+  // Consulta 2: Estadísticas y KPIs globales pre-calculados en el servidor
+  const { data: statsData, isFetching: isStatsFetching } = useQuery({
+    queryKey: ['admin-orders-stats'],
+    queryFn: () => orderService.getOrderStats(),
+  });
+
+  const orders = listData?.items || [];
+  const totalPages = listData?.totalPages || 1;
+
+  const kpis = statsData?.kpis || {
+    totalCompletedAmount: 0,
+    completedCount: 0,
+    activeAmount: 0,
+    activeCount: 0,
+    cancelledAmount: 0,
+    cancelledCount: 0,
+    cumulativeAmount: 0,
+    totalCount: 0,
+  };
+  const salesByDate = statsData?.salesByDate || {};
+  const paymentMethodsStats = statsData?.paymentMethodsStats || {};
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string, status: OrderStatus }) => 
       orderService.updateOrderStatus(orderId, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders-stats'] });
       queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
     }
   });
-
-  // Filter orders according to status and query
-  const filteredOrders = orders
-    .filter((o: Order) => salesFilter === 'ALL' ? true : o.status === salesFilter)
-    .filter((o: Order) => {
-      const query = salesSearch.toLowerCase();
-      return o.customerName.toLowerCase().includes(query) ||
-             (o.cedula && o.cedula.toLowerCase().includes(query)) ||
-             o.id.toLowerCase().includes(query) ||
-             (o.customerPhone && o.customerPhone.includes(query));
-    });
-
-  // KPI calculations
-  const totalCompletedAmount = orders
-    .filter((o: Order) => o.status === OrderStatus.DELIVERED)
-    .reduce((sum: number, o: Order) => sum + o.total, 0);
-
-  const completedCount = orders.filter((o: Order) => o.status === OrderStatus.DELIVERED).length;
-
-  const activeAmount = orders
-    .filter((o: Order) => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED)
-    .reduce((sum: number, o: Order) => sum + o.total, 0);
-
-  const activeCount = orders.filter((o: Order) => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELLED).length;
-
-  const cancelledAmount = orders
-    .filter((o: Order) => o.status === OrderStatus.CANCELLED)
-    .reduce((sum: number, o: Order) => sum + o.total, 0);
-
-  const cancelledCount = orders.filter((o: Order) => o.status === OrderStatus.CANCELLED).length;
-
-  const cumulativeAmount = orders.reduce((sum: number, o: Order) => sum + o.total, 0);
 
   // Status handler with alert popups
   const handleUpdateStatus = async (orderId: string, label: string, targetStatus: OrderStatus) => {
@@ -67,6 +65,8 @@ export const SalesTab: React.FC = () => {
       updateStatusMutation.mutate({ orderId, status: targetStatus });
     }
   };
+
+  const isFetchingAny = isListFetching || isStatsFetching;
 
   return (
     <motion.div
@@ -80,60 +80,62 @@ export const SalesTab: React.FC = () => {
       {/* KPIs de Ventas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
-          {isFetching && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
+          {isFetchingAny && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wider block mb-1">Ventas Completadas</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
-              ${totalCompletedAmount.toFixed(2)}
+              ${kpis.totalCompletedAmount.toFixed(2)}
             </span>
             <span className="text-[10px] text-slate-400 font-medium font-mono">USD</span>
           </div>
           <div className="mt-2 text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>{completedCount} pedidos entregados</span>
+            <span>{kpis.completedCount} pedidos entregados</span>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
-          {isFetching && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
+          {isFetchingAny && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-brand uppercase tracking-wider block mb-1">Ventas Activas/Trámite</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
-              ${activeAmount.toFixed(2)}
+              ${kpis.activeAmount.toFixed(2)}
             </span>
             <span className="text-[10px] text-slate-400 font-medium font-mono">USD</span>
           </div>
           <div className="mt-2 text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
             <ClipboardList className="w-4 h-4 text-brand shrink-0" />
-            <span>{activeCount} en preparación/camino</span>
+            <span>{kpis.activeCount} en preparación/camino</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
+          {isFetchingAny && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-rose-500 uppercase tracking-wider block mb-1">Órdenes Canceladas</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
-              ${cancelledAmount.toFixed(2)}
+              ${kpis.cancelledAmount.toFixed(2)}
             </span>
             <span className="text-[10px] text-slate-400 font-medium font-mono">USD</span>
           </div>
           <div className="mt-2 text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
             <XCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>{cancelledCount} pedidos anulados</span>
+            <span>{kpis.cancelledCount} pedidos anulados</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
+          {isFetchingAny && <RefreshCw className="absolute top-4 right-4 w-3 h-3 animate-spin text-slate-300" />}
           <span className="text-[9px] font-black text-indigo-600 uppercase tracking-wider block mb-1">Monto Total Registrado</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 font-mono">
-              ${cumulativeAmount.toFixed(2)}
+              ${kpis.cumulativeAmount.toFixed(2)}
             </span>
             <span className="text-[10px] text-slate-400 font-medium font-mono">USD</span>
           </div>
           <div className="mt-2 text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
             <ShoppingBag className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span>{orders.length} pedidos totales en tienda</span>
+            <span>{kpis.totalCount} pedidos totales en tienda</span>
           </div>
         </div>
       </div>
@@ -154,15 +156,6 @@ export const SalesTab: React.FC = () => {
           <div className="overflow-x-auto no-scrollbar w-full pb-2">
             <div className="h-44 min-w-[500px] sm:min-w-0 flex items-end justify-between gap-2.5 px-2 relative border-b border-l border-slate-100 pb-2 pl-2">
               {(() => {
-                const salesByDate: Record<string, number> = {};
-                orders
-                  .filter((o: Order) => o.status === OrderStatus.DELIVERED)
-                  .forEach((o: Order) => {
-                    const dateObj = new Date(o.createdAt);
-                    const lbl = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
-                    salesByDate[lbl] = (salesByDate[lbl] || 0) + o.total;
-                  });
-
                 const labels = Object.keys(salesByDate);
                 const values = Object.values(salesByDate);
                 const maxVal = values.length > 0 ? Math.max(...values, 50) : 50;
@@ -213,15 +206,9 @@ export const SalesTab: React.FC = () => {
 
           <div className="space-y-4">
             {(() => {
-              const payMethods: Record<string, number> = {};
-              orders.forEach((o: Order) => {
-                const method = o.payment?.method || 'No especificado';
-                payMethods[method] = (payMethods[method] || 0) + 1;
-              });
+              const totalOrdersCount = kpis.totalCount || 1;
 
-              const totalOrdersCount = orders.length || 1;
-
-              return Object.entries(payMethods).map(([method, count]) => {
+              return Object.entries(paymentMethodsStats).map(([method, count]) => {
                 const percent = (count / totalOrdersCount) * 100;
                 return (
                   <div key={method} className="space-y-1">
@@ -252,7 +239,10 @@ export const SalesTab: React.FC = () => {
               <button
                 key={status}
                 type="button"
-                onClick={() => setSalesFilter(status)}
+                onClick={() => {
+                  setSalesFilter(status);
+                  setPage(1);
+                }}
                 className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                   salesFilter === status 
                     ? 'bg-brand text-white shadow shadow-brand/10' 
@@ -277,7 +267,10 @@ export const SalesTab: React.FC = () => {
               placeholder="Buscar por cliente, cédula, teléfono o ID..."
               className="w-full h-11 bg-white border border-slate-200 rounded-xl pl-10 pr-4 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/15 focus:border-brand transition-all"
               value={salesSearch}
-              onChange={(e) => setSalesSearch(e.target.value)}
+              onChange={(e) => {
+                setSalesSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -288,13 +281,13 @@ export const SalesTab: React.FC = () => {
             <div className="py-24 text-center text-slate-400 animate-pulse font-bold uppercase tracking-widest text-xs">
               Cargando ventas...
             </div>
-          ) : filteredOrders.length === 0 ? (
+          ) : orders.length === 0 ? (
             <div className="py-24 text-center text-slate-400">
               <ShoppingBag className="w-16 h-16 text-slate-200 mx-auto mb-4" />
               <p className="font-bold text-base">No hay pedidos registrados en esta sección</p>
               <p className="text-xs text-slate-400 mt-1">Cuando los clientes compren o utilices un filtro diferente aparecerán aquí.</p>
             </div>
-          ) : filteredOrders.map((order: Order) => (
+          ) : orders.map((order: Order) => (
             <div key={order.id} className="p-6 md:p-8 hover:bg-slate-50/20 transition-all">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5">
                 <div>
@@ -393,6 +386,12 @@ export const SalesTab: React.FC = () => {
           ))}
         </div>
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
     </motion.div>
   );
 };
