@@ -20,7 +20,7 @@ export interface CreateStaffDTO {
 }
 
 export class AdminService {
-  async getAllPayments(options?: { page?: number; limit?: number }) {
+  async getAllPayments(options?: { page?: number; limit?: number; status?: PaymentStatus }) {
     return await paymentRepository.getAll(options);
   }
 

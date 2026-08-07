@@ -8,7 +8,8 @@ export class AdminController {
     try {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
-      const payments = await adminService.getAllPayments({ page, limit });
+      const status = req.query.status as PaymentStatus | undefined;
+      const payments = await adminService.getAllPayments({ page, limit, status });
       res.json(payments);
     } catch (error) {
       if (error instanceof AppError) throw error;

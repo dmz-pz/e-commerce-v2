@@ -36,10 +36,11 @@ export const adminService = {
   /**
    * Obtiene la lista de todos los depósitos / pagos registrados en el sistema.
    */
-  getPayments: async (params?: { page?: number; limit?: number }): Promise<import('../types/index.ts').PaginatedResponse<Payment>> => {
+  getPayments: async (params?: { page?: number; limit?: number; status?: string }): Promise<import('../types/index.ts').PaginatedResponse<Payment>> => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', String(params.page));
     if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.status) queryParams.append('status', params.status);
     const queryString = queryParams.toString();
     
     const res = await apiClient.get<import('../types/index.ts').PaginatedResponse<Payment> | Payment[]>(`/api/admin/payments${queryString ? `?${queryString}` : ''}`);

@@ -15,8 +15,12 @@ export const PaymentsTab: React.FC = () => {
 
   // Polling habilitado solo en pagos (cada 15s)
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['admin-payments', page],
-    queryFn: () => adminService.getPayments({ page, limit }),
+    queryKey: ['admin-payments', page, paymentFilter],
+    queryFn: () => adminService.getPayments({ 
+      page, 
+      limit, 
+      status: paymentFilter === 'ALL' ? undefined : paymentFilter 
+    }),
     refetchInterval: 15000,
   });
 
@@ -29,10 +33,7 @@ export const PaymentsTab: React.FC = () => {
     },
   });
 
-  const payments = data?.items || [];
-  const filteredPayments = payments.filter((p) =>
-    paymentFilter === 'ALL' ? true : p.status === paymentFilter
-  );
+  const filteredPayments = data?.items || [];
 
   const totalPages = data?.totalPages || 1;
 

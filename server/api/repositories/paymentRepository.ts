@@ -3,18 +3,24 @@ import { PaymentStatus } from "../../../generated/prisma/enums.ts";
 import { prisma } from "../db.ts";
 
 export class PaymentRepository {
-  async getAll(options?: { page?: number; limit?: number }) {
+  async getAll(options?: { page?: number; limit?: number; status?: PaymentStatus }) {
     const page = Math.max(1, options?.page || 1);
     const limit = options?.limit ? Math.max(1, options.limit) : undefined;
     const skip = limit ? (page - 1) * limit : undefined;
 
+    const where: any = {};
+    if (options?.status) {
+      where.status = options.status;
+    }
+
     const [results, total] = await Promise.all([
       prisma.payment.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip,
       }),
-      prisma.payment.count(),
+      prisma.payment.count({ where }),
     ]);
     
     const items = results.map((r) => ({
