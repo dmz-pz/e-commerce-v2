@@ -49,15 +49,6 @@ export const Catalog: React.FC = () => {
 
   const { items, total } = useCart();
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
-      </div>
-    );
-
-  const isGeneralCatalog = selectedCategory === "all" && searchQuery === "";
-
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // Mantener el scroll del tab seleccionado centrado en móviles
@@ -84,6 +75,8 @@ export const Catalog: React.FC = () => {
 
     return () => observer.disconnect();
   }, [loadMore]);
+
+  const isGeneralCatalog = selectedCategory === "all" && searchQuery === "";
 
   return (
     <main className="max-w-[1920px] mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-10">
@@ -133,32 +126,40 @@ export const Catalog: React.FC = () => {
             <PromoCarousel onCategorySelect={setSelectedCategory} />
           </div>
 
-          <ProductSection
-            title="Seleccionamos para ti"
-            subtitle="Basado en tus preferencias"
-            products={recommendedProducts}
-            icon={<Star className="w-5 h-5 fill-brand" />}
-          />
+          {loading && !filteredProducts.length ? (
+            <div className="flex items-center justify-center h-[40vh] w-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+            </div>
+          ) : (
+            <>
+              <ProductSection
+                title="Seleccionamos para ti"
+                subtitle="Basado en tus preferencias"
+                products={recommendedProducts}
+                icon={<Star className="w-5 h-5 fill-brand" />}
+              />
 
-          <FidelityBanner />
+              <FidelityBanner />
 
-          <ProductSection
-            title="Ofertas Imperdibles"
-            subtitle="Precios que te harán sonreír"
-            products={discountedProducts}
-            icon={<Tag className="w-5 h-5" />}
-          />
+              <ProductSection
+                title="Ofertas Imperdibles"
+                subtitle="Precios que te harán sonreír"
+                products={discountedProducts}
+                icon={<Tag className="w-5 h-5" />}
+              />
 
-          <RecipesBanner />
+              <RecipesBanner />
 
-          <ProductSection
-            title="Los Más Vendidos"
-            subtitle="Favoritos de nuestra comunidad"
-            products={bestSellers}
-            icon={<TrendingUp className="w-5 h-5" />}
-          />
+              <ProductSection
+                title="Los Más Vendidos"
+                subtitle="Favoritos de nuestra comunidad"
+                products={bestSellers}
+                icon={<TrendingUp className="w-5 h-5" />}
+              />
 
-          <EcoFreshBanner />
+              <EcoFreshBanner />
+            </>
+          )}
         </div>
       )}
 
@@ -252,7 +253,17 @@ export const Catalog: React.FC = () => {
             <div className="w-full">
               <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 md:gap-6 items-stretch pb-8 md:pb-0 px-2 md:px-0">
                 <AnimatePresence mode="popLayout">
-                  {filteredProducts.length === 0 && (
+                  {loading && !filteredProducts.length ? (
+                    <motion.div
+                      key="loading-state"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="col-span-full w-full py-24 flex justify-center"
+                    >
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+                    </motion.div>
+                  ) : filteredProducts.length === 0 ? (
                     <motion.div
                       key="empty-state"
                       initial={{ opacity: 0 }}
@@ -265,9 +276,7 @@ export const Catalog: React.FC = () => {
                         Sin resultados • Intenta otra búsqueda o subcategoría
                       </p>
                     </motion.div>
-                  )}
-
-                  {filteredProducts.length > 0 &&
+                  ) : (
                     filteredProducts.map((product) => (
                       <div
                         key={product.id}
@@ -275,7 +284,8 @@ export const Catalog: React.FC = () => {
                       >
                         <ProductCard product={product} />
                       </div>
-                    ))}
+                    ))
+                  )}
                 </AnimatePresence>
               </div>
 
