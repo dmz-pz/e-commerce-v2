@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '../types/index.ts';
 
 export const BottomNav: React.FC = () => {
-  const { setSelectedCategory, setSelectedSubcategory, setShowCart, setShowCategoriesModal } = useGlobalCatalog();
+  const { setSelectedCategory, setSelectedSubcategory, setShowCart, setShowCategoriesModal, setSearchQuery } = useGlobalCatalog();
   const { items } = useCart();
   const { user } = useUser();
   const location = useLocation();
@@ -26,6 +26,7 @@ export const BottomNav: React.FC = () => {
   const handleHomeClick = () => {
     setSelectedCategory('all');
     setSelectedSubcategory('all');
+    setSearchQuery('');
     if (location.pathname !== '/') {
       navigate('/');
     }
