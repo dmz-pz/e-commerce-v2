@@ -45,6 +45,8 @@ interface CatalogContextType {
   setSortBy: (sort: "relevance" | "price_asc" | "price_desc" | "name_asc") => void;
   totalProducts: number;
   totalPages: number;
+  loadMore: () => void;
+  isAppending: boolean;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -58,6 +60,8 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isAppending, setIsAppending] = useState(false);
+  const isAppendingRef = React.useRef(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
@@ -80,6 +84,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Resetear a página 1 al cambiar filtros principales
   useEffect(() => {
+    isAppendingRef.current = false;
     setPage(1);
   }, [selectedCategory, selectedSubcategory, searchQuery, limit, sortBy]);
 
@@ -126,7 +131,11 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // 2. CARGA PAGINADA SERVER-SIDE DE PRODUCTOS SEGÚN FILTROS Y NAVEGACIÓN
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
+    if (isAppendingRef.current) {
+      setIsAppending(true);
+    } else {
+      setLoading(true);
+    }
     try {
       // Determinar ID real de categoría o subcategoría si no es 'all'
       let catId: string | undefined;
@@ -154,13 +163,24 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         sortBy,
       });
 
-      setProducts(res.items || []);
+      if (isAppendingRef.current) {
+        setProducts((prev) => {
+          const newItems = res.items || [];
+          const uniqueIds = new Set(prev.map(p => p.id));
+          const toAdd = newItems.filter(p => !uniqueIds.has(p.id));
+          return [...prev, ...toAdd];
+        });
+        isAppendingRef.current = false;
+      } else {
+        setProducts(res.items || []);
+      }
       setTotalProducts(res.total || 0);
       setTotalPages(res.totalPages || 1);
     } catch (err) {
       console.error("Error al obtener catálogo paginado:", err);
     } finally {
       setLoading(false);
+      setIsAppending(false);
     }
   }, [page, limit, selectedCategory, selectedSubcategory, searchQuery, sortBy, categories]);
 
@@ -196,6 +216,12 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     return activeCategory?.subcategories || [];
   }, [categories, selectedCategory]);
+
+  const loadMore = useCallback(() => {
+    if (loading || isAppending || page >= totalPages) return;
+    isAppendingRef.current = true;
+    setPage((p) => p + 1);
+  }, [loading, isAppending, page, totalPages]);
 
   // 5. PROCESAMIENTO DEL CHECKOUT
   const handleCheckout = async () => {
@@ -262,6 +288,8 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         setSortBy,
         totalProducts,
         totalPages,
+        loadMore,
+        isAppending,
       }}
     >
       {children}

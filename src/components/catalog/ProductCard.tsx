@@ -40,9 +40,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               referrerPolicy="no-referrer"
             />
             <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-              <div className="bg-brand/90 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-bold text-white border border-brand/10 uppercase tracking-wider">
-                {product.subcategory?.category?.name}
-              </div>
               {product.discountPrice && (
                 <div className="bg-accent px-2 py-0.5 rounded-full text-[10px] font-black text-brand uppercase tracking-wider shadow-lg shadow-accent/20">
                   -

@@ -36,18 +36,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(current => {
       const existing = current.find(item => item.productId === product.id);
       if (existing) {
-        return current.map(item => 
-          item.productId === product.id 
+        return current.map(item =>
+          item.productId === product.id
             ? { ...item, quantity: item.quantity + quantity, price: effectivePrice }
             : item
         ).filter(item => item.quantity > 0);
       }
       if (quantity <= 0) return current;
-      return [...current, { 
-        productId: product.id, 
-        name: product.name, 
-        price: effectivePrice, 
-        quantity 
+      return [...current, {
+        productId: product.id,
+        name: product.name,
+        price: effectivePrice,
+        quantity
       }];
     });
   };
@@ -57,8 +57,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (quantity <= 0) {
         return current.filter(item => item.productId !== productId);
       }
-      return current.map(item => 
-        item.productId === productId 
+      return current.map(item =>
+        item.productId === productId
           ? { ...item, quantity }
           : item
       );
@@ -78,7 +78,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <CartContext.Provider value={{ items, addItem, updateQuantity, removeItem, clearCart, total }}>
-      { children }
+      {children}
     </CartContext.Provider>
   );
 };

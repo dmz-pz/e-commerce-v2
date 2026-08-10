@@ -25,12 +25,12 @@ export const SubcategorySidebar: React.FC = () => {
 
   return (
     <aside className="w-64 shrink-0 hidden lg:block">
-      <div className="sticky top-40 bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-        <h3 className="text-xs font-black text-brand uppercase tracking-widest mb-6 px-2">
+      <div className="sticky top-40 bg-white rounded-3xl border border-slate-100 p-6 shadow-sm max-h-[calc(100vh-12rem)] flex flex-col">
+        <h3 className="text-xs font-black text-brand uppercase tracking-widest mb-6 px-2 shrink-0">
           {categoryDisplayName}
         </h3>
 
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-18rem)] pr-1 no-scrollbar">
           {listToDisplay.map((sub) => {
             const subName = typeof sub === 'string' ? sub : sub.name;
             const subId = typeof sub === 'string' ? sub : sub.id;

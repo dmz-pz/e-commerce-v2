@@ -20,11 +20,21 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    // Reset state if src changes
-    setIsLoaded(false);
-    setHasError(false);
+    // Verificar si la imagen ya está en caché/completa
+    if (imgRef.current?.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setIsLoaded(true);
+      } else {
+        setHasError(true);
+        setIsLoaded(true);
+      }
+    } else {
+      setIsLoaded(false);
+      setHasError(false);
+    }
   }, [src]);
 
   return (
@@ -47,6 +57,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       ) : (
         /* Actual Image */
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           loading={loading}
