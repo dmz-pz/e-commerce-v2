@@ -1,25 +1,27 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/Navbar.tsx';
 import { BottomNav } from './components/BottomNav.tsx';
-import { Catalog } from './pages/Catalog.tsx';
-import { ProductDetail } from './pages/ProductDetail.tsx';
-import { StaffDashboard } from './pages/StaffDashboard.tsx';
-import { AdminDashboard } from './pages/AdminDashboard.tsx';
 import { CategoryModal } from './components/catalog/CategoryModal.tsx';
 import { CartDrawer } from './components/catalog/CartDrawer.tsx';
 import { CartProvider } from './context/CartContext.tsx';
 import { CatalogProvider } from './context/CatalogContext.tsx';
 import { UserProvider, useUser } from './context/UserContext.tsx';
 import { ProtectedRoute } from './components/ProtectedRoute.tsx';
-import Login from './pages/Login.tsx';
-import Register from './pages/Register.tsx';
-import Profile from './pages/Profile.tsx';
-import ForgotPassword from './pages/ForgotPassword.tsx';
-import ResetPassword from './pages/ResetPassword.tsx';
-import { DeliveryDashboard } from './pages/DeliveryDashboard.tsx';
-import { Checkout } from './pages/Checkout.tsx';
+
+const Catalog = lazy(() => import('./pages/Catalog.tsx').then(module => ({ default: module.Catalog })));
+const ProductDetail = lazy(() => import('./pages/ProductDetail.tsx').then(module => ({ default: module.ProductDetail })));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard.tsx').then(module => ({ default: module.StaffDashboard })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.tsx').then(module => ({ default: module.AdminDashboard })));
+const DeliveryDashboard = lazy(() => import('./pages/DeliveryDashboard.tsx').then(module => ({ default: module.DeliveryDashboard })));
+const Checkout = lazy(() => import('./pages/Checkout.tsx').then(module => ({ default: module.Checkout })));
+
+const Login = lazy(() => import('./pages/Login.tsx'));
+const Register = lazy(() => import('./pages/Register.tsx'));
+const Profile = lazy(() => import('./pages/Profile.tsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
 
 import { Role } from './types/index.ts';
 
@@ -29,6 +31,7 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutos
     },
   },
 });
@@ -68,6 +71,15 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const LoadingFallback = () => (
+  <div className="flex h-[calc(100vh-80px)] w-full items-center justify-center">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-10 h-10 border-4 border-slate-200 border-t-brand rounded-full animate-spin"></div>
+      <span className="text-sm font-bold text-slate-400 tracking-widest uppercase">Cargando...</span>
+    </div>
+  </div>
+);
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -78,7 +90,8 @@ export default function App() {
         <div className="min-h-screen bg-slate-50 flex flex-col pb-16 md:pb-0">
           <Navbar />
           <div className="flex-1">
-            <Routes>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
               <Route path="/" element={
                 <ClientRoute>
                   <Catalog />
@@ -135,6 +148,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
             </Routes>
+            </Suspense>
           </div>
           <BottomNav />
           <CartDrawer />
