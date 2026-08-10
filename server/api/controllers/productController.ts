@@ -16,9 +16,14 @@ export class ProductController {
     const sortBy = req.query.sortBy as "relevance" | "price_asc" | "price_desc" | "name_asc" | undefined;
     const isRecommended = req.query.isRecommended === "true";
     const hasDiscount = req.query.hasDiscount === "true";
+    
+    // Nuevos filtros
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined;
+    const status = req.query.status as "all" | "active" | "inactive" | undefined;
 
     // Si se especifican parámetros de paginación o filtros, usamos getPaginatedProducts
-    if (page || limit || subcategoryId || categoryId || search || sortBy || isRecommended || hasDiscount) {
+    if (page || limit || subcategoryId || categoryId || search || sortBy || isRecommended || hasDiscount || minPrice !== undefined || maxPrice !== undefined || status) {
       const paginatedResult = await productService.getPaginatedProducts({
         page,
         limit,
@@ -29,6 +34,9 @@ export class ProductController {
         isRecommended,
         hasDiscount,
         includeInactive,
+        minPrice,
+        maxPrice,
+        status,
       });
       res.json(paginatedResult);
       return;

@@ -86,15 +86,6 @@ export const Navbar: React.FC = () => {
               {/* Logo */}
               <div className="flex items-center gap-2 md:gap-3">
                 <Logo className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
-                <span className="font-black text-base md:text-xl tracking-tight text-white md:text-brand uppercase">
-                  Mi
-                  <span className="text-accent underline decoration-white md:decoration-brand underline-offset-4">
-                    negocio
-                  </span>
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[9px] border border-slate-200">
-                  OS V3.0
-                </span>
               </div>
 
               {/* Badge indicativo central de rol / módulo */}
@@ -124,8 +115,8 @@ export const Navbar: React.FC = () => {
                     <Link
                       to="/admin"
                       className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/admin"
-                          ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
-                          : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
+                        ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
+                        : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
                         }`}
                     >
                       Admin
@@ -133,8 +124,8 @@ export const Navbar: React.FC = () => {
                     <Link
                       to="/staff"
                       className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/staff"
-                          ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
-                          : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
+                        ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
+                        : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
                         }`}
                     >
                       Operaciones
@@ -142,8 +133,8 @@ export const Navbar: React.FC = () => {
                     <Link
                       to="/delivery"
                       className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/delivery"
-                          ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
-                          : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
+                        ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
+                        : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
                         }`}
                     >
                       Repartos
@@ -209,14 +200,14 @@ export const Navbar: React.FC = () => {
                 {/* Mobile Title or Logo */}
                 <div className="md:hidden">
                   {selectedCategory !== "all" ? (
-                     <span className="font-black text-sm tracking-tight text-white uppercase text-center max-w-[200px] truncate block">
-                       {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
-                     </span>
+                    <span className="font-black text-sm tracking-tight text-white uppercase text-center max-w-[200px] truncate block">
+                      {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                    </span>
                   ) : (
-                     <Logo className="w-10 h-10 drop-shadow-md" />
+                    <Logo className="w-10 h-10 drop-shadow-md" />
                   )}
                 </div>
-                
+
                 {/* Desktop Logo */}
                 <div className="hidden md:flex items-center gap-2 md:gap-3">
                   <Logo className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
@@ -283,16 +274,16 @@ export const Navbar: React.FC = () => {
 
                 {/* Mobile Cart or Search Icon */}
                 <div className="md:hidden w-10 h-10">
-                   {selectedCategory !== "all" && (
-                      <button 
-                        onClick={() => {
-                          setSelectedCategory("all");
-                        }}
-                        className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors"
-                      >
-                         <Search className="w-6 h-6 text-white" />
-                      </button>
-                   )}
+                  {selectedCategory !== "all" && (
+                    <button
+                      onClick={() => {
+                        setSelectedCategory("all");
+                      }}
+                      className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      <Search className="w-6 h-6 text-white" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Desktop Cart */}
@@ -320,7 +311,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Mobile Search Bar - Visible only on Mobile when in root catalog */}
-            {selectedCategory === "all" && (
+            {selectedCategory === "all" && location.pathname !== "/checkout" && (
               <div className="md:hidden pb-4 mt-2">
                 <div className="h-11 bg-white/10 border border-white/20 rounded-full flex items-center px-4 gap-3">
                   <Search className="w-4 h-4 text-white/50 shrink-0" />
@@ -380,8 +371,8 @@ export const Navbar: React.FC = () => {
                         key={categoryId}
                         onClick={() => handleCategorySelect(categoryId)}
                         className={`px-3 py-1.5 border-b-2 text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer select-none hover:text-white ${isSelected
-                            ? "border-accent text-white"
-                            : "border-transparent text-white/70 hover:border-white/20"
+                          ? "border-accent text-white"
+                          : "border-transparent text-white/70 hover:border-white/20"
                           }`}
                       >
                         {categoryName}
@@ -396,7 +387,7 @@ export const Navbar: React.FC = () => {
       </header>
 
       {/* Spacer to prevent layout shift - Matches initial header height exactly */}
-      <div className={`${selectedCategory === "all" ? "h-[124px]" : "h-[64px]"} md:h-[128px] pointer-events-none shrink-0`} />
+      <div className={`${selectedCategory === "all" && location.pathname !== "/checkout" ? "h-[124px]" : "h-[64px]"} md:h-[128px] pointer-events-none shrink-0`} />
     </>
   );
 };

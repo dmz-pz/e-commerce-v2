@@ -70,6 +70,8 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onCategorySelect }
             alt={PROMO_SLIDES[current]?.title}
             className="w-full h-full object-cover"
             containerClassName="absolute inset-0 z-0"
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 z-20 flex flex-col justify-center px-8 md:px-16 lg:px-24">
             <motion.span 

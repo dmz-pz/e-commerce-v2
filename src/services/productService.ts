@@ -25,6 +25,9 @@ export interface GetProductsParams {
   isRecommended?: boolean;
   hasDiscount?: boolean;
   all?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  status?: "all" | "active" | "inactive";
 }
 
 export interface CreateProductPayload {
@@ -56,6 +59,9 @@ export const productService = {
     if (params.isRecommended) queryParams.append("isRecommended", "true");
     if (params.hasDiscount) queryParams.append("hasDiscount", "true");
     if (params.all) queryParams.append("all", "true");
+    if (params.minPrice !== undefined) queryParams.append("minPrice", String(params.minPrice));
+    if (params.maxPrice !== undefined) queryParams.append("maxPrice", String(params.maxPrice));
+    if (params.status) queryParams.append("status", params.status);
 
     const queryString = queryParams.toString();
     const endpoint = `/api/products${queryString ? `?${queryString}` : ""}`;

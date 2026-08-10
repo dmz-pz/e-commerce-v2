@@ -21,6 +21,7 @@ import { ProductCreateModal } from "../components/admin/ProductCreateModal.tsx";
 import { CategoryManageModal } from "../components/admin/CategoryManageModal.tsx";
 import { SettlementsTab } from "../components/admin/SettlementsTab.tsx";
 import { StaffTab } from "../components/admin/StaffTab.tsx";
+import { AdminBottomNav } from "../components/admin/AdminBottomNav.tsx";
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -67,85 +68,84 @@ export const AdminDashboard: React.FC = () => {
           />
         </header>
 
-        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-8">
-          <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap shrink-0 self-start gap-1">
+        <div className="hidden md:flex flex-row justify-between items-center gap-2 md:gap-4 mb-6 md:mb-8 w-full">
+          <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar whitespace-nowrap gap-1 w-full md:w-auto flex-1">
             <button
               onClick={() => setActiveTab("inventory")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "inventory"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "inventory"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <Package className="w-4 h-4" />
+              <Package className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Inventario de Productos
             </button>
             <button
               onClick={() => setActiveTab("sales")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "sales"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "sales"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Ventas y Pedidos
             </button>
             <button
               onClick={() => setActiveTab("payments")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "payments"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "payments"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <Coins className="w-4 h-4" />
+              <Coins className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Auditar Transacciones
             </button>
             <button
               onClick={() => setActiveTab("settlements")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "settlements"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "settlements"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <Wallet className="w-4 h-4" />
+              <Wallet className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Tesorería (Efectivo)
             </button>
             <button
               onClick={() => setActiveTab("audit")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "audit"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "audit"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <ClipboardList className="w-4 h-4" />
+              <ClipboardList className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Trazabilidad (Logs)
             </button>
             <button
               onClick={() => setActiveTab("staff")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "staff"
+              className={`flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === "staff"
                 ? "bg-brand text-white shadow-md shadow-brand/10"
                 : "text-slate-500 hover:text-brand hover:bg-slate-50"
                 }`}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
               Gestión de Personal
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={refreshData}
-              className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-400 hover:text-brand cursor-pointer self-start md:self-auto"
-              title="Refrescar Datos"
-            >
-              <RefreshCw className="w-4 h-4 animate-hover" />
-            </button>
-          </div>
+          <button
+            onClick={refreshData}
+            className="shrink-0 p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm text-slate-400 hover:text-brand cursor-pointer"
+            title="Refrescar Datos"
+          >
+            <RefreshCw className="w-4 h-4 md:w-5 md:h-5 animate-hover" />
+          </button>
         </div>
 
         {activeTab === "inventory" && (
           <InventoryTab
             onCreateProduct={openCreateModal}
             onManageCategories={openCategoryModal}
+            onRefresh={refreshData}
           />
         )}
 
@@ -170,6 +170,8 @@ export const AdminDashboard: React.FC = () => {
           onSuccess={refreshData}
         />
       </div>
+      
+      <AdminBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </main>
   );
 };

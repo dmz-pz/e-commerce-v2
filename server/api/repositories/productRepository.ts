@@ -23,6 +23,9 @@ export interface ProductQueryOptions {
   isRecommended?: boolean;
   hasDiscount?: boolean;
   includeInactive?: boolean;
+  status?: "all" | "active" | "inactive";
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export class ProductRepository {
@@ -51,12 +54,32 @@ export class ProductRepository {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
-      ...(options.includeInactive ? {} : { isActive: true }),
       ...(options.subcategoryId ? { subcategoryId: options.subcategoryId } : {}),
       ...(options.categoryId ? { subcategory: { categoryId: options.categoryId } } : {}),
       ...(options.isRecommended ? { isRecommended: true } : {}),
       ...(options.hasDiscount ? { discountPrice: { not: null } } : {}),
     };
+
+    // Lógica de visibilidad
+    if (options.status === "active") {
+      where.isActive = true;
+    } else if (options.status === "inactive") {
+      where.isActive = false;
+    } else if (!options.status && !options.includeInactive) {
+      // Compatibilidad con el flag anterior
+      where.isActive = true;
+    }
+
+    // Filtros de precio
+    if (options.minPrice !== undefined || options.maxPrice !== undefined) {
+      where.price = {};
+      if (options.minPrice !== undefined) {
+        where.price.gte = new Prisma.Decimal(options.minPrice);
+      }
+      if (options.maxPrice !== undefined) {
+        where.price.lte = new Prisma.Decimal(options.maxPrice);
+      }
+    }
 
     if (options.search && options.search.trim()) {
       const query = options.search.trim();
