@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ShieldAlert,
   Bike,
+  ChevronLeft,
 } from "lucide-react";
 import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { Logo } from "./Logo.tsx";
@@ -182,14 +183,19 @@ export const Navbar: React.FC = () => {
         <nav className="bg-brand md:bg-white border-b border-white/10 md:border-slate-100 min-h-[64px] md:h-20 flex items-center shadow-sm relative z-20">
           <div className="max-w-[1920px] mx-auto px-4 md:px-8 w-full">
             <div className="flex justify-between items-center gap-4 md:gap-8">
-              {/* Mobile User Icon / Desktop Logo */}
-              <div className="md:hidden">
-                <Link
-                  to={user ? "/profile" : "/login"}
-                  className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center"
-                >
-                  <User className="w-5 h-5 text-white/70" />
-                </Link>
+              {/* Mobile User Icon / Desktop Logo / Mobile Back Button */}
+              <div className="md:hidden w-10 h-10">
+                {selectedCategory !== "all" && (
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("all");
+                      setSearchQuery("");
+                    }}
+                    className="w-10 h-10 flex items-center justify-center text-white"
+                  >
+                    <ChevronLeft className="w-7 h-7" />
+                  </button>
+                )}
               </div>
 
               <Link
@@ -200,13 +206,27 @@ export const Navbar: React.FC = () => {
                 }}
                 className="flex items-center gap-2 md:gap-3 shrink-0 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0"
               >
-                <Logo className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
-                <span className="font-black text-lg md:text-2xl tracking-tight text-white md:text-brand uppercase hidden sm:block">
-                  Mi
-                  <span className="text-accent underline decoration-white md:decoration-brand underline-offset-4">
-                    negocio
+                {/* Mobile Title or Logo */}
+                <div className="md:hidden">
+                  {selectedCategory !== "all" ? (
+                     <span className="font-black text-sm tracking-tight text-white uppercase text-center max-w-[200px] truncate block">
+                       {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                     </span>
+                  ) : (
+                     <Logo className="w-10 h-10 drop-shadow-md" />
+                  )}
+                </div>
+                
+                {/* Desktop Logo */}
+                <div className="hidden md:flex items-center gap-2 md:gap-3">
+                  <Logo className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
+                  <span className="font-black text-lg md:text-2xl tracking-tight text-white md:text-brand uppercase hidden sm:block">
+                    Mi
+                    <span className="text-accent underline decoration-white md:decoration-brand underline-offset-4">
+                      negocio
+                    </span>
                   </span>
-                </span>
+                </div>
               </Link>
 
               {/* Desktop Global Search - Hidden on Mobile */}
@@ -261,13 +281,28 @@ export const Navbar: React.FC = () => {
                   )}
                 </div>
 
+                {/* Mobile Cart or Search Icon */}
+                <div className="md:hidden w-10 h-10">
+                   {selectedCategory !== "all" && (
+                      <button 
+                        onClick={() => {
+                          setSelectedCategory("all");
+                        }}
+                        className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors"
+                      >
+                         <Search className="w-6 h-6 text-white" />
+                      </button>
+                   )}
+                </div>
+
+                {/* Desktop Cart */}
                 <button
                   onClick={() => setShowCart(true)}
-                  className="relative w-10 h-10 md:w-12 md:h-12 bg-white/10 md:bg-slate-50 border border-white/20 md:border-slate-200 rounded-xl md:rounded-2xl flex items-center justify-center transition-all md:hover:bg-brand group md:hover:border-brand"
+                  className="hidden md:flex relative w-12 h-12 bg-slate-50 border border-slate-200 rounded-2xl items-center justify-center transition-all hover:bg-brand group hover:border-brand"
                 >
-                  <ShoppingCart className="w-6 h-6 md:w-5 md:h-5 text-white/70 md:text-slate-400 md:group-hover:text-white transition-colors" />
+                  <ShoppingCart className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
                   {itemCount > 0 && (
-                    <span className="absolute top-0 right-0 md:-top-1 md:-right-1 bg-accent text-brand text-[9px] md:text-[10px] w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-black border-2 border-white shadow-sm animate-in zoom-in">
+                    <span className="absolute -top-1 -right-1 bg-accent text-brand text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-black border-2 border-white shadow-sm animate-in zoom-in">
                       {itemCount}
                     </span>
                   )}
@@ -284,19 +319,21 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Search Bar - Visible only on Mobile */}
-            <div className="md:hidden pb-4 mt-2">
-              <div className="h-11 bg-white/10 border border-white/20 rounded-full flex items-center px-4 gap-3">
-                <Search className="w-4 h-4 text-white/50 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Busca aquí tu producto"
-                  className="bg-transparent border-none outline-none w-full text-xs font-bold text-white placeholder:text-white/30 placeholder:font-medium"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
+            {/* Mobile Search Bar - Visible only on Mobile when in root catalog */}
+            {selectedCategory === "all" && (
+              <div className="md:hidden pb-4 mt-2">
+                <div className="h-11 bg-white/10 border border-white/20 rounded-full flex items-center px-4 gap-3">
+                  <Search className="w-4 h-4 text-white/50 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Busca aquí tu producto"
+                    className="bg-transparent border-none outline-none w-full text-xs font-bold text-white placeholder:text-white/30 placeholder:font-medium"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </nav>
 
@@ -359,7 +396,7 @@ export const Navbar: React.FC = () => {
       </header>
 
       {/* Spacer to prevent layout shift - Matches initial header height exactly */}
-      <div className="h-[124px] md:h-[128px] pointer-events-none shrink-0" />
+      <div className={`${selectedCategory === "all" ? "h-[124px]" : "h-[64px]"} md:h-[128px] pointer-events-none shrink-0`} />
     </>
   );
 };
