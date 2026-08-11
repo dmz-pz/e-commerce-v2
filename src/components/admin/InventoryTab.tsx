@@ -9,6 +9,8 @@ import { categoryService } from '../../services/categoryService.ts';
 import { Pagination } from '../ui/Pagination.tsx';
 import { FilterBottomSheet } from './FilterBottomSheet.tsx';
 import { useDebounce } from '../../hooks/useDebounce.ts';
+import { ProductEditDrawer } from './ProductEditDrawer.tsx';
+import { Pencil } from 'lucide-react';
 
 interface InventoryTabProps {
   onCreateProduct?: () => void;
@@ -42,6 +44,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
 
   const [page, setPage] = useState(1);
   const limit = 12;
+
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -230,7 +234,11 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                 </td>
               </tr>
             ) : products.map((p: Product) => (
-              <tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors">
+              <tr 
+                key={p.id} 
+                onClick={() => setEditingProduct(p)}
+                className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors cursor-pointer group"
+              >
                 <td className="py-4.5 px-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/60 shrink-0">
@@ -289,7 +297,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                   </button>
                 </td>
                 <td className="py-4.5 px-6 text-right text-[10px] font-mono text-slate-300">
-                  {p.id.slice(0, 8)}
+                  <div className="flex items-center justify-end">
+                    <span className="group-hover:hidden">{p.id.slice(0, 8)}</span>
+                    <Pencil className="w-4 h-4 text-brand hidden group-hover:block" />
+                  </div>
                 </td>
               </tr>
             ))}
@@ -310,10 +321,14 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           </div>
         ) : (
           products.map((p: Product) => (
-            <div key={p.id} className="p-3 flex flex-col gap-3 hover:bg-slate-50/40 transition-colors relative">
+            <div 
+              key={p.id} 
+              onClick={() => setEditingProduct(p)}
+              className="bg-white p-4 rounded-3xl border border-slate-100 flex flex-col gap-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer my-2 mx-2"
+            >
               <div className="absolute top-3 right-3">
                 <button
-                  onClick={() => toggleMutation.mutate({ id: p.id, isActive: p.isActive === false })}
+                  onClick={(e) => { e.stopPropagation(); toggleMutation.mutate({ id: p.id, isActive: p.isActive === false }); }}
                   disabled={toggleMutation.isPending}
                   className={`flex items-center justify-center w-8 h-8 rounded-full cursor-pointer transition-all border shadow-sm disabled:opacity-50 ${p.isActive !== false
                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/50'
@@ -411,6 +426,15 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           setPage(1);
         }}
         onClear={handleClearFilters}
+      />
+
+      <ProductEditDrawer
+        isOpen={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        product={editingProduct}
+        onSave={() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+        }}
       />
     </motion.div>
   );

@@ -170,6 +170,7 @@ export interface Product {
   isRecommended?: boolean;
   salesCount?: number;
   isActive?: boolean;
+  taxRateId?: string;
   subcategoryId: string;
   subcategory?: Subcategory;
   images?: ProductImage[];
