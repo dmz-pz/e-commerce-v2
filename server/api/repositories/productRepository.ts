@@ -195,7 +195,7 @@ export class ProductRepository {
    */
   async update(
     id: string,
-    input: Partial<CreateProductInput>,
+    input: Partial<CreateProductInput> & { imageUrl?: string; thumbUrl?: string },
   ): Promise<ProductWithRelations> {
     return await prisma.product.update({
       where: { id },
@@ -218,6 +218,18 @@ export class ProductRepository {
           input.specifications !== undefined
             ? (input.specifications as Prisma.InputJsonValue)
             : undefined,
+        ...(input.imageUrl ? {
+          images: {
+            deleteMany: {},
+            create: [
+              {
+                url: input.imageUrl,
+                thumbUrl: input.thumbUrl,
+                order: 1,
+              },
+            ],
+          },
+        } : {}),
       },
       include: {
         images: true,

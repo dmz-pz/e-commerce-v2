@@ -72,7 +72,7 @@ export class ProductService {
    */
   async updateProduct(
     id: string,
-    updates: Partial<CreateProductInput>,
+    updates: Partial<CreateProductInput> & { imageUrl?: string; thumbUrl?: string },
     performedByUserId: string,
   ): Promise<ProductWithRelations> {
     const previousState = await this.getProductById(id);
