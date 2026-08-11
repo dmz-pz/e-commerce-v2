@@ -32,7 +32,9 @@ class ApiClient {
         errorData.message ||
         errorData.error ||
         `Error HTTP: status ${response.status}`;
-      throw new Error(errMsg);
+      const err = new Error(errMsg);
+      (err as any).data = errorData;
+      throw err;
     }
 
     // Algunos endpoints pueden retornar vacío o no JSON

@@ -98,14 +98,15 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      key="inventory-panel"
-      className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm"
-      id="inventory-tab-panel"
-    >
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        key="inventory-panel"
+        className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm"
+        id="inventory-tab-panel"
+      >
       {/* Table search filter bar */}
       <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row items-stretch lg:items-center gap-3 md:gap-4">
         
@@ -407,6 +408,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           <Plus className="w-6 h-6" />
         </button>
       )}
+      </motion.div>
 
       {/* Filter Bottom Sheet */}
       <FilterBottomSheet 
@@ -436,6 +438,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
           queryClient.invalidateQueries({ queryKey: ['admin-products'] });
         }}
       />
-    </motion.div>
+    </>
   );
 };

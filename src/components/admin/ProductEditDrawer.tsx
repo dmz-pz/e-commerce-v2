@@ -23,6 +23,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
 }) => {
   const [isMutating, setIsMutating] = useState(false);
   const [formError, setFormError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [availableSubcategories, setAvailableSubcategories] = useState<Subcategory[]>([]);
@@ -50,6 +51,8 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
     if (isOpen) {
       categoryService.getCategories().then(setCategories).catch(console.error);
       productService.getTaxRates().then(setTaxRates).catch(console.error);
+      setErrors({});
+      setFormError("");
     }
   }, [isOpen]);
 
@@ -114,13 +117,56 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
     if (!product) return;
     
     setFormError("");
-    setIsMutating(true);
+    const newErrors: Record<string, string> = {};
 
-    if (!editProduct.name || !editProduct.price || !editProduct.subcategoryId || !editProduct.taxRateId) {
-      setFormError("Por favor, completa los campos requeridos.");
-      setIsMutating(false);
+    if (!editProduct.name.trim()) {
+      newErrors.name = "El nombre es obligatorio";
+    }
+
+    if (!editProduct.price) {
+      newErrors.price = "El precio es obligatorio";
+    } else {
+      const p = parseFloat(editProduct.price);
+      if (isNaN(p) || p <= 0) {
+        newErrors.price = "El precio debe ser un número mayor a cero";
+      }
+    }
+
+    if (editProduct.discountPrice) {
+      const d = parseFloat(editProduct.discountPrice);
+      const p = parseFloat(editProduct.price);
+      if (isNaN(d) || d <= 0) {
+        newErrors.discountPrice = "El precio de descuento debe ser mayor a cero";
+      } else if (!isNaN(p) && d >= p) {
+        newErrors.discountPrice = "El descuento debe ser menor al precio regular";
+      }
+    }
+
+    if (editProduct.stock === "") {
+      newErrors.stock = "El stock es obligatorio";
+    } else {
+      const s = parseInt(editProduct.stock);
+      if (isNaN(s) || s < 0) {
+        newErrors.stock = "El stock no puede ser negativo";
+      }
+    }
+
+    if (!editProduct.subcategoryId) {
+      newErrors.subcategoryId = "La subcategoría es obligatoria";
+    }
+
+    if (!editProduct.taxRateId) {
+      newErrors.taxRateId = "La tasa de impuesto es obligatoria";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setFormError("Por favor, corrige los errores en el formulario.");
       return;
     }
+
+    setErrors({});
+    setIsMutating(true);
 
     try {
       const formData = new FormData();
@@ -148,7 +194,19 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
       onClose();
     } catch (err: any) {
       console.error("Error al actualizar producto:", err);
-      setFormError(err.message || "No se pudo actualizar el producto.");
+      if (err.data && Array.isArray(err.data)) {
+        const backendErrors: Record<string, string> = {};
+        err.data.forEach((issue: any) => {
+          const fieldName = issue.path[issue.path.length - 1];
+          if (fieldName) {
+            backendErrors[fieldName] = issue.message;
+          }
+        });
+        setErrors(backendErrors);
+        setFormError("Por favor, corrige los errores validados por el servidor.");
+      } else {
+        setFormError(err.message || "No se pudo actualizar el producto.");
+      }
     } finally {
       setIsMutating(false);
     }
@@ -163,14 +221,14 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 transition-opacity"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[110] transition-opacity"
           />
           <motion.div
             initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 w-full md:w-[500px] lg:w-[600px] bg-white shadow-2xl z-50 flex flex-col border-l border-slate-100"
+            className="fixed inset-y-0 right-0 w-full md:w-[500px] lg:w-[600px] bg-white shadow-2xl z-[120] flex flex-col border-l border-slate-100"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-10">
@@ -242,6 +300,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                         required
                         value={editProduct.name}
                         onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
+                        error={errors.name}
                       />
                       <Input
                         label="Marca"
@@ -289,6 +348,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                       label="Subcategoría *"
                       value={editProduct.subcategoryId}
                       onChange={(e) => setEditProduct({ ...editProduct, subcategoryId: e.target.value })}
+                      error={errors.subcategoryId}
                     >
                       {availableSubcategories.map((sub) => (
                         <option key={sub.id} value={sub.id}>{sub.name}</option>
@@ -311,6 +371,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                       leftIcon={<DollarSign className="w-4 h-4" />}
                       value={editProduct.price}
                       onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
+                      error={errors.price}
                     />
                     <Input
                       type="number"
@@ -319,6 +380,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                       leftIcon={<DollarSign className="w-4 h-4" />}
                       value={editProduct.discountPrice}
                       onChange={(e) => setEditProduct({ ...editProduct, discountPrice: e.target.value })}
+                      error={errors.discountPrice}
                     />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -328,6 +390,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                       required
                       value={editProduct.stock}
                       onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
+                      error={errors.stock}
                     />
                     <Select
                       label="Unidad"
@@ -344,6 +407,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                       label="Impuesto *"
                       value={editProduct.taxRateId}
                       onChange={(e) => setEditProduct({ ...editProduct, taxRateId: e.target.value })}
+                      error={errors.taxRateId}
                     >
                       {taxRates.map((tax) => (
                         <option key={tax.id} value={tax.id}>{tax.name} ({tax.rate}%)</option>

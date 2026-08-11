@@ -8,11 +8,14 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, leftIcon, rightIcon, className = '', ...props }, ref) => {
+  ({ label, error, leftIcon, rightIcon, className = '', id, ...props }, ref) => {
+    const generatedId = id || (label ? `${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-input` : undefined);
+    const errorId = generatedId ? `${generatedId}-error` : undefined;
+
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+          <label htmlFor={generatedId} className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
             {label}
           </label>
         )}
@@ -23,15 +26,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
           <input
+            id={generatedId}
             ref={ref}
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
             className={`
-              w-full h-11 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 
+              w-full h-11 bg-slate-50 border rounded-xl text-xs font-bold text-slate-800 
               placeholder:text-slate-400 shadow-inner
               focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all
               disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed
               ${leftIcon ? 'pl-11' : 'px-4'} 
               ${rightIcon ? 'pr-11' : 'px-4'}
-              ${error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}
+              ${error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300'}
               ${className}
             `}
             {...props}
@@ -43,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="text-[10px] font-bold text-rose-500 px-1 mt-0.5">{error}</p>
+          <p id={errorId} role="alert" className="text-[10px] font-bold text-rose-500 px-1 mt-0.5">{error}</p>
         )}
       </div>
     );
