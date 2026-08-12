@@ -26,6 +26,10 @@ services:
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-e-commerce-v2}?schema=public"
+      
+      # --- Añadidas para Seguridad y CORS ---
+      APP_URL: ${APP_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       JWT_SECRET: ${JWT_SECRET}           # Obligatorio para JWT en producción
       
       # --- Añadidas para Cloudflare R2 (Imágenes) ---
