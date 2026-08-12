@@ -5,9 +5,9 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
-const DSN = process.env.ODBC_DSN || 'Conexion_Mine';
-const UID = process.env.ODBC_UID || 'lector';
-const PWD = process.env.ODBC_PWD || 'DsI2018';
+const DSN = process.env.ODBC_DSN;
+const UID = process.env.ODBC_UID;
+const PWD = process.env.ODBC_PWD;
 const connectionString = `DSN=${DSN};UID=${UID};PWD=${PWD}`;
 
 const IMAGES_DIR = process.env.IMAGES_DIR || 'C:\\Users\\DMZ\\Videos\\scraping-imagenes-plansuarez\\catalogo_productos';
@@ -74,7 +74,7 @@ async function syncCatalog() {
 
   // La tasa de cambio viene en todas las filas (por el cross join), tomamos la primera
   const tasaVig = rows[0].tasa_vig;
-  
+
   if (tasaVig) {
     console.log(`[+] Sincronizando Tasa de Cambio del día: ${tasaVig}`);
     const exchangeRate = await prisma.exchangeRate.findFirst();
@@ -96,8 +96,8 @@ async function syncCatalog() {
     defaultCategory = await prisma.category.create({ data: { name: 'Sin Categorizar' } });
   }
 
-  let defaultSubcategory = await prisma.subcategory.findFirst({ 
-    where: { name: 'Varios', categoryId: defaultCategory.id } 
+  let defaultSubcategory = await prisma.subcategory.findFirst({
+    where: { name: 'Varios', categoryId: defaultCategory.id }
   });
   if (!defaultSubcategory) {
     defaultSubcategory = await prisma.subcategory.create({
@@ -106,9 +106,9 @@ async function syncCatalog() {
   }
 
   console.log('[+] Sincronizando Impuestos y Productos...');
-  
+
   let successCount = 0;
-  
+
   for (const row of rows) {
     // 1. Manejo del Impuesto
     const codImpuesto = String(row.cod_impuesto);
@@ -126,7 +126,7 @@ async function syncCatalog() {
     const isActive = row.ind_inactivo === 'A';
     const unit = (row.ind_pesado === 1 || row.ind_pesado === '1') ? UnitType.KG : UnitType.UNID;
     const price = row.precio_usd ? Number(row.precio_usd) : 0;
-    
+
     const externalId = String(row.cod_interno);
     const barcode = row.cod_barra ? String(row.cod_barra) : null;
 
@@ -162,16 +162,16 @@ async function syncCatalog() {
   }
 
   console.log(`[+] Importación de catálogo completada: ${successCount} productos.`);
-  
+
   console.log('[+] Procesando imágenes locales con Sharp (generación offline para R2)...');
   if (fs.existsSync(IMAGES_DIR)) {
     if (!SKIP_OPTIMIZATION && !fs.existsSync(OPTIMIZED_DIR)) {
       fs.mkdirSync(OPTIMIZED_DIR, { recursive: true });
     }
-    
+
     let imagesProcessed = 0;
     const categoriesDirs = fs.readdirSync(IMAGES_DIR, { withFileTypes: true }).filter(d => d.isDirectory());
-    
+
     for (const catDir of categoriesDirs) {
       const catName = catDir.name;
       // Crear/buscar categoria en BD
@@ -186,12 +186,12 @@ async function syncCatalog() {
       for (const subDir of subcategoriesDirs) {
         const subName = subDir.name;
         // La restricción de unicidad es [name, categoryId]
-        let subcategory = await prisma.subcategory.findUnique({ 
-          where: { name_categoryId: { name: subName, categoryId: category.id } } 
+        let subcategory = await prisma.subcategory.findUnique({
+          where: { name_categoryId: { name: subName, categoryId: category.id } }
         });
         if (!subcategory) {
-          subcategory = await prisma.subcategory.create({ 
-            data: { name: subName, categoryId: category.id } 
+          subcategory = await prisma.subcategory.create({
+            data: { name: subName, categoryId: category.id }
           });
         }
 
@@ -201,7 +201,7 @@ async function syncCatalog() {
         for (const img of images) {
           const barcode = path.parse(img.name).name;
           const sourceFilePath = path.join(imgPath, img.name);
-          
+
           // Buscar producto usando el código de barras
           const product = await prisma.product.findUnique({ where: { barcode } });
           if (product) {
@@ -210,45 +210,45 @@ async function syncCatalog() {
               where: { id: product.id },
               data: { subcategoryId: subcategory.id }
             });
-            
+
             // Verificamos si ya existe la imagen asociada en BD
             const existingImg = await prisma.productImage.findFirst({ where: { productId: product.id } });
             if (!existingImg) {
-               // Nombres de archivos optimizados (locales, listos para arrastrar a R2)
-               const fullFilename = `${barcode}-full.webp`;
-               const thumbFilename = `${barcode}-thumb.webp`;
-               
-               if (!SKIP_OPTIMIZATION) {
-                 console.log(`[+] Optimizando y guardando imagen para: ${barcode}`);
-                 const fullDestPath = path.join(OPTIMIZED_DIR, fullFilename);
-                 const thumbDestPath = path.join(OPTIMIZED_DIR, thumbFilename);
+              // Nombres de archivos optimizados (locales, listos para arrastrar a R2)
+              const fullFilename = `${barcode}-full.webp`;
+              const thumbFilename = `${barcode}-thumb.webp`;
 
-                 // Leer buffer original
-                 const fileBuffer = fs.readFileSync(sourceFilePath);
+              if (!SKIP_OPTIMIZATION) {
+                console.log(`[+] Optimizando y guardando imagen para: ${barcode}`);
+                const fullDestPath = path.join(OPTIMIZED_DIR, fullFilename);
+                const thumbDestPath = path.join(OPTIMIZED_DIR, thumbFilename);
 
-                 // Generar Versión Full
-                 await sharp(fileBuffer)
-                   .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
-                   .webp({ quality: 80 })
-                   .toFile(fullDestPath);
+                // Leer buffer original
+                const fileBuffer = fs.readFileSync(sourceFilePath);
 
-                 // Generar Versión Thumb
-                 await sharp(fileBuffer)
-                   .resize({ width: 300, height: 300, fit: 'cover' })
-                   .webp({ quality: 75 })
-                   .toFile(thumbDestPath);
-               } else {
-                 console.log(`[+] Registrando URLs en base de datos para: ${barcode} (omitiendo optimización física)`);
-               }
-               
-               // Crear registro en BD apuntando al dominio público de Cloudflare
-               // (Asumiendo que subirás estos archivos directamente en el root del bucket, bajo un folder 'products/')
-               const fullUrl = `${PUBLIC_URL}/products/${fullFilename}`;
-               const thumbUrl = `${PUBLIC_URL}/products/${thumbFilename}`;
-               
-               await prisma.productImage.create({
-                 data: { productId: product.id, url: fullUrl, thumbUrl }
-               });
+                // Generar Versión Full
+                await sharp(fileBuffer)
+                  .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
+                  .webp({ quality: 80 })
+                  .toFile(fullDestPath);
+
+                // Generar Versión Thumb
+                await sharp(fileBuffer)
+                  .resize({ width: 300, height: 300, fit: 'cover' })
+                  .webp({ quality: 75 })
+                  .toFile(thumbDestPath);
+              } else {
+                console.log(`[+] Registrando URLs en base de datos para: ${barcode} (omitiendo optimización física)`);
+              }
+
+              // Crear registro en BD apuntando al dominio público de Cloudflare
+              // (Asumiendo que subirás estos archivos directamente en el root del bucket, bajo un folder 'products/')
+              const fullUrl = `${PUBLIC_URL}/products/${fullFilename}`;
+              const thumbUrl = `${PUBLIC_URL}/products/${thumbFilename}`;
+
+              await prisma.productImage.create({
+                data: { productId: product.id, url: fullUrl, thumbUrl }
+              });
             }
             imagesProcessed++;
           }
@@ -259,7 +259,7 @@ async function syncCatalog() {
   } else {
     console.log(`[-] Error: El directorio de imágenes no existe en la ruta: ${IMAGES_DIR}`);
   }
-  
+
   await connection.close();
   await shutdownDatabase();
 }
