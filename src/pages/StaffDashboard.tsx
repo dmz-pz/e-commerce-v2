@@ -22,7 +22,6 @@ export const StaffDashboard: React.FC = () => {
     setLimit,
     assigningId,
     setAssigningId,
-    catalogProducts,
     substitutingItem,
     setSubstitutingItem,
     addingToOrderId,
@@ -120,8 +119,7 @@ export const StaffDashboard: React.FC = () => {
       {/* Modular Substitution Popup Overlay */}
       <SubstitutionModal
         substitutingItem={substitutingItem}
-        onClose={() => { setSubstitutingItem(null); setErrorMessage(null); }}
-        catalogProducts={catalogProducts}
+        onClose={() => setSubstitutingItem(null)}
         onPerformSubstitution={handlePerformSubstitution}
         errorMessage={errorMessage}
       />
@@ -129,9 +127,8 @@ export const StaffDashboard: React.FC = () => {
       {/* Add New Product Popup Overlay (Reusing SubstitutionModal UI) */}
       <SubstitutionModal
         substitutingItem={addingToOrderId ? { orderId: addingToOrderId, productId: '', name: 'NUEVO PRODUCTO' } : null}
-        onClose={() => { setAddingToOrderId(null); setErrorMessage(null); }}
-        catalogProducts={catalogProducts}
-        onPerformSubstitution={handleAddProduct}
+        onClose={() => setAddingToOrderId(null)}
+        onPerformSubstitution={(replacement) => handleAddProduct(replacement)}
         errorMessage={errorMessage}
         isAddMode={true}
       />
