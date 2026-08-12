@@ -16,8 +16,8 @@ export const registerSchema = z.object({
       .string({ error: "La cédula es requerida" })
       .trim()
       .regex(
-        /^\d{7,8}$/,
-        "La cédula debe contener solo números y tener entre 7 y 8 dígitos",
+        /^[VE]-\d{7,8}$/,
+        "La cédula debe ser V o E y contener entre 7 y 8 dígitos (ej: V-12345678).",
       ),
     firstName: z
       .string({ error: "El nombre es requerido" })
@@ -32,8 +32,8 @@ export const registerSchema = z.object({
     phone: z
       .string({ error: "El teléfono es requerido" })
       .regex(
-        /^\d{11}$/,
-        "El teléfono debe contener solo números y tener exactamente 11 dígitos",
+        /^\+\d{12}$/,
+        "El teléfono debe tener exactamente 13 dígitos",
       ),
     email: z
       .string()

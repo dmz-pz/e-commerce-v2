@@ -5,6 +5,7 @@ import { User, MapPin, LogOut, Plus, Trash2, Edit2, Check, X, ShoppingBag, Packa
 import { useNavigate } from 'react-router-dom';
 import { orderService } from '../services/orderService.ts';
 import { Order, OrderStatus } from '../types/index.ts';
+import { PhoneInput } from '../components/ui/PhoneInput.tsx';
 
 const Profile: React.FC = () => {
   const { user, logout, updateProfile, addAddress, deleteAddress, updateAddress } = useUser();
@@ -195,12 +196,12 @@ const Profile: React.FC = () => {
                   <div className="space-y-2 md:col-span-2">
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Teléfono de Contacto</span>
                     {isEditingInfo ? (
-                      <input
-                        className="w-full md:w-1/2 h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-                        value={tempPhone}
-                        onChange={(e) => setTempPhone(e.target.value)}
-                        placeholder="+58 414 1234567"
-                      />
+                      <div className="w-full md:w-1/2">
+                        <PhoneInput
+                          value={tempPhone}
+                          onChange={setTempPhone}
+                        />
+                      </div>
                     ) : (
                       <p className="text-base font-bold text-slate-800">{user.phone || 'No especificado'}</p>
                     )}

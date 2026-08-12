@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus, DeliveryPerson, Product, OrderItem } from '../types/index.ts';
 import { orderService } from '../services/orderService.ts';
-import { productService } from '../services/productService.ts';
+
 
 export const useStaffDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -13,7 +13,6 @@ export const useStaffDashboard = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(6);
 
-  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const [substitutingItem, setSubstitutingItem] = useState<{ orderId: string, productId: string, name: string } | null>(null);
   const [addingToOrderId, setAddingToOrderId] = useState<string | null>(null);
   const [validatingPaymentOrderId, setValidatingPaymentOrderId] = useState<string | null>(null);
@@ -45,16 +44,10 @@ export const useStaffDashboard = () => {
       .catch(err => console.error("Error fetching motorizados:", err));
   };
 
-  const fetchProducts = () => {
-    productService.getProducts({ all: true })
-      .then(data => setCatalogProducts(data.items || []))
-      .catch(err => console.error("Error fetching products:", err));
-  };
 
   useEffect(() => {
     fetchOrders();
     fetchMotorizados();
-    fetchProducts();
 
     const interval = setInterval(() => {
       orderService.getOrders({ todayOnly: true, limit: 1000 })
@@ -348,8 +341,8 @@ export const useStaffDashboard = () => {
   const filteredOrders = filter === 'all'
     ? orders
     : filter === OrderStatus.READY_TO_PAY
-    ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
-    : orders.filter(o => o.status === filter);
+      ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
+      : orders.filter(o => o.status === filter);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / limit));
 
@@ -371,7 +364,6 @@ export const useStaffDashboard = () => {
     setLimit,
     assigningId,
     setAssigningId,
-    catalogProducts,
     substitutingItem,
     setSubstitutingItem,
     addingToOrderId,
