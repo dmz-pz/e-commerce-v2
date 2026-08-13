@@ -16,36 +16,98 @@ import { useCart } from "../context/CartContext.tsx";
 import { Product } from "../types/index.ts";
 import { parseAndFormatPrice } from "../utils/formatPrice.ts";
 import { OptimizedImage } from "../components/ui/OptimizedImage.tsx";
+import { productService } from "../services/productService.ts";
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const {
     products,
-    loading,
+    recommendedProducts,
+    discountedProducts,
+    bestSellers,
     setSelectedCategory,
     setSelectedSubcategory,
     setSearchQuery,
   } = useGlobalCatalog();
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    if (!loading && products.length > 0) {
-      const found = products.find((p) => p.id === id);
+    let active = true;
+    async function loadProduct() {
+      if (!id) return;
+      setLoadingProduct(true);
+      setError(null);
+
+      // 1. Buscar en memoria local del catálogo (incluyendo las secciones destacadas de la portada)
+      const allLocalProducts = [
+        ...products,
+        ...(recommendedProducts || []),
+        ...(discountedProducts || []),
+        ...(bestSellers || []),
+      ];
+      const found = allLocalProducts.find((p) => p.id === id);
+
       if (found) {
-        setProduct(found);
-      } else {
-        // Opcional: navigate('/')
+        if (active) {
+          setProduct(found);
+          setLoadingProduct(false);
+        }
+        return;
+      }
+
+      // 2. Si no se encuentra localmente (por ej. recarga de página o link directo), consultar API
+      try {
+        const fetched = await productService.getProductById(id);
+        if (active) {
+          setProduct(fetched);
+        }
+      } catch (err) {
+        console.error("Error fetching product details:", err);
+        if (active) {
+          setError("No se pudo cargar el producto.");
+        }
+      } finally {
+        if (active) {
+          setLoadingProduct(false);
+        }
       }
     }
-  }, [id, products, loading]);
+
+    loadProduct();
+
+    return () => {
+      active = false;
+    };
+  }, [id, products, recommendedProducts, discountedProducts, bestSellers]);
 
   // 1. Guardias de carga y de objeto nulo
-  if (loading || !product) {
+  if (loadingProduct) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <p className="text-slate-500 font-bold">{error || "Producto no encontrado"}</p>
+        <Link
+          to="/"
+          onClick={() => {
+            setSelectedCategory("all");
+            setSelectedSubcategory("all");
+            setSearchQuery("");
+          }}
+          className="text-brand hover:underline font-black uppercase text-xs tracking-widest"
+        >
+          Volver al Inicio
+        </Link>
       </div>
     );
   }
