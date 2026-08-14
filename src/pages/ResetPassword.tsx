@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Mail, KeyRound, ArrowRight, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Logo } from '../components/Logo.tsx';
 import { PasswordInput } from '../components/PasswordInput.tsx';
-import { apiClient } from '../services/apiClient.ts';
+import { authClient } from '../services/authClient.ts';
 
 export const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,12 +16,7 @@ export const ResetPassword: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const qEmail = searchParams.get('email');
-    const qCode = searchParams.get('code');
-    if (qEmail) setEmail(qEmail);
-    if (qCode) setCode(qCode);
-  }, [searchParams]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +36,21 @@ export const ResetPassword: React.FC = () => {
     }
 
     try {
-      await apiClient.post<{ status: string; message: string }>('auth/reset-password', {
-        email,
-        code,
+      const token = searchParams.get('token');
+      if (!token) {
+        setError('Enlace inválido o expirado. Por favor solicita uno nuevo.');
+        return;
+      }
+
+      const { error: apiError } = await authClient.resetPassword({
         newPassword,
+        token
       });
+
+      if (apiError) {
+        setError(apiError.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
+        return;
+      }
 
       setSuccess(true);
     } catch (error) {
@@ -59,7 +63,7 @@ export const ResetPassword: React.FC = () => {
 
   return (
     <main className="min-h-[80vh] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden"
@@ -76,37 +80,9 @@ export const ResetPassword: React.FC = () => {
           </div>
 
           {!success ? (
+
+
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="email" 
-                    required
-                    className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Código de Seguridad</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="text" 
-                    required
-                    className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-xs font-bold text-slate-700 font-mono focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-                    placeholder="123456"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Nueva Contraseña</label>
                 <PasswordInput
@@ -130,7 +106,7 @@ export const ResetPassword: React.FC = () => {
               </div>
 
               {error && (
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"
@@ -139,7 +115,7 @@ export const ResetPassword: React.FC = () => {
                 </motion.p>
               )}
 
-              <button 
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-brand-dark transition-all disabled:opacity-50 shadow-lg shadow-brand/20 group mt-4"

@@ -3,14 +3,14 @@ import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, ArrowRight, Loader2, ArrowLeft, KeyRound, CheckCircle2 } from 'lucide-react';
 import { Logo } from '../components/Logo.tsx';
-import { apiClient } from '../services/apiClient.ts';
+import { authClient } from '../services/authClient.ts';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<string | null>(null);
-  const [resetCode, setResetCode] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,14 +20,12 @@ export const ForgotPassword: React.FC = () => {
     setSuccess(null);
 
     try {
-      const res = await apiClient.post<{ status: string; message: string; resetCode?: string }>('auth/forgot-password', {
+      await authClient.requestPasswordReset({
         email,
+        redirectTo: "/reset-password"
       });
 
-      setSuccess(res.message || 'Código enviado correctamente');
-      if (res.resetCode) {
-        setResetCode(res.resetCode);
-      }
+      setSuccess('Si el correo está registrado, recibirás un enlace seguro para restablecer tu contraseña. (En modo de desarrollo, revisa la terminal del servidor).');
     } catch (error) {
       const err = error as Error;
       setError(err.message || 'No se pudo procesar la solicitud');
@@ -109,18 +107,13 @@ export const ForgotPassword: React.FC = () => {
                 </p>
               </div>
 
-              {resetCode && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Tu código de seguridad</span>
-                  <span className="font-mono text-2xl font-black text-brand tracking-widest">{resetCode}</span>
-                </div>
-              )}
+
 
               <button
-                onClick={() => navigate(`/reset-password?email=${encodeURIComponent(email)}&code=${resetCode || ''}`)}
+                onClick={() => navigate(`/login`)}
                 className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-brand-dark transition-all shadow-lg shadow-brand/20"
               >
-                Continuar a Restablecer
+                Volver al Inicio de Sesión
                 <ArrowRight className="w-4 h-4" />
               </button>
             </motion.div>
