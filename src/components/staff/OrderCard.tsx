@@ -374,7 +374,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             <div>
               <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest block mb-0.5">En Reparto</span>
               <span className="text-[10px] font-black text-slate-700 uppercase">
-                En ruta con: {deliveryPerson ? `${deliveryPerson.firstName} ${deliveryPerson.lastName}` : 'Motorizado'}
+                En ruta con: {deliveryPerson ? deliveryPerson.name : 'Motorizado'}
               </span>
             </div>
           </div>

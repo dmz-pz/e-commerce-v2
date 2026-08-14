@@ -64,8 +64,7 @@ export function StaffTab() {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchSearch = 
-        user.firstName.toLowerCase().includes(search.toLowerCase()) || 
-        user.lastName.toLowerCase().includes(search.toLowerCase()) ||
+        user.name.toLowerCase().includes(search.toLowerCase()) || 
         user.cedula.toLowerCase().includes(search.toLowerCase());
       
       const matchRole = roleFilter === 'ALL' || user.role === roleFilter;
@@ -185,10 +184,10 @@ export function StaffTab() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-700 flex items-center justify-center text-white font-bold shadow-inner">
-                          {user.firstName[0]}{user.lastName[0]}
+                          {user.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium text-white">{user.firstName} {user.lastName}</div>
+                          <div className="font-medium text-white">{user.name}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                             C.I: {user.cedula}
                           </div>
@@ -226,7 +225,7 @@ export function StaffTab() {
                           <ArrowRightLeft className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(user.id, `${user.firstName} ${user.lastName}`)}
+                          onClick={() => handleDelete(user.id, user.name)}
                           title="Dar de Baja"
                           className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >

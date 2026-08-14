@@ -36,7 +36,15 @@ export function StaffCreateModal({ isOpen, onClose, onSuccess }: StaffCreateModa
     setError(null);
 
     try {
-      await adminService.createStaff(formData);
+      const payload = {
+        cedula: formData.cedula,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        phone: formData.phone,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      };
+      await adminService.createStaff(payload);
       onSuccess();
       onClose();
       // Reset form

@@ -48,8 +48,7 @@ const Register: React.FC = () => {
     try {
       await register({
         cedula,
-        firstName,
-        lastName,
+        name: `${firstName} ${lastName}`.trim(),
         phone,
         email,
         password,
@@ -82,36 +81,37 @@ const Register: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Primer Nombre */}
+              {/* Nombre Completo */}
+              {/* Nombres */}
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Primer Nombre</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Nombres</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                   <input
                     type="text"
                     required
-                    minLength={3}
-                    maxLength={16}
+                    minLength={2}
+                    maxLength={20}
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
-                    placeholder="María"
+                    placeholder="Ej. María"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* Primer Apellido */}
+              {/* Apellidos */}
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Primer Apellido</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Apellidos</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                   <input
                     type="text"
                     required
-                    minLength={3}
-                    maxLength={25}
+                    minLength={2}
+                    maxLength={20}
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
-                    placeholder="Pérez"
+                    placeholder="Ej. Pérez"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                   />

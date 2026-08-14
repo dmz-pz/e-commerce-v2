@@ -9,8 +9,7 @@ import { Payment, AuditLog, User } from '../types/index.ts';
 // Re-utilizamos la misma estructura del backend para asegurar consistencia
 export interface CreateStaffPayload {
   cedula: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string;
   email: string;
   password?: string;

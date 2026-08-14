@@ -240,7 +240,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         })),
       });
 
-      const customerDisplayName = user.firstName || user.name || "";
+      const customerDisplayName = user.name || "";
       alert(
         `¡Gracias ${customerDisplayName}! Pedido realizado con éxito. El personal ya está preparando tu compra.`,
       );
