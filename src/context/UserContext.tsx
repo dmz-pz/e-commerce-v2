@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient.ts';
+import { authClient } from '../services/authClient.ts';
 import { Role } from '../types/index.ts';
 
 interface Address {
@@ -18,8 +19,6 @@ interface User {
   phone?: string;
   addresses: Address[];
   role?: Role;
-  firstName?: string;
-  lastName?: string;
 }
 
 interface UserContextType {
@@ -27,8 +26,7 @@ interface UserContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: {
     cedula: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     phone: string;
     email: string;
     password: string;
@@ -46,29 +44,21 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  // Validar sesión inicial con el backend leyendo la cookie httpOnly vía GET /auth/me
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await apiClient.get<{
-          user: {
-            id: string;
-            name: string;
-            email: string;
-            phone?: string;
-            role?: Role;
-          };
-        }>('auth/me');
-        
-        if (res && res.user) {
+        const { data } = await authClient.getSession();
+        if (data && data.user) {
           setUser({
-            id: res.user.id,
-            name: res.user.name,
-            email: res.user.email,
-            phone: res.user.phone,
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            phone: (data.user as any).phone,
             addresses: [],
-            role: res.user.role || Role.CLIENTE
+            role: (data.user as any).role || Role.CLIENTE
           });
+        } else {
+          setUser(null);
         }
       } catch (err) {
         setUser(null);
@@ -79,51 +69,65 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await apiClient.post<{
-      status: string;
-      user: {
-        id: string;
-        name: string;
-        email: string;
-        phone?: string;
-        role?: Role;
-      };
-    }>('auth/login', { email, password });
+    const { data, error } = await authClient.signIn.email({
+      email,
+      password
+    });
 
-    if (res && res.user) {
+    if (error) {
+      throw new Error(error.message || 'Credenciales inválidas');
+    }
+
+    if (data && data.user) {
       setUser({
-        id: res.user.id,
-        name: res.user.name,
-        email: res.user.email,
-        phone: res.user.phone,
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: (data.user as any).phone,
         addresses: [],
-        role: res.user.role || Role.CLIENTE
+        role: (data.user as any).role || Role.CLIENTE
       });
-    } else {
-      throw new Error('Credenciales o respuesta de autenticación inválida');
     }
   };
 
   const register = async (data: {
     cedula: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     phone: string;
     email: string;
     password: string;
     birthdate?: string;
   }) => {
-    // 1. Llamar a la API del backend para registrarse de forma segura
-    await apiClient.post<{ status: string; user: unknown }>('auth/register', data);
-    // 2. Loguearse automáticamente usando las credenciales recién creadas
-    await login(data.email, data.password);
+    const { data: resData, error } = await (authClient.signUp.email as any)({
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      cedula: data.cedula,
+      phone: data.phone,
+      birthdate: data.birthdate
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Error al registrar usuario');
+    }
+
+    if (resData && resData.user) {
+      setUser({
+        id: resData.user.id,
+        name: resData.user.name,
+        email: resData.user.email,
+        phone: (resData.user as any).phone,
+        addresses: [],
+        role: (resData.user as any).role || Role.CLIENTE
+      });
+    }
   };
 
   const logout = async () => {
     try {
-      await apiClient.post('auth/logout');
+      await authClient.signOut();
     } catch (err) {
-      console.error("Error al cerrar sesión en servidor:", err);
+      console.error("Error al cerrar sesión:", err);
     } finally {
       setUser(null);
     }
@@ -141,10 +145,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role?: Role;
         };
       }>('auth/profile', data);
-      
+
       if (res && res.user) {
-        const updatedUser = { 
-          ...user, 
+        const updatedUser = {
+          ...user,
           name: res.user.name,
           email: res.user.email,
           phone: res.user.phone,
@@ -169,7 +173,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateAddress = async (id: string, updatedFields: Partial<Address>) => {
     if (!user) return;
-    const updatedAddresses = user.addresses.map(addr => 
+    const updatedAddresses = user.addresses.map(addr =>
       addr.id === id ? { ...addr, ...updatedFields } : addr
     );
     const updatedUser = { ...user, addresses: updatedAddresses };
@@ -184,15 +188,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      login, 
-      register, 
-      logout, 
-      updateProfile, 
-      addAddress, 
-      updateAddress, 
-      deleteAddress 
+    <UserContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      updateProfile,
+      addAddress,
+      updateAddress,
+      deleteAddress
     }}>
       {children}
     </UserContext.Provider>

@@ -109,8 +109,7 @@ export interface Address {
 export interface User {
   id: string;
   cedula: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string;
   email: string;
   birthdate?: string; // Fechas vienen como ISO string desde la API JSON
