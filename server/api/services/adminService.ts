@@ -11,8 +11,7 @@ import { prisma } from "../db.ts";
 
 export interface CreateStaffDTO {
   cedula: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string;
   email: string;
   password?: string;
@@ -103,8 +102,7 @@ export class AdminService {
 
     const newUser = await userRepository.create({
       cedula: userData.cedula,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
+      name: userData.name,
       phone: userData.phone,
       email: userData.email,
       passwordHash: hashedPassword,
@@ -122,7 +120,7 @@ export class AdminService {
     }
 
     await auditLogRepository.create({
-      action: `Alta de empleado: Se registró a ${newUser.firstName} con rol ${newUser.role}`,
+      action: `Alta de empleado: Se registró a ${newUser.name} con rol ${newUser.role}`,
       performedById,
     });
 
@@ -150,7 +148,7 @@ export class AdminService {
     }
 
     await auditLogRepository.create({
-      action: `Cambio de Rol: El empleado ${user.firstName} cambió de ${user.role} a ${role}`,
+      action: `Cambio de Rol: El empleado ${user.name} cambió de ${user.role} a ${role}`,
       performedById,
     });
 
@@ -164,7 +162,7 @@ export class AdminService {
     const deleted = await userRepository.softDelete(id);
 
     await auditLogRepository.create({
-      action: `Baja de empleado: Se eliminó/desactivó a ${user.firstName} (Rol: ${user.role})`,
+      action: `Baja de empleado: Se eliminó/desactivó a ${user.name} (Rol: ${user.role})`,
       performedById,
     });
 

@@ -191,8 +191,7 @@ export class OrderService {
 
     const shippingCost = 0.0; // Se actualizará en otra etapa según tu instrucción
     const calculatedTotal = calculatedSubtotal + shippingCost;
-    const fullCustomerName =
-      `${customer.firstName} ${customer.lastName}`.trim(); //
+    const fullCustomerName = customer.name.trim(); //
 
     const newOrder = await orderRepository.create({
       customerId: customer.id,

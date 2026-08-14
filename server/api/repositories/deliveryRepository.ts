@@ -14,7 +14,7 @@ export class DeliveryRepository {
 
     return deliveryProfiles.map(p => ({
       id: p.userId,
-      name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+      name: p.user.name.trim(),
       phone: p.user.phone,
       status: p.status.toLowerCase() as 'available' | 'busy' | 'offline',
       vehicle: p.vehiclePlate || "Moto / Vehículo Asignado",
@@ -74,7 +74,7 @@ export class DeliveryRepository {
 
     return {
       id: profile.userId,
-      name: `${profile.user.firstName} ${profile.user.lastName}`.trim(),
+      name: profile.user.name.trim(),
       phone: profile.user.phone,
       status: profile.status.toLowerCase() as 'available' | 'busy' | 'offline',
       vehicle: profile.vehiclePlate || "Moto / Vehículo Asignado",
@@ -94,7 +94,7 @@ export class DeliveryRepository {
 
     return profiles.map(p => ({
       id: p.userId,
-      name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+      name: p.user.name.trim(),
       cashInHand: Number(p.cashInHand),
       status: p.status
     }));
@@ -139,10 +139,10 @@ export class DeliveryRepository {
     });
     return settlements.map(s => ({
       id: s.id,
-      driverName: `${s.deliveryPerson.firstName} ${s.deliveryPerson.lastName}`.trim(),
+      driverName: s.deliveryPerson.name.trim(),
       amount: Number(s.amount),
       status: s.status,
-      reviewedByName: s.reviewedBy ? `${s.reviewedBy.firstName} ${s.reviewedBy.lastName}`.trim() : 'Sistema',
+      reviewedByName: s.reviewedBy ? s.reviewedBy.name.trim() : 'Sistema',
       createdAt: s.createdAt
     }));
   }
