@@ -92,18 +92,18 @@ enum SettlementStatus {
 // ==========================================
 
 model User {
-  id           String    @id @default(uuid())
-  cedula       String    @unique
-  firstName    String
-  lastName     String
-  phone        String
-  email        String    @unique
-  passwordHash String
-  birthdate    DateTime?
-  role         Role      @default(CLIENTE)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  id            String    @id @default(uuid())
+  cedula        String    @unique
+  name          String
+  phone         String
+  email         String    @unique
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?
+  birthdate     DateTime?
+  role          Role      @default(CLIENTE)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime? @map("deleted_at")
 
   // Relaciones
   addresses    Address[]
@@ -117,7 +117,55 @@ model User {
   settlements         DriverSettlement[] @relation("DriverSettlements")
   settlementsReviewed DriverSettlement[] @relation("AdminSettlements")
 
+  // Relaciones de Better Auth
+  sessions Session[]
+  accounts Account[]
+
   @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime? @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("verifications")
 }
 
 model Address {
@@ -125,7 +173,7 @@ model Address {
   alias  String
   line1  String
   line2  String?
-  userId String
+  userId String  @map("user_id")
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
@@ -146,7 +194,7 @@ model Category {
 model Subcategory {
   id         String    @id @default(uuid())
   name       String
-  categoryId String
+  categoryId String    @map("category_id")
   category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   products   Product[]
 
@@ -156,28 +204,28 @@ model Subcategory {
 
 model Product {
   id             String   @id @default(uuid())
-  externalId     String?  @unique
+  externalId     String?  @unique @map("external_id")
   name           String
   description    String   @db.Text
   barcode        String?  @unique
   price          Decimal  @db.Decimal(10, 2)
-  discountPrice  Decimal? @db.Decimal(10, 2)
+  discountPrice  Decimal? @map("discount_price") @db.Decimal(10, 2)
   stock          Int      @default(0)
   brand          String?
   rating         Float    @default(0.0)
-  reviewCount    Int      @default(0)
+  reviewCount    Int      @default(0) @map("review_count")
   specifications Json?
   unit           UnitType @default(UNID)
-  isRecommended  Boolean  @default(false)
-  salesCount     Int      @default(0)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isRecommended  Boolean  @default(false) @map("is_recommended")
+  salesCount     Int      @default(0) @map("sales_count")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  taxRateId          String
+  taxRateId          String         @map("tax_rate_id")
   taxRate            TaxRate        @relation(fields: [taxRateId], references: [id])
   images             ProductImage[]
-  subcategoryId      String
+  subcategoryId      String         @map("subcategory_id")
   subcategory        Subcategory    @relation(fields: [subcategoryId], references: [id])
   orderItems         OrderItem[]
   substitutedInItems OrderItem[]    @relation("SubstitutedWithProduct")
@@ -189,11 +237,13 @@ model Product {
 
 model ProductImage {
   id        String  @id @default(uuid())
-  productId String
+  productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id])
   url       String
-  thumbUrl  String?
+  thumbUrl  String? @map("thumb_url")
   order     Int?
+
+  @@map("product_images")
 }
 
 // ==========================================
@@ -202,26 +252,26 @@ model ProductImage {
 
 model Order {
   id                String            @id @default(uuid())
-  customerId        String
+  customerId        String            @map("customer_id")
   customer          User              @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
-  fulfillmentMethod FulfillmentMethod @default(DELIVERY)
-  deliveryAddress   String?
-  customerName      String
+  fulfillmentMethod FulfillmentMethod @default(DELIVERY) @map("fulfillment_method")
+  deliveryAddress   String?           @map("delivery_address")
+  customerName      String            @map("customer_name")
   cedula            String
-  customerPhone     String
+  customerPhone     String            @map("customer_phone")
   subtotal          Decimal           @default(0.00) @db.Decimal(10, 2)
-  shippingCost      Decimal           @default(0.00) @db.Decimal(10, 2)
+  shippingCost      Decimal           @default(0.00) @map("shipping_cost") @db.Decimal(10, 2)
   total             Decimal           @db.Decimal(10, 2)
   status            OrderStatus       @default(PENDING)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   payment      Payment?
   items        OrderItem[]
   auditLogs    AuditLog[]
   deliveryJobs DeliveryJob[]
 
-  pickerId String?
+  pickerId String? @map("picker_id")
   picker   User?   @relation("PickerOrders", fields: [pickerId], references: [id])
 
   @@index([customerId])
@@ -232,16 +282,16 @@ model Order {
 
 model OrderItem {
   id                String     @id @default(uuid())
-  orderId           String
+  orderId           String     @map("order_id")
   order             Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId         String
+  productId         String     @map("product_id")
   product           Product    @relation(fields: [productId], references: [id])
   name              String
   price             Decimal    @db.Decimal(10, 2)
-  requestedQuantity Decimal    @db.Decimal(10, 3)
-  pickedQuantity    Decimal    @db.Decimal(10, 3)
+  requestedQuantity Decimal    @map("requested_quantity") @db.Decimal(10, 3)
+  pickedQuantity    Decimal    @map("picked_quantity") @db.Decimal(10, 3)
   status            ItemStatus @default(COMPLETED)
-  substitutedWithId String?
+  substitutedWithId String?    @map("substituted_with_id")
   substitutedWith   Product?   @relation("SubstitutedWithProduct", fields: [substitutedWithId], references: [id])
 
   @@index([orderId])
@@ -255,28 +305,28 @@ model OrderItem {
 
 model DeliveryProfile {
   id              String       @id @default(uuid())
-  userId          String       @unique
+  userId          String       @unique @map("user_id")
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   status          DriverStatus @default(OFFLINE)
-  cashInHand      Decimal      @default(0.00) @db.Decimal(10, 2) // Dinero físico recolectado pendiente por rendir
-  vehiclePlate    String?
-  currentLocation Json? // Coordenadas
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  cashInHand      Decimal      @default(0.00) @map("cash_in_hand") @db.Decimal(10, 2) // Dinero físico recolectado pendiente por rendir
+  vehiclePlate    String?      @map("vehicle_plate")
+  currentLocation Json?        @map("current_location") // Coordenadas
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("delivery_profiles")
 }
 
 model DeliveryJob {
   id               String            @id @default(uuid())
-  orderId          String
+  orderId          String            @map("order_id")
   order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  deliveryPersonId String
+  deliveryPersonId String            @map("delivery_person_id")
   deliveryPerson   User              @relation("DriverJobs", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
   status           DeliveryJobStatus @default(ASSIGNED)
-  failureReason    String?
-  assignedAt       DateTime          @default(now())
-  completedAt      DateTime?
+  failureReason    String?           @map("failure_reason")
+  assignedAt       DateTime          @default(now()) @map("assigned_at") @db.Timestamptz(3)
+  completedAt      DateTime?         @map("completed_at") @db.Timestamptz(3)
 
   @@index([deliveryPersonId])
   @@index([orderId])
@@ -285,14 +335,14 @@ model DeliveryJob {
 
 model DriverSettlement {
   id               String           @id @default(uuid())
-  deliveryPersonId String
+  deliveryPersonId String           @map("delivery_person_id")
   deliveryPerson   User             @relation("DriverSettlements", fields: [deliveryPersonId], references: [id], onDelete: Restrict)
   amount           Decimal          @db.Decimal(10, 2)
   status           SettlementStatus @default(PENDING)
-  reviewedById     String?
+  reviewedById     String?          @map("reviewed_by_id")
   reviewedBy       User?            @relation("AdminSettlements", fields: [reviewedById], references: [id], onDelete: SetNull)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([deliveryPersonId])
   @@map("driver_settlements")
@@ -304,16 +354,16 @@ model DriverSettlement {
 
 model Payment {
   id           String        @id @default(uuid())
-  orderId      String        @unique
+  orderId      String        @unique @map("order_id")
   order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
   amount       Decimal       @db.Decimal(10, 2)
   method       PaymentMethod
   status       PaymentStatus @default(PENDING)
   reference    String?
-  receiptUrl   String?
-  reviewedById String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  receiptUrl   String?       @map("receipt_url")
+  reviewedById String?       @map("reviewed_by_id")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([status])
   @@map("payments")
@@ -321,14 +371,14 @@ model Payment {
 
 model AuditLog {
   id            String   @id @default(uuid())
-  orderId       String?
+  orderId       String?  @map("order_id")
   order         Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
   action        String
-  performedById String
+  performedById String   @map("performed_by_id")
   performedBy   User     @relation("UserAudited", fields: [performedById], references: [id])
-  previousState Json?
-  newState      Json?
-  timestamp     DateTime @default(now())
+  previousState Json?    @map("previous_state")
+  newState      Json?    @map("new_state")
+  timestamp     DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([orderId])
   @@map("audit_logs")
@@ -342,7 +392,7 @@ model ExchangeRate {
   id        String   @id @default(uuid())
   rate      Decimal  @db.Decimal(10, 4)
   currency  String   @default("VES")
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("exchange_rates")
 }

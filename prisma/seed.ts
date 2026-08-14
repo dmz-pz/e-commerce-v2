@@ -39,19 +39,17 @@ async function main() {
   // ==========================================
   const seedUsers = [
     {
-      cedula: "12345678", // 8 dígitos exactos
-      firstName: "Admin",
-      lastName: "Supermercado",
+      cedula: "12345678",
+      name: "Admin Supermercado",
       phone: "04121234567",
       email: "admin@supermercado.com",
-      password: "Password123", // Cumple: Mayúscula, Minúscula, Número y min 8 caracteres
-      birthdate: "1988-10-12", // Formato fecha válido
+      password: "Password123",
+      birthdate: "1988-10-12",
       role: "ADMINISTRADOR",
     },
     {
       cedula: "87654321",
-      firstName: "Juan",
-      lastName: "Cliente",
+      name: "Juan Cliente",
       phone: "04128765432",
       email: "cliente@gmail.com",
       password: "Password123",
@@ -60,8 +58,7 @@ async function main() {
     },
     {
       cedula: "15984263",
-      firstName: "Pedro",
-      lastName: "Picker",
+      name: "Pedro Picker",
       phone: "04141598426",
       email: "picker@supermercado.com",
       password: "Password123",
@@ -70,8 +67,7 @@ async function main() {
     },
     {
       cedula: "36925814",
-      firstName: "Carlos",
-      lastName: "Delivery",
+      name: "Carlos Delivery",
       phone: "04163692581",
       email: "delivery@supermercado.com",
       password: "Password123",
@@ -88,11 +84,12 @@ async function main() {
     if (!existingUser) {
       try {
         // Enviar petición HTTP al controlador de autenticación real
-        const response = await axios.post(`${API_URL}/auth/register`, user);
-        console.log(`👤 Usuario Creado vía API: ${user.firstName} [${user.role}] - Status: ${response.status}`);
+        // Ahora usamos authClient o auth/register según corresponda
+        const response = await axios.post(`${API_URL}/auth/sign-up/email`, user);
+        console.log(`👤 Usuario Creado vía API: ${user.name} [${user.role}] - Status: ${response.status}`);
       } catch (error: any) {
         console.error(
-          `❌ Error al registrar al usuario ${user.email} con Zod:`,
+          `❌ Error al registrar al usuario ${user.email}:`,
           error.response?.data || error.message
         );
       }
