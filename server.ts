@@ -14,6 +14,8 @@ import deliveryRoutes from "./server/api/routes/deliveryRoutes.ts";
 import adminRoutes from "./server/api/routes/adminRoutes.ts";
 import categoryRoutes from "./server/api/routes/categoryRoutes.ts";
 
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { auth } from "./server/api/lib/auth.ts";
 import { globalErrorHandler } from "./server/api/middlewares/errorMiddleware.ts";
 
 async function startServer() {
@@ -50,7 +52,7 @@ async function startServer() {
   app.use(cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      
+
       if (process.env.NODE_ENV !== "production") {
         if (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
           return callback(null, true);
@@ -60,7 +62,7 @@ async function startServer() {
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      
+
       callback(new Error(`Origen ${origin} no permitido por CORS`));
     },
     credentials: true,
@@ -68,6 +70,7 @@ async function startServer() {
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     maxAge: 86400,
   }));
+  app.all("/api/auth/*", toNodeHandler(auth));
   app.use(express.json());
   app.use(cookieParser());
 

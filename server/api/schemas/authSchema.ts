@@ -19,16 +19,11 @@ export const registerSchema = z.object({
         /^[VE]-\d{7,8}$/,
         "La cédula debe ser V o E y contener entre 7 y 8 dígitos (ej: V-12345678).",
       ),
-    firstName: z
+    name: z
       .string({ error: "El nombre es requerido" })
       .trim()
       .min(3, "El nombre debe tener al menos 3 caracteres")
-      .max(16, "El nombre debe tener maximo 16 caracteres"),
-    lastName: z
-      .string({ error: "El apellido es requerido" })
-      .trim()
-      .min(3, "El apellido debe tener al menos 3 caracteres")
-      .max(25, "El apellido debe tener maximo 25 caracteres"),
+      .max(40, "El nombre debe tener maximo 40 caracteres"),
     phone: z
       .string({ error: "El teléfono es requerido" })
       .regex(

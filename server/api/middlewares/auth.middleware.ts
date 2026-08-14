@@ -1,42 +1,31 @@
-
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { auth } from "../lib/auth.ts";
 
-export function verifyToken(req: Request, res: Response, next: NextFunction): void {
-  const token = req.cookies?.access_token;
-  if (!token) {
-    res.status(401).json({
-      error: "Acceso denegado. No se encontro ninguna sesión activa.",
-    });
-    return;
-  }
-
+export async function verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error("SECRET no existe para la firma del jwt");
-    }
+    // Better Auth extrae la cookie de sesión o el bearer token automáticamente de los headers
+    const session = await auth.api.getSession({
+      headers: req.headers as HeadersInit,
+    });
 
-    // Verificamos el token firmado
-    const decoded = jwt.verify(token, secret) as {
-      id: string;
-      name: string;
-      email: string;
-      role: string;
-    };
-
-    req.user = decoded;
-
-    next(); // Continuamos a la ruta protegida
-  } catch (e: unknown) { const error = e as Error;
-    if (error.name === "TokenExpiredError") {
+    if (!session) {
       res.status(401).json({
-        code: "TOKEN_EXPIRADO",
-        error: "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+        error: "Acceso denegado. No se encontro ninguna sesión activa.",
       });
       return;
     }
-    res.status(403).json({ error: "Token inválido o alterado." });
+
+    // Adaptamos el usuario de Better Auth al formato que espera la app
+    req.user = {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      role: (session.user as any).role || "CLIENTE",
+    };
+
+    next();
+  } catch (error) {
+    res.status(403).json({ error: "Error al verificar la sesión." });
     return;
   }
 }
