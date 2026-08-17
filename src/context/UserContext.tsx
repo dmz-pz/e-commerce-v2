@@ -104,7 +104,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: data.name,
       cedula: data.cedula,
       phone: data.phone,
-      birthdate: data.birthdate
+      birthdate: data.birthdate,
+      callbackURL: `${window.location.origin}/email-verified`
     });
 
     if (error) {

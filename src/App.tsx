@@ -22,7 +22,7 @@ const Register = lazy(() => import('./pages/Register.tsx'));
 const Profile = lazy(() => import('./pages/Profile.tsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
-
+const EmailVerified = lazy(() => import('./pages/EmailVerified.tsx').then(module => ({ default: module.EmailVerified })));
 import { Role } from './types/index.ts';
 
 // Configuración global de React Query
@@ -131,6 +131,9 @@ export default function App() {
                 <AuthRoute>
                   <ResetPassword />
                 </AuthRoute>
+              } />
+              <Route path="/email-verified" element={
+                <EmailVerified />
               } />
               <Route path="/profile" element={
                 <ProtectedRoute>
