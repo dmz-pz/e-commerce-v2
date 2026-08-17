@@ -6,7 +6,6 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { shutdownDatabase } from "./server/api/db.ts";
 
-import authRoutes from "./server/api/routes/authRoutes.ts";
 import productRoutes from "./server/api/routes/productRoutes.ts";
 import orderRoutes from "./server/api/routes/orderRoutes.ts";
 import inventoryRoutes from "./server/api/routes/inventoryRoutes.ts";
@@ -75,7 +74,6 @@ async function startServer() {
   app.use(cookieParser());
 
   // API Layers
-  app.use("/api/auth", authRoutes);
   app.use("/api/products", productRoutes);
   app.use("/api/orders", orderRoutes);
   app.use("/api/inventory", inventoryRoutes);
