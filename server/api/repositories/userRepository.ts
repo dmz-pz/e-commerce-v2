@@ -1,28 +1,8 @@
 import { prisma } from "../db.ts";
-import { RegisterUserInput } from "../schemas/authSchema";
 import { AppError } from "../utils/appErrors.ts";
 import { Role } from "../../../generated/prisma/enums.ts";
 
-type UserCreateInput = Omit<RegisterUserInput, "password" | "birthdate"> & {
-  passwordHash: string;
-  birthdate?: Date; // Sobreescribimos a tipo Date nativo para Prisma
-};
-
 export class UserRepository {
-  async create(data: UserCreateInput) {
-    try {
-      const newUser = await prisma.user.create({
-        data,
-      });
-      return newUser;
-    } catch (e: unknown) { const error = e as Error;
-      throw new AppError(
-        `Error al crear el usuario en la base de datos: ${error.message}`,
-        500
-      );
-    }
-  }
-
   async getByEmail(email: string) {
     try {
 
@@ -45,17 +25,6 @@ export class UserRepository {
       });
     } catch (e: unknown) { const error = e as Error;
       throw new AppError(`Error al buscar usuario por ID: ${error.message}`, 500);
-    }
-  }
-
-  async updatePassword(id: string, passwordHash: string) {
-    try {
-      return await prisma.user.update({
-        where: { id },
-        data: { passwordHash },
-      });
-    } catch (e: unknown) { const error = e as Error;
-      throw new AppError(`Error al actualizar contraseña del usuario: ${error.message}`, 500);
     }
   }
 

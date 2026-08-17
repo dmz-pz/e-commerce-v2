@@ -1,3 +1,4 @@
+import { auth } from "../lib/auth.ts";
 import { paymentRepository } from "../repositories/paymentRepository.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
 import { orderRepository } from "../repositories/orderRepository.ts";
@@ -6,7 +7,6 @@ import { userRepository } from "../repositories/userRepository.ts";
 
 import { AppError } from "../utils/appErrors.ts";
 import { Role, PaymentStatus, OrderStatus } from "../../../generated/prisma/enums.ts";
-import bcrypt from "bcrypt";
 import { prisma } from "../db.ts";
 
 export interface CreateStaffDTO {
@@ -98,16 +98,20 @@ export class AdminService {
     }
 
     const pass = userData.password || "123456";
-    const hashedPassword = (await bcrypt.hash(pass, 10));
 
-    const newUser = await userRepository.create({
-      cedula: userData.cedula,
-      name: userData.name,
-      phone: userData.phone,
-      email: userData.email,
-      passwordHash: hashedPassword,
-      role: userData.role,
+    const signUpResult = await auth.api.signUpEmail({
+      body: {
+        email: userData.email,
+        password: pass,
+        name: userData.name,
+        cedula: userData.cedula,
+        phone: userData.phone,
+        role: userData.role,
+        callbackURL: `${process.env.APP_URL || 'http://localhost:3000'}/email-verified`,
+      },
     });
+
+    const newUser = signUpResult.user;
 
     if (userData.role === Role.DELIVERY) {
       await prisma.deliveryProfile.create({
