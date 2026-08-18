@@ -56,10 +56,31 @@ export const registerSchema = z.object({
         error: "Debe incluir al menos un  número",
       }),
 
-    birthdate: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
-      error:
-        "El formato de la fecha de nacimiento no es válido (Debe ser YYYY-MM-DD)",
-    }),
+    birthdate: z
+      .string({ error: "La fecha de nacimiento es requerida" })
+      .trim()
+      .min(1, "La fecha de nacimiento es requerida")
+      .refine((val) => !isNaN(Date.parse(val)), {
+        error: "El formato de la fecha de nacimiento no es válido",
+      })
+      .refine(
+        (val) => {
+          const birthDateObj = new Date(val);
+          const today = new Date();
+          let age = today.getFullYear() - birthDateObj.getFullYear();
+          const monthDiff = today.getMonth() - birthDateObj.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDateObj.getDate())
+          ) {
+            age--;
+          }
+          return age >= 18;
+        },
+        {
+          error: "Debes ser mayor de edad (mínimo 18 años) para registrarte.",
+        },
+      ),
 
     role: RoleEnum.default("CLIENTE"),
   }),
