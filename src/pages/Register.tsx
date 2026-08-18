@@ -71,6 +71,26 @@ const Register: React.FC = () => {
       return;
     }
 
+    if (!birthdate) {
+      setError('La fecha de nacimiento es requerida.');
+      setLoading(false);
+      return;
+    }
+
+    const birthDateObj = new Date(birthdate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDateObj.getFullYear();
+    const monthDiff = today.getMonth() - birthDateObj.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      setError('Debes ser mayor de edad (mínimo 18 años) para registrarte.');
+      setLoading(false);
+      return;
+    }
+
     try {
       await register({
         cedula,
@@ -215,13 +235,14 @@ const Register: React.FC = () => {
                 </div>
               </div>
 
-              {/* Fecha de Nacimiento (Opcional) */}
+              {/* Fecha de Nacimiento */}
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Fecha de Nacimiento (Opcional)</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Fecha de Nacimiento</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                   <input
                     type="date"
+                    required
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                     value={birthdate}
                     onChange={(e) => setBirthdate(e.target.value)}
