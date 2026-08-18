@@ -12,11 +12,8 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
+        autoSignIn: false,
         sendResetPassword: async ({ user, url }) => {
-            console.log("=== RESET PASSWORD URL GENERADA ===");
-            console.log(url);
-            console.log("===================================");
-
             void sendPasswordResetEmail(
                 user.email,
                 user.name,
@@ -27,10 +24,6 @@ export const auth = betterAuth({
     emailVerification: {
         sendOnSignUp: true,
         sendVerificationEmail: async ({ user, url }) => {
-            console.log("=== EMAIL VERIFICATION URL GENERADA ===");
-            console.log(url);
-            console.log("===================================");
-
             void sendVerificationEmail(
                 user.email,
                 user.name,

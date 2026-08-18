@@ -98,7 +98,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string;
     birthdate?: string;
   }) => {
-    const { data: resData, error } = await (authClient.signUp.email as any)({
+    const { error } = await (authClient.signUp.email as any)({
       email: data.email,
       password: data.password,
       name: data.name,
@@ -112,16 +112,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(error.message || 'Error al registrar usuario');
     }
 
-    if (resData && resData.user) {
-      setUser({
-        id: resData.user.id,
-        name: resData.user.name,
-        email: resData.user.email,
-        phone: (resData.user as any).phone,
-        addresses: [],
-        role: (resData.user as any).role || Role.CLIENTE
-      });
-    }
+    // No iniciamos sesión automáticamente para obligar la verificación de correo
   };
 
   const logout = async () => {
