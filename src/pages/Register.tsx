@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
-import { User, Mail, ArrowRight, Loader2, Calendar } from 'lucide-react';
+import { User, Mail, ArrowRight, Loader2, Calendar, CheckCircle2, RefreshCw } from 'lucide-react';
+import { authClient } from '../services/authClient.ts';
 import { Logo } from '../components/Logo.tsx';
 import { PasswordInput } from '../components/PasswordInput.tsx';
 import { PhoneInput } from '../components/ui/PhoneInput.tsx';
@@ -18,8 +19,33 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const { register } = useUser();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [cooldown]);
+
+  const handleResendEmail = async () => {
+    if (cooldown > 0) return;
+    try {
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: `${window.location.origin}/email-verified`
+      });
+      setCooldown(60);
+    } catch (err) {
+      console.error("Error al reenviar:", err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +80,7 @@ const Register: React.FC = () => {
         password,
         birthdate: birthdate || undefined
       });
-      navigate('/profile');
+      setSuccess(true);
     } catch (error) {
       const err = error as Error;
       setError(err.message || 'Error al registrarse');
@@ -62,6 +88,43 @@ const Register: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <main className="min-h-[90vh] flex items-center justify-center p-4 py-10 bg-slate-50/50">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-border/5 border border-slate-100 overflow-hidden text-center p-8 md:p-12"
+        >
+          <div className="mx-auto mb-6 w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-4">¡Registro Exitoso!</h1>
+          <p className="text-slate-500 font-medium mb-8">
+            Te hemos enviado un enlace de verificación a <strong>{email}</strong>. Por favor, revisa tu bandeja de entrada o la carpeta de Spam para activar tu cuenta.
+          </p>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center hover:bg-brand-dark transition-all shadow-lg shadow-brand/20"
+            >
+              Ir a Iniciar Sesión
+            </button>
+            <button
+              onClick={handleResendEmail}
+              disabled={cooldown > 0}
+              className="w-full h-14 bg-slate-50 text-slate-600 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-slate-100 transition-all disabled:opacity-50 border border-slate-200"
+            >
+              <RefreshCw className={`w-4 h-4 ${cooldown > 0 ? '' : 'hover:rotate-180 transition-transform duration-500'}`} />
+              {cooldown > 0 ? `Reintentar en ${cooldown}s` : 'Reenviar Correo'}
+            </button>
+          </div>
+        </motion.div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-[90vh] flex items-center justify-center p-4 py-10 bg-slate-50/50">
