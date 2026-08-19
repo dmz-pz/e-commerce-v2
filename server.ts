@@ -12,6 +12,7 @@ import inventoryRoutes from "./server/api/routes/inventoryRoutes.ts";
 import deliveryRoutes from "./server/api/routes/deliveryRoutes.ts";
 import adminRoutes from "./server/api/routes/adminRoutes.ts";
 import categoryRoutes from "./server/api/routes/categoryRoutes.ts";
+import userRoutes from "./server/api/routes/userRoutes.ts";
 
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./server/api/lib/auth.ts";
@@ -80,6 +81,7 @@ async function startServer() {
   app.use("/api/delivery", deliveryRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/categories", categoryRoutes);
+  app.use("/api/users", userRoutes);
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", message: "SuperMercado Express API is running" });

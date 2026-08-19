@@ -95,7 +95,7 @@ model User {
   id            String    @id @default(uuid())
   cedula        String    @unique
   name          String
-  phone         String
+  phone         String    @unique
   email         String    @unique
   emailVerified Boolean   @default(false) @map("email_verified")
   image         String?

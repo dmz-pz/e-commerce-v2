@@ -63,6 +63,30 @@ export class UserRepository {
       throw new AppError(`Error al dar de baja al usuario: ${error.message}`, 500);
     }
   }
+
+  async getByCedula(cedula: string) {
+    try {
+      return await prisma.user.findUnique({
+        where: { cedula },
+        select: { id: true, createdAt: true, emailVerified: true },
+      });
+    } catch (e: unknown) {
+      const error = e as Error;
+      throw new AppError(`Error al buscar usuario por cédula: ${error.message}`, 500);
+    }
+  }
+
+  async getByPhone(phone: string) {
+    try {
+      return await prisma.user.findFirst({
+        where: { phone },
+        select: { id: true, createdAt: true, emailVerified: true },
+      });
+    } catch (e: unknown) {
+      const error = e as Error;
+      throw new AppError(`Error al buscar usuario por teléfono: ${error.message}`, 500);
+    }
+  }
 }
 
 export const userRepository = new UserRepository();
