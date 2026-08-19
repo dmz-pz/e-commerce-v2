@@ -69,35 +69,41 @@ export const auth = betterAuth({
                     throw new APIError("BAD_REQUEST", { message: firstError });
                 }
 
-                // 2. Validación de duplicados (Cédula y Teléfono)
-                const existingCedula = await prisma.user.findUnique({
-                    where: { cedula: body.cedula },
-                });
-                if (existingCedula) {
-                    throw new APIError("BAD_REQUEST", { message: "La cédula ingresada ya se encuentra registrada por otro usuario." });
-                }
+                // Función auxiliar para revisar y limpiar cuentas fantasma
+                const checkAndCleanGhost = async (user: any, fieldName: string) => {
+                    const hoursSinceCreation = (new Date().getTime() - user.createdAt.getTime()) / (1000 * 60 * 60);
+                    if (!user.emailVerified && hoursSinceCreation >= 1) {
+                        await prisma.user.delete({ where: { id: user.id } });
+                        console.log(`[AUTH] Limpiado usuario fantasma por ${fieldName} (${user[fieldName]}) para permitir registro legítimo.`);
+                        return true; // Era fantasma y fue limpiado
+                    }
+                    return false; // Es una cuenta real
+                };
 
-                const existingPhone = await prisma.user.findFirst({
-                    where: { phone: body.phone },
-                });
-                if (existingPhone) {
-                    throw new APIError("BAD_REQUEST", { message: "El número de teléfono ingresado ya se encuentra registrado por otro usuario." });
-                }
-
-                // 3. Manejo de Email Duplicado y Fantasma
                 try {
+                    // 2. Validación de duplicados y limpieza de fantasmas
+                    const existingCedula = await prisma.user.findUnique({
+                        where: { cedula: body.cedula },
+                    });
+                    if (existingCedula) {
+                        const cleaned = await checkAndCleanGhost(existingCedula, 'cedula');
+                        if (!cleaned) throw new APIError("BAD_REQUEST", { message: "La cédula ingresada ya se encuentra registrada por otro usuario." });
+                    }
+
+                    const existingPhone = await prisma.user.findFirst({
+                        where: { phone: body.phone },
+                    });
+                    if (existingPhone) {
+                        const cleaned = await checkAndCleanGhost(existingPhone, 'phone');
+                        if (!cleaned) throw new APIError("BAD_REQUEST", { message: "El número de teléfono ingresado ya se encuentra registrado por otro usuario." });
+                    }
+
                     const existingUser = await prisma.user.findUnique({
                         where: { email },
                     });
-
                     if (existingUser) {
-                        const hoursSinceCreation = (new Date().getTime() - existingUser.createdAt.getTime()) / (1000 * 60 * 60);
-                        if (!existingUser.emailVerified && hoursSinceCreation >= 1) {
-                            await prisma.user.delete({ where: { id: existingUser.id } });
-                            console.log(`[AUTH] Limpiado usuario fantasma (${email}) para permitir registro legítimo.`);
-                        } else {
-                            throw new APIError("BAD_REQUEST", { message: "El correo electrónico ingresado ya se encuentra registrado por otro usuario." });
-                        }
+                        const cleaned = await checkAndCleanGhost(existingUser, 'email');
+                        if (!cleaned) throw new APIError("BAD_REQUEST", { message: "El correo electrónico ingresado ya se encuentra registrado por otro usuario." });
                     }
                 } catch (error) {
                     if (error instanceof APIError) {
