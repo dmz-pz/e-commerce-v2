@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
 import { User, Mail, ArrowRight, Loader2, Calendar, CheckCircle2, RefreshCw } from 'lucide-react';
 import { authClient } from '../services/authClient.ts';
+import { userService } from '../services/userService.ts';
 import { Logo } from '../components/Logo.tsx';
 import { PasswordInput } from '../components/PasswordInput.tsx';
 import { PhoneInput } from '../components/ui/PhoneInput.tsx';
@@ -18,7 +19,8 @@ const Register: React.FC = () => {
   const [birthdate, setBirthdate] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
   const [success, setSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const { register } = useUser();
@@ -47,46 +49,101 @@ const Register: React.FC = () => {
     }
   };
 
+  const checkAvailability = async (field: 'cedula' | 'phone' | 'email', value: string) => {
+    if (!value) return;
+    try {
+      await userService.checkAvailability({ [field]: value });
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    } catch (error: any) {
+      if (error.data?.issues) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          error.data.issues.forEach((issue: any) => {
+            if (issue.path && issue.path[0] === field) {
+              newErrors[field] = issue.message;
+            }
+          });
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  const handleBlur = (field: 'cedula' | 'phone' | 'email' | 'birthdate', value: string) => {
+    if (field === 'birthdate') {
+      if (!value) return;
+      const birthDateObj = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDateObj.getFullYear();
+      const monthDiff = today.getMonth() - birthDateObj.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        setErrors(prev => ({ ...prev, birthdate: 'Debes ser mayor de edad (mínimo 18 años) para registrarte.' }));
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.birthdate;
+          return newErrors;
+        });
+      }
+      return;
+    }
+
+    // Asynchronous backend validation for uniqueness
+    checkAvailability(field, value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrors({});
+    setGeneralError('');
+
+    let hasClientErrors = false;
+    const newErrors: Record<string, string> = {};
 
     // Validaciones básicas de formato del frontend previas al backend
     if (!/^[VE]-\d{7,8}$/.test(cedula)) {
-      setError('La cédula debe ser V o E y contener entre 7 y 8 dígitos (ej: V-12345678).');
-      setLoading(false);
-      return;
+      newErrors.cedula = 'La cédula debe ser V o E y contener entre 7 y 8 dígitos (ej: V-12345678).';
+      hasClientErrors = true;
     }
 
     if (!/^\+58\d{10}$/.test(phone)) {
-      setError('El teléfono debe ser válido y contener 10 dígitos (ej: +584121234567).');
-      setLoading(false);
-      return;
+      newErrors.phone = 'El teléfono debe ser válido y contener 10 dígitos (ej: +584121234567).';
+      hasClientErrors = true;
     }
 
     if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
-      setLoading(false);
-      return;
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres.';
+      hasClientErrors = true;
     }
 
     if (!birthdate) {
-      setError('La fecha de nacimiento es requerida.');
-      setLoading(false);
-      return;
+      newErrors.birthdate = 'La fecha de nacimiento es requerida.';
+      hasClientErrors = true;
+    } else {
+      const birthDateObj = new Date(birthdate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDateObj.getFullYear();
+      const monthDiff = today.getMonth() - birthDateObj.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
+        age--;
+      }
+
+      if (age < 18) {
+        newErrors.birthdate = 'Debes ser mayor de edad (mínimo 18 años) para registrarte.';
+        hasClientErrors = true;
+      }
     }
 
-    const birthDateObj = new Date(birthdate);
-    const today = new Date();
-    let age = today.getFullYear() - birthDateObj.getFullYear();
-    const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
-      age--;
-    }
-
-    if (age < 18) {
-      setError('Debes ser mayor de edad (mínimo 18 años) para registrarte.');
+    if (hasClientErrors) {
+      setErrors(newErrors);
       setLoading(false);
       return;
     }
@@ -102,8 +159,18 @@ const Register: React.FC = () => {
       });
       setSuccess(true);
     } catch (error) {
-      const err = error as Error;
-      setError(err.message || 'Error al registrarse');
+      const err = error as any;
+      if (err.data?.issues) {
+        const backendErrors: Record<string, string> = {};
+        err.data.issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0]) {
+            backendErrors[issue.path[0]] = issue.message;
+          }
+        });
+        setErrors(backendErrors);
+      } else {
+        setGeneralError(err.message || 'Error al registrarse');
+      }
     } finally {
       setLoading(false);
     }
@@ -145,6 +212,8 @@ const Register: React.FC = () => {
       </main>
     );
   }
+  const isFormComplete = !!(cedula && firstName && lastName && phone && email && birthdate && password);
+  const isSubmitDisabled = loading || Object.values(errors).some(Boolean) || !isFormComplete;
 
   return (
     <main className="min-h-[90vh] flex items-center justify-center p-4 py-10 bg-slate-50/50">
@@ -204,19 +273,33 @@ const Register: React.FC = () => {
               {/* Cédula */}
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Cédula de Identidad</label>
-                <CedulaInput
-                  value={cedula}
-                  onChange={setCedula}
-                />
+                <div onBlur={() => handleBlur('cedula', cedula)}>
+                  <CedulaInput
+                    value={cedula}
+                    onChange={(val) => { setCedula(val); setErrors(prev => ({ ...prev, cedula: '' })); }}
+                  />
+                </div>
+                {errors.cedula && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.cedula}
+                  </motion.p>
+                )}
               </div>
 
               {/* Teléfono */}
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Teléfono Móvil</label>
-                <PhoneInput
-                  value={phone}
-                  onChange={setPhone}
-                />
+                <div onBlur={() => handleBlur('phone', phone)}>
+                  <PhoneInput
+                    value={phone}
+                    onChange={(val) => { setPhone(val); setErrors(prev => ({ ...prev, phone: '' })); }}
+                  />
+                </div>
+                {errors.phone && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.phone}
+                  </motion.p>
+                )}
               </div>
 
               {/* Email */}
@@ -230,9 +313,15 @@ const Register: React.FC = () => {
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                     placeholder="maria.perez@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
+                    onBlur={(e) => handleBlur('email', e.target.value)}
                   />
                 </div>
+                {errors.email && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.email}
+                  </motion.p>
+                )}
               </div>
 
               {/* Fecha de Nacimiento */}
@@ -245,9 +334,19 @@ const Register: React.FC = () => {
                     required
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                     value={birthdate}
-                    onChange={(e) => setBirthdate(e.target.value)}
+                    onChange={(e) => { setBirthdate(e.target.value); setErrors(prev => ({ ...prev, birthdate: '' })); }}
+                    onBlur={(e) => handleBlur('birthdate', e.target.value)}
                   />
                 </div>
+                {!errors.birthdate ? (
+                  <p className="text-[10px] text-slate-400 mt-2 px-1 font-semibold">
+                    Debes ser mayor de edad para registrarte.
+                  </p>
+                ) : (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.birthdate}
+                  </motion.p>
+                )}
               </div>
 
               {/* Contraseña */}
@@ -257,28 +356,36 @@ const Register: React.FC = () => {
                   required
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
                 />
+                {errors.password && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.password}
+                  </motion.p>
+                )}
                 <p className="text-[10px] text-slate-400 mt-2 px-1 font-semibold">
                   Debe incluir mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.
                 </p>
               </div>
             </div>
 
-            {error && (
+            {generalError && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 px-4 rounded-xl border border-red-100"
               >
-                {error}
+                {generalError}
               </motion.p>
             )}
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-brand-dark transition-all disabled:opacity-50 shadow-lg shadow-brand/20 group"
+              disabled={isSubmitDisabled}
+              className={`w-full h-14 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all shadow-lg group ${isSubmitDisabled
+                ? 'bg-slate-300 opacity-70 cursor-not-allowed shadow-none'
+                : 'bg-brand hover:bg-brand-dark shadow-brand/20'
+                }`}
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

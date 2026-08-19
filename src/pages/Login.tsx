@@ -10,7 +10,8 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
   const { login } = useUser();
   const navigate = useNavigate();
 
@@ -18,14 +19,25 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrors({});
+    setGeneralError('');
 
     try {
       await login(email, password);
       navigate('/profile');
     } catch (error) {
-      const err = error as Error;
-      setError(err.message || 'Error al iniciar sesión');
+      const err = error as any;
+      if (err.data?.issues) {
+        const newErrors: Record<string, string> = {};
+        err.data.issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0]) {
+            newErrors[issue.path[0]] = issue.message;
+          }
+        });
+        setErrors(newErrors);
+      } else {
+        setGeneralError(err.message || 'Error al iniciar sesión');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,9 +70,14 @@ const Login: React.FC = () => {
                   className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                   placeholder="tu@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
                 />
               </div>
+              {errors.email && (
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                  {errors.email}
+                </motion.p>
+              )}
             </div>
 
             <div>
@@ -74,17 +91,22 @@ const Login: React.FC = () => {
                 required
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
               />
+              {errors.password && (
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                  {errors.password}
+                </motion.p>
+              )}
             </div>
 
-            {error && (
+            {generalError && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"
               >
-                {error}
+                {generalError}
               </motion.p>
             )}
 

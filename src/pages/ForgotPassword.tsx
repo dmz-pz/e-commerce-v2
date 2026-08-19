@@ -8,7 +8,8 @@ import { authClient } from '../services/authClient.ts';
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
   const [success, setSuccess] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -16,7 +17,8 @@ export const ForgotPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrors({});
+    setGeneralError('');
     setSuccess(null);
 
     try {
@@ -27,8 +29,18 @@ export const ForgotPassword: React.FC = () => {
 
       setSuccess('Si el correo está registrado, recibirás un enlace seguro para restablecer tu contraseña. (En modo de desarrollo, revisa la terminal del servidor).');
     } catch (error) {
-      const err = error as Error;
-      setError(err.message || 'No se pudo procesar la solicitud');
+      const err = error as any;
+      if (err.data?.issues) {
+        const newErrors: Record<string, string> = {};
+        err.data.issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0]) {
+            newErrors[issue.path[0]] = issue.message;
+          }
+        });
+        setErrors(newErrors);
+      } else {
+        setGeneralError(err.message || 'No se pudo procesar la solicitud');
+      }
     } finally {
       setLoading(false);
     }
@@ -64,18 +76,23 @@ export const ForgotPassword: React.FC = () => {
                     className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-300"
                     placeholder="tu@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
                   />
                 </div>
+                {errors.email && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.email}
+                  </motion.p>
+                )}
               </div>
 
-              {error && (
+              {generalError && (
                 <motion.p 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"
                 >
-                  {error}
+                  {generalError}
                 </motion.p>
               )}
 

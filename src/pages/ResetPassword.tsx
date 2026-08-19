@@ -12,7 +12,8 @@ export const ResetPassword: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
@@ -21,16 +22,24 @@ export const ResetPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrors({});
+    setGeneralError('');
+
+    let hasClientErrors = false;
+    const newErrors: Record<string, string> = {};
 
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      setLoading(false);
-      return;
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      hasClientErrors = true;
     }
 
     if (newPassword.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+      newErrors.newPassword = 'La contraseña debe tener al menos 8 caracteres';
+      hasClientErrors = true;
+    }
+
+    if (hasClientErrors) {
+      setErrors(newErrors);
       setLoading(false);
       return;
     }
@@ -38,7 +47,7 @@ export const ResetPassword: React.FC = () => {
     try {
       const token = searchParams.get('token');
       if (!token) {
-        setError('Enlace inválido o expirado. Por favor solicita uno nuevo.');
+        setGeneralError('Enlace inválido o expirado. Por favor solicita uno nuevo.');
         return;
       }
 
@@ -48,14 +57,24 @@ export const ResetPassword: React.FC = () => {
       });
 
       if (apiError) {
-        setError(apiError.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
+        setGeneralError(apiError.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
         return;
       }
 
       setSuccess(true);
     } catch (error) {
-      const err = error as Error;
-      setError(err.message || 'No se pudo restablecer la contraseña');
+      const err = error as any;
+      if (err.data?.issues) {
+        const backendErrors: Record<string, string> = {};
+        err.data.issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0]) {
+            backendErrors[issue.path[0]] = issue.message;
+          }
+        });
+        setErrors(backendErrors);
+      } else {
+        setGeneralError(err.message || 'No se pudo restablecer la contraseña');
+      }
     } finally {
       setLoading(false);
     }
@@ -90,8 +109,13 @@ export const ResetPassword: React.FC = () => {
                   className="h-12 text-xs font-bold"
                   placeholder="••••••••"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => { setNewPassword(e.target.value); setErrors(prev => ({ ...prev, newPassword: '' })); }}
                 />
+                {errors.newPassword && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.newPassword}
+                  </motion.p>
+                )}
               </div>
 
               <div>
@@ -101,17 +125,22 @@ export const ResetPassword: React.FC = () => {
                   className="h-12 text-xs font-bold"
                   placeholder="••••••••"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: '' })); }}
                 />
+                {errors.confirmPassword && (
+                  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                    {errors.confirmPassword}
+                  </motion.p>
+                )}
               </div>
 
-              {error && (
+              {generalError && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"
                 >
-                  {error}
+                  {generalError}
                 </motion.p>
               )}
 
