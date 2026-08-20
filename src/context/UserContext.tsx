@@ -75,7 +75,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
-      throw new Error(error.message || 'Credenciales inválidas');
+      const err = new Error(error.message || 'Credenciales inválidas');
+      (err as any).code = error.code;
+      throw err;
     }
 
     if (data && data.user) {

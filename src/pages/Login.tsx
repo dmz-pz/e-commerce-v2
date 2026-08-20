@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.tsx';
-import { Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, ArrowRight, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { authClient } from '../services/authClient';
 import { Logo } from '../components/Logo.tsx';
 import { PasswordInput } from '../components/PasswordInput.tsx';
 
@@ -12,10 +13,42 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
+  const [showUnverified, setShowUnverified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const { login } = useUser();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendCooldown]);
 
+  const handleResend = async (targetEmail: string) => {
+    if (resendCooldown > 0) return;
+    
+    setResendLoading(true);
+    setResendSuccess(false);
+    try {
+      await authClient.sendVerificationEmail({
+        email: targetEmail,
+        callbackURL: '/login' // No se usa directamente aquí pero es requerido por la API
+      });
+      setResendSuccess(true);
+      setResendCooldown(60);
+    } catch (error) {
+      console.error('Error re-enviando email', error);
+    } finally {
+      setResendLoading(false);
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -27,6 +60,14 @@ const Login: React.FC = () => {
       navigate('/profile');
     } catch (error) {
       const err = error as any;
+      
+      if (err.code === 'EMAIL_NOT_VERIFIED') {
+        setShowUnverified(true);
+        setUnverifiedEmail(email);
+        handleResend(email);
+        return;
+      }
+
       if (err.data?.issues) {
         const newErrors: Record<string, string> = {};
         err.data.issues.forEach((issue: any) => {
@@ -42,6 +83,69 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (showUnverified) {
+    return (
+      <main className="min-h-[80vh] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white rounded-[32px] p-8 shadow-2xl shadow-brand/10 border border-slate-100"
+        >
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-8 h-8 text-brand" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Verifica tu correo</h1>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Hemos enviado un correo de verificación a <span className="font-bold text-slate-700">{unverifiedEmail}</span>. 
+              Por favor, revisa tu bandeja de entrada o spam.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {resendSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-sm font-medium flex items-center gap-3 justify-center mb-4 border border-emerald-100"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                Correo reenviado con éxito
+              </motion.div>
+            )}
+
+            <button
+              onClick={() => handleResend(unverifiedEmail)}
+              disabled={resendCooldown > 0 || resendLoading}
+              className="w-full h-14 bg-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-brand-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand/20 group"
+            >
+              {resendLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : resendCooldown > 0 ? (
+                `Reenviar en ${resendCooldown}s`
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  Reenviar correo
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setShowUnverified(false);
+                setGeneralError('');
+                setResendSuccess(false);
+              }}
+              className="w-full h-14 bg-slate-100 text-slate-600 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+            >
+              Volver al inicio de sesión
+            </button>
+          </div>
+        </motion.div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-[80vh] flex items-center justify-center p-4">
