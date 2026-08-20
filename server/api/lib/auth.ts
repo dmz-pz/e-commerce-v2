@@ -49,6 +49,10 @@ export const auth = betterAuth({
                 required: false,
                 defaultValue: "CLIENTE",
             },
+            birthdate: {
+                type: "date",
+                required: false,
+            },
         },
     },
     // Agrega después los proveedores de redes sociales que necesites:
@@ -67,6 +71,11 @@ export const auth = betterAuth({
                 } catch (error: any) {
                     const firstError = error.errors?.[0]?.message || "Error de validación";
                     throw new APIError("BAD_REQUEST", { message: firstError });
+                }
+
+                // Convertir birthdate a Date object para que better-auth lo acepte si su type es "date"
+                if (body.birthdate && typeof body.birthdate === "string") {
+                    body.birthdate = new Date(body.birthdate);
                 }
 
                 // Función auxiliar para revisar y limpiar cuentas fantasma

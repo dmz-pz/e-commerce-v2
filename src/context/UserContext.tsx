@@ -106,7 +106,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: data.name,
       cedula: data.cedula,
       phone: data.phone,
-      birthdate: data.birthdate,
+      birthdate: data.birthdate ? new Date(data.birthdate).toISOString() : undefined,
       callbackURL: `${window.location.origin}/email-verified`
     });
 
