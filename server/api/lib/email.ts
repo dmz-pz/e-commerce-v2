@@ -48,19 +48,27 @@ export const sendVerificationEmailService = async (email: string, name: string, 
             to: email,
             subject: "Verifica tu Correo Electrónico - Minegocio OS",
             html: `
-                <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-                    <h1>
-                    <span style = "font-family: sans-serif; color: #eaee19ff">MI
-                    <span style = "font-family: sans-serif; color: #153cebff">NEGOCIO</span>
-                    </span>
-                    </h1>
-                    <h2>¡Bienvenido, ${name}!</h2>
-                    <p>Gracias por registrarte. Por favor, verifica tu dirección de correo electrónico haciendo clic en el botón de abajo.</p>
-                    <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #2547dfff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-                        Verificar mi Correo
-                    </a>
-                    <p style="font-size: 12px; color: #666;">Si no creaste una cuenta, puedes ignorar de forma segura este correo.</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="color-scheme" content="light">
+                    <meta name="supported-color-schemes" content="light">                 
+                </head>
+                <body style="margin: 0; padding: 0; background-color: #ffffff;">
+                    <div style="font-family: sans-serif; text-align: center; padding: 20px; background-color: #ffffff; color: #333333;">
+                        <h1>
+                            <img src="https://images.minegociosup.com/Logos/logo.png" alt="MINEGOCIO" style="max-width: 200px; height: auto; border: 0;" />
+                        </h1>
+                        <h2>¡Bienvenido, ${name}!</h2>
+                        <p>Gracias por registrarte. Por favor, verifica tu dirección de correo electrónico haciendo clic en el botón de abajo.</p>
+                        <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #2547df; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+                            Verificar mi Correo
+                        </a>
+                        <p style="font-size: 12px; color: #666666;">Si no creaste una cuenta, puedes ignorar de forma segura este correo.</p>
+                    </div>
+                </body>
+                </html>
             `
         });
     } catch (error) {
