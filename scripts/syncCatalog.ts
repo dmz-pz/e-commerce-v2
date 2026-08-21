@@ -32,7 +32,7 @@ SELECT
 FROM DBA.tv_producto AS p
 INNER JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
 INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
-OUTER APPLY (
+CROSS APPLY (
     SELECT TOP 1 mto_precio, mto_moneda 
     FROM DBA.ta_precio_producto 
     WHERE cod_interno = p.cod_interno AND mto_moneda > 0
