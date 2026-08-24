@@ -47,6 +47,7 @@ interface CatalogContextType {
   totalPages: number;
   loadMore: () => void;
   isAppending: boolean;
+  exchangeRate: number;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -66,6 +67,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showCart, setShowCart] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
 
   // Estados de paginación server-side
   const [page, setPage] = useState(1);
@@ -97,12 +99,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [categoriesData, recRes, discRes] = await Promise.all([
+        const [categoriesData, recRes, discRes, exchangeRes] = await Promise.all([
           categoryService.getCategories(),
           productService.getProducts({ isRecommended: true, limit: 10 }),
           productService.getProducts({ hasDiscount: true, limit: 10 }),
+          fetch("/api/products/exchange-rate").then(r => r.json()).catch(() => ({ rate: 1 }))
         ]);
         setCategories(categoriesData);
+        if (exchangeRes && exchangeRes.rate) setExchangeRate(exchangeRes.rate);
 
         let finalRecommended = recRes.items || [];
         if (finalRecommended.length === 0) {
@@ -290,6 +294,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         totalPages,
         loadMore,
         isAppending,
+        exchangeRate,
       }}
     >
       {children}

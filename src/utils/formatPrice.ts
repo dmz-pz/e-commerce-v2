@@ -1,5 +1,5 @@
 export const parseAndFormatPrice = (price: unknown): string => {
-  if (price === null || price === undefined || price === "") return "0.00";
+  if (price === null || price === undefined || price === "") return "0,00";
 
   // Si viene como Objeto Decimal de Prisma/decimal.js, intentamos usar .toString() o .toNumber()
   let numericValue: number;
@@ -10,5 +10,10 @@ export const parseAndFormatPrice = (price: unknown): string => {
     numericValue = Number(price);
   }
 
-  return isNaN(numericValue) ? "0.00" : numericValue.toFixed(2);
+  if (isNaN(numericValue)) return "0,00";
+
+  return numericValue.toLocaleString('es-VE', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
 };

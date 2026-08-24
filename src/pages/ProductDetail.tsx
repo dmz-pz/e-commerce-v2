@@ -7,7 +7,6 @@ import {
   Share2,
   Plus,
   Minus,
-  Clock,
   ShieldCheck,
   ShoppingBasket,
 } from "lucide-react";
@@ -25,9 +24,12 @@ export const ProductDetail: React.FC = () => {
     recommendedProducts,
     discountedProducts,
     bestSellers,
+    exchangeRate,
     setSelectedCategory,
     setSelectedSubcategory,
     setSearchQuery,
+
+
   } = useGlobalCatalog();
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
@@ -131,6 +133,19 @@ export const ProductDetail: React.FC = () => {
   const discountPercent = numDiscount
     ? Math.round((1 - numDiscount / numPrice) * 100)
     : 0;
+
+  const bsPrice = numPrice * exchangeRate;
+  const bsDiscountPrice = numDiscount ? numDiscount * exchangeRate : null;
+  const rawPercentage = product.taxRate?.percentage;
+  const percentage = rawPercentage !== undefined ? Number(rawPercentage) : undefined;
+
+  const ivaMount = percentage !== undefined && !isNaN(percentage)
+    ? (bsPrice * (percentage / (100 + percentage))).toFixed(2)
+    : null;
+
+  const taxLabel = product.taxRate && product.taxRate.percentage > 0
+    ? `I.V.A Bs: (${ivaMount})`
+    : 'Exento de I.V.A';
 
   return (
     <main className="max-w-[1920px] mx-auto px-4 md:px-8 py-4 md:py-8">
@@ -245,8 +260,8 @@ export const ProductDetail: React.FC = () => {
                   <Star
                     key={i}
                     className={`w-3 h-3 md:w-4 md:h-4 ${i <= Math.round(product.rating || 5)
-                        ? "text-accent fill-accent"
-                        : "text-slate-200"
+                      ? "text-accent fill-accent"
+                      : "text-slate-200"
                       }`}
                   />
                 ))}
@@ -302,21 +317,31 @@ export const ProductDetail: React.FC = () => {
           <div className="bg-white rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/50 p-6 md:p-8 xl:sticky xl:top-32">
             <div className="mb-6 md:mb-8">
               {product.discountPrice ? (
-                <div className="flex items-baseline gap-2 md:gap-3">
-                  <span className="text-3xl md:text-4xl font-black text-brand tracking-tighter">
-                    ${parseAndFormatPrice(product.discountPrice)}
-                  </span>
-                  <span className="text-base md:text-lg font-bold text-slate-300 line-through tracking-tighter">
-                    ${parseAndFormatPrice(product.price)}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-baseline gap-2 md:gap-3">
+                    <span className="text-3xl md:text-4xl font-black text-brand tracking-tighter">
+                      Ref. {parseAndFormatPrice(product.discountPrice)}
+                    </span>
+                    <span className="text-base md:text-lg font-bold text-slate-300 line-through tracking-tighter">
+                      Ref. {parseAndFormatPrice(product.price)}
+                    </span>
+                  </div>
+                  <span className="text-sm md:text-base font-bold text-slate-500 tracking-tighter">
+                    Bs. {parseAndFormatPrice(bsDiscountPrice!)}
                   </span>
                 </div>
               ) : (
-                <span className="text-3xl md:text-4xl font-black text-brand tracking-tighter">
-                  ${parseAndFormatPrice(product.price)}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-3xl md:text-4xl font-black text-brand tracking-tighter">
+                    Ref. {parseAndFormatPrice(product.price)}
+                  </span>
+                  <span className="text-sm md:text-base font-bold text-slate-500 tracking-tighter">
+                    Bs. {parseAndFormatPrice(bsPrice)}
+                  </span>
+                </div>
               )}
-              <p className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1 md:mt-2">
-                I.V.A Incluido • Precio por {product.unit}
+              <p className="text-[8px] md:text-[12px] text-slate-400 font-bold uppercase tracking-wider mt-1 md:mt-2">
+                {taxLabel}
               </p>
             </div>
 
@@ -351,12 +376,6 @@ export const ProductDetail: React.FC = () => {
 
               <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4 pt-2 md:pt-4">
                 <div className="flex items-center gap-2 md:gap-3 text-slate-600">
-                  <div className="w-6 h-6 md:w-8 md:h-8 bg-brand/5 rounded-lg flex items-center justify-center shrink-0">
-                    <Clock className="w-3 h-3 md:w-4 md:h-4 text-brand" />
-                  </div>
-                  <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">
-                    Express en <span className="text-brand">35 min</span>
-                  </span>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 text-slate-600">
                   <div className="w-6 h-6 md:w-8 md:h-8 bg-brand/5 rounded-lg flex items-center justify-center shrink-0">
@@ -421,7 +440,7 @@ export const ProductDetail: React.FC = () => {
                     {p.name}
                   </h4>
                   <p className="text-brand font-black text-xs md:text-sm">
-                    ${parseAndFormatPrice(p.price)}
+                    Ref. {parseAndFormatPrice(p.price)}
                   </p>
                 </Link>
               );

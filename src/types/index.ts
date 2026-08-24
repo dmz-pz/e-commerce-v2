@@ -170,6 +170,7 @@ export interface Product {
   salesCount?: number;
   isActive?: boolean;
   taxRateId?: string;
+  taxRate?: { id: string; percentage: number; name: string };
   subcategoryId: string;
   subcategory?: Subcategory;
   images?: ProductImage[];
