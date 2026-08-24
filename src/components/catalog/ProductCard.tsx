@@ -64,12 +64,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                       ${parseAndFormatPrice(product.discountPrice)}
                     </span>
                     <span className="text-[8px] md:text-[10px] font-bold text-slate-300 line-through tracking-tighter">
-                      ${product.price}
+                      Ref. {product.price}
                     </span>
                   </>
                 ) : (
                   <span className="text-sm md:text-base font-black text-brand tracking-tighter">
-                    ${product.price}
+                    Ref. {product.price}
                   </span>
                 )}
               </div>
@@ -80,11 +80,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 {product.unit}
               </span>
               <span
-                className={`text-[8px] md:text-[10px] px-1.5 md:px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${
-                  product.stock < 10
-                    ? "bg-orange-50 text-orange-600"
-                    : "bg-brand/10 text-brand"
-                }`}
+                className={`text-[8px] md:text-[10px] px-1.5 md:px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${product.stock < 10
+                  ? "bg-orange-50 text-orange-600"
+                  : "bg-brand/10 text-brand"
+                  }`}
               >
                 St: {product.stock}
               </span>
