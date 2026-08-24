@@ -150,11 +150,16 @@ export class ProductController {
    * Obtiene la lista de tasas de impuestos disponibles.
    */
   async getTaxRates(_req: Request, res: Response): Promise<void> {
-    const { prisma } = await import("../db.ts");
-    const taxRates = await prisma.taxRate.findMany({
-      orderBy: { percentage: 'desc' }
-    });
+    const taxRates = await productService.getTaxRates();
     res.json(taxRates);
+  }
+
+  /**
+   * Obtiene la tasa de cambio actual.
+   */
+  async getExchangeRate(_req: Request, res: Response): Promise<void> {
+    const exchangeRate = await productService.getExchangeRate();
+    res.json(exchangeRate);
   }
 }
 

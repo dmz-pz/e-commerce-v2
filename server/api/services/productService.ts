@@ -158,6 +158,19 @@ export class ProductService {
     }
     return product;
   }
+  /**
+   * Obtiene la tasa de cambio actual desde el repositorio.
+   */
+  async getExchangeRate(): Promise<{ rate: number }> {
+    return await productRepository.getExchangeRate();
+  }
+
+  /**
+   * Obtiene las tasas de impuestos desde el repositorio.
+   */
+  async getTaxRates() {
+    return await productRepository.getTaxRates();
+  }
 }
 
 export const productService = new ProductService();

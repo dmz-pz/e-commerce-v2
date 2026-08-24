@@ -5,6 +5,7 @@ import { Prisma } from "../../../generated/prisma/client.ts";
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     images: true;
+    taxRate: true;
     subcategory: {
       include: {
         category: true;
@@ -38,6 +39,7 @@ export class ProductRepository {
       where: includeInactive ? {} : { isActive: true },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -107,6 +109,7 @@ export class ProductRepository {
         orderBy,
         include: {
           images: true,
+          taxRate: true,
           subcategory: {
             include: {
               category: true,
@@ -134,6 +137,7 @@ export class ProductRepository {
       where: { id },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -181,6 +185,7 @@ export class ProductRepository {
       },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -233,6 +238,7 @@ export class ProductRepository {
       },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -261,6 +267,7 @@ export class ProductRepository {
       data: { isActive: false },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -288,6 +295,7 @@ export class ProductRepository {
       where: { barcode },
       include: {
         images: true,
+        taxRate: true,
         subcategory: {
           include: {
             category: true,
@@ -296,6 +304,26 @@ export class ProductRepository {
       },
     });
   }
+
+  /**
+   * Obtiene la tasa de cambio actual.
+   */
+  async getExchangeRate(): Promise<{ rate: number }> {
+    const exchangeRate = await prisma.exchangeRate.findFirst({
+      where: { currency: 'VES' }
+    });
+    return { rate: exchangeRate?.rate ? Number(exchangeRate.rate) : 1 };
+  }
+
+  /**
+   * Obtiene la lista de tasas de impuestos disponibles.
+   */
+  async getTaxRates() {
+    return await prisma.taxRate.findMany({
+      orderBy: { percentage: 'desc' }
+    });
+  }
 }
+
 
 export const productRepository = new ProductRepository();
