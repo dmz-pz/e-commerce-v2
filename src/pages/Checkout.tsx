@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext.tsx';
 import { useUser } from '../context/UserContext.tsx';
+import { useGlobalCatalog } from '../context/CatalogContext.tsx';
 import { apiClient } from '../services/apiClient.ts';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -18,6 +19,7 @@ export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { items, updateQuantity, removeItem, clearCart, total } = useCart();
+  const { products, exchangeRate } = useGlobalCatalog();
 
   // Estado del flujo
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -45,6 +47,17 @@ export const Checkout: React.FC = () => {
   // Totales
   const shippingCost = deliveryMethod === 'DELIVERY' ? 2.00 : 0; // Costo fijo de delivery demo
   const finalTotal = total + shippingCost;
+  
+  // Cálculo de IVA total
+  let totalIvaBs = 0;
+  items.forEach(item => {
+    const product = products.find(p => p.id === item.productId);
+    const percentage = product?.taxRate?.percentage;
+    if (percentage) {
+      const bsItemTotal = (Number(item.price) * item.quantity) * exchangeRate;
+      totalIvaBs += bsItemTotal * (Number(percentage) / (100 + Number(percentage)));
+    }
+  });
 
   const handleNextStep = () => {
     if (deliveryMethod === 'DELIVERY' && !selectedAddress) {
@@ -155,8 +168,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setDeliveryMethod('DELIVERY')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex flex-col gap-2 ${deliveryMethod === 'DELIVERY'
-                          ? 'border-brand bg-brand/5'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <Truck className={`w-6 h-6 ${deliveryMethod === 'DELIVERY' ? 'text-brand' : 'text-slate-400'}`} />
@@ -167,8 +180,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setDeliveryMethod('PICK_UP')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex flex-col gap-2 ${deliveryMethod === 'PICK_UP'
-                          ? 'border-brand bg-brand/5'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <Store className={`w-6 h-6 ${deliveryMethod === 'PICK_UP' ? 'text-brand' : 'text-slate-400'}`} />
@@ -228,7 +241,7 @@ export const Checkout: React.FC = () => {
                         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                           <div>
                             <h3 className="text-sm font-bold text-slate-800 truncate">{item.name}</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">Bs. {Number(item.price).toFixed(2)} c/u</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Ref. {Number(item.price).toFixed(2)} c/u</p>
                           </div>
 
                           <div className="flex items-center justify-between mt-3">
@@ -245,9 +258,14 @@ export const Checkout: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-4">
-                              <span className="font-black text-brand">
-                                Bs. {(Number(item.price) * item.quantity).toFixed(2)}
-                              </span>
+                              <div className="flex flex-col items-end gap-0.5">
+                                <span className="font-black text-brand">
+                                  Ref. {(Number(item.price) * item.quantity).toFixed(2)}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  Bs. {((Number(item.price) * item.quantity) * exchangeRate).toFixed(2)}
+                                </span>
+                              </div>
                               <button
                                 onClick={() => removeItem(item.productId)}
                                 className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
@@ -279,8 +297,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setPaymentMethod('PAGO_MOVIL')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${paymentMethod === 'PAGO_MOVIL'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${paymentMethod === 'PAGO_MOVIL' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -295,8 +313,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setPaymentMethod('ZELLE')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${paymentMethod === 'ZELLE'
-                          ? 'border-indigo-500 bg-indigo-50'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${paymentMethod === 'ZELLE' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -311,8 +329,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setPaymentMethod('EFECTIVO_DELIVERY')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${paymentMethod === 'EFECTIVO_DELIVERY'
-                          ? 'border-brand bg-brand/5'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${paymentMethod === 'EFECTIVO_DELIVERY' ? 'bg-brand text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -327,8 +345,8 @@ export const Checkout: React.FC = () => {
                     <button
                       onClick={() => setPaymentMethod('PUNTO_DELIVERY')}
                       className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${paymentMethod === 'PUNTO_DELIVERY'
-                          ? 'border-brand bg-brand/5'
-                          : 'border-slate-100 hover:border-slate-200 bg-white'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${paymentMethod === 'PUNTO_DELIVERY' ? 'bg-brand text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -355,20 +373,28 @@ export const Checkout: React.FC = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between text-sm font-medium text-slate-600">
                   <span>Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})</span>
-                  <span>Bs. {total.toFixed(2)}</span>
+                  <span>Ref. {total.toFixed(2)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm font-medium text-slate-600">
                   <span>Costo de Envío {deliveryMethod === 'PICK_UP' && '(Gratis)'}</span>
-                  <span>Bs. {shippingCost.toFixed(2)}</span>
+                  <span>Ref. {shippingCost.toFixed(2)}</span>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-base font-black text-slate-800 uppercase">Total a Pagar</span>
-                    <span className="text-2xl font-black text-brand">Bs. {finalTotal.toFixed(2)}</span>
+                    <span className="text-2xl font-black text-brand">Ref. {finalTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-right text-xs text-slate-400 mt-1">Impuestos incluidos</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-sm font-bold text-slate-500 uppercase">Total en Bs.</span>
+                    <span className="text-lg font-black text-slate-600">Bs. {(finalTotal * exchangeRate).toFixed(2)}</span>
+                  </div>
+                  <div className="text-right mt-1">
+                     <span className="text-[10px] md:text-[12px] text-slate-400 font-bold uppercase tracking-wider">
+                       {totalIvaBs > 0 ? `I.V.A Bs: (${totalIvaBs.toFixed(2)})` : 'Exento de I.V.A'}
+                     </span>
+                  </div>
                 </div>
               </div>
 
