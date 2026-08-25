@@ -18,6 +18,7 @@ interface ModalFormLayoutProps {
   hideSubmitButton?: boolean;
   showCancelButton?: boolean;
   cancelText?: string;
+  maxWidthClass?: string;
 }
 
 export const ModalFormLayout: React.FC<ModalFormLayoutProps> = ({
@@ -36,6 +37,7 @@ export const ModalFormLayout: React.FC<ModalFormLayoutProps> = ({
   hideSubmitButton = false,
   showCancelButton = false,
   cancelText = "Cancelar",
+  maxWidthClass = "max-w-lg",
 }) => {
   return (
     <AnimatePresence>
@@ -55,7 +57,7 @@ export const ModalFormLayout: React.FC<ModalFormLayoutProps> = ({
             initial={{ scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
-            className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] sm:max-h-[85vh] relative z-10"
+            className={`bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] sm:max-h-[85vh] relative z-10 ${maxWidthClass}`}
           >
             {/* Header */}
             <div className="p-6 border-b border-slate-100 shrink-0 flex justify-between items-center bg-slate-50">
