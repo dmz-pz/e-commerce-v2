@@ -65,6 +65,11 @@ export const auth = betterAuth({
                 const body = ctx.body as any;
                 const email = body.email as string;
 
+                // Prevenir inyección de roles: Forzar siempre a CLIENTE en el registro público
+                if (body.role) {
+                    body.role = "CLIENTE";
+                }
+
                 // 1. Validación Zod
                 try {
                     registerSchema.parse({ body });

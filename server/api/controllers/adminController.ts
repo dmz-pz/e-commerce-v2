@@ -109,8 +109,11 @@ export class AdminController {
 
       const newUser = await adminService.createStaff(userData, performedById);
       res.status(201).json(newUser);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof AppError) throw error;
+      if (error.status && error.message) {
+          throw new AppError(error.message, 400);
+      }
       throw new AppError("Error interno al crear el empleado.", 500);
     }
   }

@@ -16,6 +16,7 @@ export interface CreateStaffDTO {
   email: string;
   password?: string;
   role: Role;
+  birthdate: string;
 }
 
 export class AdminService {
@@ -97,7 +98,15 @@ export class AdminService {
       throw new AppError("La cédula ya se encuentra registrada.", 400);
     }
 
-    const pass = userData.password || "123456";
+    const pass = userData.password;
+    if (!pass) {
+      throw new AppError("La contraseña es requerida para proceder", 400)
+    }
+
+    const birthdate = userData.birthdate;
+    if (!birthdate) {
+      throw new AppError("La fecha de nacimiento es requerida", 400)
+    }
 
     const signUpResult = await auth.api.signUpEmail({
       body: {
@@ -106,12 +115,22 @@ export class AdminService {
         name: userData.name,
         cedula: userData.cedula,
         phone: userData.phone,
-        role: userData.role,
-        callbackURL: `${process.env.APP_URL || 'http://localhost:3000'}/email-verified`,
+        birthdate: userData.birthdate as any,
+        role: userData.role, // El hook lo forzará a CLIENTE
+        callbackURL: `${process.env.APP_URLL || 'http://localhost:4000'}/email-verified`,
       },
     });
 
-    const newUser = signUpResult.user;
+    let newUser = signUpResult.user;
+
+    // ACTUALIZACIÓN SEGURA: Como el hook de seguridad fuerza el rol a CLIENTE en el registro,
+    // el admin (que está autorizado) actualiza el rol en la base de datos inmediatamente después.
+    if (userData.role !== Role.CLIENTE) {
+      newUser = await prisma.user.update({
+        where: { id: newUser.id },
+        data: { role: userData.role }
+      });
+    }
 
     if (userData.role === Role.DELIVERY) {
       await prisma.deliveryProfile.create({

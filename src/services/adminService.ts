@@ -14,6 +14,7 @@ export interface CreateStaffPayload {
   email: string;
   password?: string;
   role: string;
+  birthdate: string;
 }
 
 export interface DriverCashDTO {
