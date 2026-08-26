@@ -54,7 +54,13 @@ async function startServer() {
       if (!origin) return callback(null, true);
 
       if (process.env.NODE_ENV !== "production") {
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
+        // Permitir localhost, 127.0.0.1 y cualquier IP de red local o dominio .local
+        if (
+          /^https?:\/\/localhost(:\d+)?$/.test(origin) || 
+          /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin) ||
+          /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin) ||
+          /^https?:\/\/.*\.local(:\d+)?$/.test(origin)
+        ) {
           return callback(null, true);
         }
       }
