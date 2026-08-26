@@ -262,6 +262,8 @@ model Order {
   subtotal          Decimal           @default(0.00) @db.Decimal(10, 2)
   shippingCost      Decimal           @default(0.00) @map("shipping_cost") @db.Decimal(10, 2)
   total             Decimal           @db.Decimal(10, 2)
+  exchangeRate      Decimal           @default(0.00) @map("exchange_rate") @db.Decimal(10, 4)
+  totalBs           Decimal           @default(0.00) @map("total_bs") @db.Decimal(10, 2)
   status            OrderStatus       @default(PENDING)
   createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)

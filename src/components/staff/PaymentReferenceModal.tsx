@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Receipt, AlertTriangle, UploadCloud, FileImage } from 'lucide-react';
+import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
 
 interface PaymentReferenceModalProps {
-  orderData: { id: string, total: number, customerName: string } | null;
+  orderData: { id: string, total: number, customerName: string, paymentMethod?: string, exchangeRate?: number, totalBs?: number } | null;
   onClose: () => void;
   onSubmit: (reference: string, receiptFile?: File) => Promise<void>;
 }
@@ -17,8 +18,12 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
   const [file, setFile] = useState<File | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { exchangeRate: globalExchangeRate } = useGlobalCatalog();
 
   if (!orderData) return null;
+
+  const activeExchangeRate = orderData.exchangeRate && Number(orderData.exchangeRate) > 0 ? Number(orderData.exchangeRate) : globalExchangeRate;
+  const displayTotalBs = orderData.totalBs && Number(orderData.totalBs) > 0 ? Number(orderData.totalBs) : Number(orderData.total) * activeExchangeRate;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +85,12 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
             {/* Payment Summary */}
             <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl flex justify-between items-center">
               <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Monto a Corroborar</span>
-              <span className="text-lg font-black text-orange-600 font-mono">${Number(orderData.total).toFixed(2)}</span>
+              <div className="flex flex-col items-end">
+                <span className="text-lg font-black text-orange-600 font-mono">${Number(orderData.total).toFixed(2)}</span>
+                {orderData.paymentMethod === 'PAGO_MOVIL' && (
+                  <span className="text-[10px] font-black text-orange-500 font-mono">Bs. {displayTotalBs.toFixed(2)}</span>
+                )}
+              </div>
             </div>
 
             {/* Error Message */}

@@ -220,6 +220,8 @@ export interface Order {
   subtotal: number;
   shippingCost: number;
   total: number;
+  exchangeRate: number;
+  totalBs: number;
   status: OrderStatus;
   items: OrderItem[];
   payment?: Payment;

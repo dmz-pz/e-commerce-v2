@@ -11,6 +11,8 @@ export interface CreateOrderPayload {
   subtotal: number;
   shippingCost?: number;
   total: number;
+  exchangeRate: number;
+  totalBs: number;
   items: Array<{
     productId: string;
     name: string;
@@ -142,6 +144,8 @@ export class OrderRepository {
           subtotal: data.subtotal,
           shippingCost: data.shippingCost ?? 0.0,
           total: data.total,
+          exchangeRate: data.exchangeRate,
+          totalBs: data.totalBs,
           status: OrderStatus.PENDING, // Tu valor inicial por defecto
 
           ...(data.fulfillmentMethod && {

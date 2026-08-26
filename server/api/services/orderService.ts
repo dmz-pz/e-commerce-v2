@@ -7,6 +7,7 @@ import { paymentRepository } from "../repositories/paymentRepository.ts";
 import { CreateOrderInput } from "../schemas/orderSchema.ts";
 import { AppError } from "../utils/appErrors.ts";
 import { auditLogRepository } from "../repositories/auditLogRepository.ts";
+import { prisma } from "../db.ts";
 
 export class OrderService {
   /**
@@ -193,6 +194,13 @@ export class OrderService {
     const calculatedTotal = calculatedSubtotal + shippingCost;
     const fullCustomerName = customer.name.trim(); //
 
+    // G. Obtener la tasa de cambio actual para blindar la orden
+    const latestRate = await prisma.exchangeRate.findFirst({
+      orderBy: { updatedAt: "desc" },
+    });
+    const exchangeRate = latestRate ? Number(latestRate.rate) : 1;
+    const totalBs = calculatedTotal * exchangeRate;
+
     const newOrder = await orderRepository.create({
       customerId: customer.id,
       customerName: fullCustomerName,
@@ -203,6 +211,8 @@ export class OrderService {
       subtotal: calculatedSubtotal,
       shippingCost: shippingCost,
       total: calculatedTotal,
+      exchangeRate: exchangeRate,
+      totalBs: totalBs,
       items: enrichedItems,
     });
 
