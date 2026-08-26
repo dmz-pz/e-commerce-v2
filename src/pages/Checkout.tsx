@@ -45,8 +45,7 @@ export const Checkout: React.FC = () => {
   }, [user, navigate]);
 
   // Totales
-  const shippingCost = deliveryMethod === 'DELIVERY' ? 2.00 : 0; // Costo fijo de delivery demo
-  const finalTotal = total + shippingCost;
+  const finalTotal = total;
   
   // Cálculo de IVA total
   let totalIvaBs = 0;
@@ -376,11 +375,6 @@ export const Checkout: React.FC = () => {
                   <span>Ref. {total.toFixed(2)}</span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-medium text-slate-600">
-                  <span>Costo de Envío {deliveryMethod === 'PICK_UP' && '(Gratis)'}</span>
-                  <span>Ref. {shippingCost.toFixed(2)}</span>
-                </div>
-
                 <div className="pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-base font-black text-slate-800 uppercase">Total a Pagar</span>
@@ -397,6 +391,15 @@ export const Checkout: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {deliveryMethod === 'DELIVERY' && (
+                <div className="mb-6 p-3 bg-brand/5 border border-brand/10 rounded-xl flex items-start gap-3">
+                  <span className="text-[16px]">🛵</span>
+                  <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
+                    <strong>Información de envío:</strong> El costo exacto del delivery dependerá de tu zona y será calculado e informado por nuestro equipo al confirmar tu pedido.
+                  </p>
+                </div>
+              )}
 
               {currentStep === 1 ? (
                 <button

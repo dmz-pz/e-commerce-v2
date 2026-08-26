@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { useGlobalCatalog } from "../context/CatalogContext.tsx";
 import { useCart } from "../context/CartContext.tsx";
+import { useUser } from "../context/UserContext.tsx";
 import { PromoCarousel } from "../components/catalog/PromoCarousel.tsx";
 import { ProductCard } from "../components/catalog/ProductCard.tsx";
 import {
@@ -48,6 +49,7 @@ export const Catalog: React.FC = () => {
   } = useGlobalCatalog();
 
   const { items, total } = useCart();
+  const { user } = useUser();
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -99,23 +101,36 @@ export const Catalog: React.FC = () => {
           </h1>
         </div>
         <div className="hidden lg:flex gap-8 items-center bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <div className="text-right">
-            <span className="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">
-              Entrega Promedio
-            </span>
-            <span className="block text-xl font-bold text-brand tracking-tight">
-              25 - 40 min
-            </span>
-          </div>
-          <div className="w-px h-10 bg-slate-100" />
-          <div className="text-right">
-            <span className="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">
-              Costo de Envío
-            </span>
-            <span className="block text-xl font-bold text-accent tracking-tight">
-              ¡Gratis!
-            </span>
-          </div>
+          {user ? (
+            <div className="text-right flex flex-col justify-center">
+              <span className="block text-[12px] font-black text-yellow-400 uppercase tracking-widest mb-1 ">
+                ¡Qué bueno verte de nuevo!
+              </span>
+              <span className="block text-xl font-bold text-brand tracking-tight">
+                {user.name}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="text-right">
+                <span className="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">
+                  Entrega Promedio
+                </span>
+                <span className="block text-xl font-bold text-brand tracking-tight">
+                  25 - 40 min
+                </span>
+              </div>
+              <div className="w-px h-10 bg-slate-100" />
+              <div className="text-right">
+                <span className="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">
+                  Costo de Envío
+                </span>
+                <span className="block text-xl font-bold text-accent tracking-tight">
+                  ¡Gratis!
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
