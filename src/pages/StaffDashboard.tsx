@@ -147,7 +147,10 @@ export const StaffDashboard: React.FC = () => {
           ? { 
               id: validatingPaymentOrderId, 
               total: Number(filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.total || 0),
-              customerName: filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.customerName || 'Cliente'
+              customerName: filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.customerName || 'Cliente',
+              paymentMethod: filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.payment?.method,
+              exchangeRate: filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.exchangeRate,
+              totalBs: filteredOrders.find((o) => o.id === validatingPaymentOrderId)?.totalBs
             } 
           : null}
         onClose={() => setValidatingPaymentOrderId(null)}

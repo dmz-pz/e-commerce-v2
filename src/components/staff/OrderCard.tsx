@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  Clock, CheckCircle2, Smartphone, CreditCard, IdCard, Bike, Check, 
-  MessageCircle, Trash2, RefreshCw, AlertTriangle, Minus, Plus 
+import {
+  Clock, CheckCircle2, Smartphone, CreditCard, IdCard, Bike, Check,
+  MessageCircle, Trash2, RefreshCw, AlertTriangle, Minus, Plus, Copy
 } from 'lucide-react';
-import { Order, OrderStatus, DeliveryPerson } from '../../types/index.ts';
+import { Order, OrderStatus, DeliveryPerson, ItemStatus } from '../../types/index.ts';
+import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
 
 interface OrderCardProps {
   order: Order;
@@ -82,12 +83,35 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onAddProduct,
   onRequirePaymentReference,
 }) => {
+  const { exchangeRate } = useGlobalCatalog();
   const isModifyingThisOrder = modifyingOrderId === order.id;
   const styles = getStatusStyles(order.status);
+
+  // Fallback para órdenes antiguas que no tienen la tasa guardada
+  const activeExchangeRate = order.exchangeRate && Number(order.exchangeRate) > 0 ? Number(order.exchangeRate) : exchangeRate;
+  const displayTotalBs = order.totalBs && Number(order.totalBs) > 0 ? Number(order.totalBs) : Number(order.total) * activeExchangeRate;
 
   const activeJob = order.deliveryJobs?.[0];
   const deliveryPersonId = activeJob && activeJob.status !== 'FAILED' ? activeJob.deliveryPersonId : undefined;
   const deliveryPerson = activeJob && activeJob.status !== 'FAILED' ? activeJob.deliveryPerson : undefined;
+
+  const handleCopyOrderInfo = () => {
+    const header = `📋 *Pedido #${order.id.slice(0, 8)}* - ${order.customerName}\n\n*Artículos:*\n`;
+    const itemsList = order.items.map(item => {
+      let statusTag = '';
+      if (item.status === ItemStatus.CANCELLED) {
+        statusTag = ' ❌ [Eliminado/Agotado]';
+      } else if (item.status === ItemStatus.SUBSTITUTED) {
+        statusTag = ' 🔄 [Sustituido]';
+      }
+      return `• ${item.requestedQuantity ?? item.quantity ?? 1}x ${item.name}${statusTag}`;
+    }).join('\n');
+
+    const paymentMethodName = order.payment?.method || 'Efectivo / En Entrega';
+    const footer = `\n\n*Método de pago:* ${paymentMethodName} \n*Total:* Ref. ${Number(order.total).toFixed(2)}   Bs. ${displayTotalBs.toFixed(2)}`;
+
+    navigator.clipboard.writeText(`${header}${itemsList}${footer}`).catch(err => console.error('Error al copiar: ', err));
+  };
 
   return (
     <motion.div
@@ -107,19 +131,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </span>
           <h3 className="font-bold text-slate-900 text-lg tracking-tight">{order.customerName}</h3>
         </div>
-        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-          order.status === OrderStatus.PENDING ? 'bg-orange-50 text-orange-600 border-orange-100' :
+        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.status === OrderStatus.PENDING ? 'bg-orange-50 text-orange-600 border-orange-100' :
           order.status === OrderStatus.PICKING ? 'bg-brand/5 text-brand border-brand/10' :
-          order.status === OrderStatus.READY_TO_PAY ? 'bg-purple-50 text-purple-600 border-purple-100' :
-          order.status === OrderStatus.PAID ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-          order.status === OrderStatus.CANCELLED ? 'bg-red-50 text-red-600 border-red-100' :
-          'bg-green-50 text-green-600 border-green-100'
-        }`}>
-          {order.status === OrderStatus.PENDING ? 'Pendiente' : 
-           order.status === OrderStatus.PICKING ? 'En Preparación' : 
-           order.status === OrderStatus.READY_TO_PAY ? 'Listo p/ Pagar' : 
-           order.status === OrderStatus.PAID ? 'Pagado' : 
-           order.status === OrderStatus.CANCELLED ? 'Cancelado' : 'Enviado'}
+            order.status === OrderStatus.READY_TO_PAY ? 'bg-purple-50 text-purple-600 border-purple-100' :
+              order.status === OrderStatus.PAID ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                order.status === OrderStatus.CANCELLED ? 'bg-red-50 text-red-600 border-red-100' :
+                  'bg-green-50 text-green-600 border-green-100'
+          }`}>
+          {order.status === OrderStatus.PENDING ? 'Pendiente' :
+            order.status === OrderStatus.PICKING ? 'En Preparación' :
+              order.status === OrderStatus.READY_TO_PAY ? 'Listo p/ Pagar' :
+                order.status === OrderStatus.PAID ? 'Pagado' :
+                  order.status === OrderStatus.CANCELLED ? 'Cancelado' : 'Enviado'}
         </div>
       </div>
 
@@ -136,7 +159,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <div className="col-span-2 flex items-center gap-2 pt-1 border-t border-slate-200/50">
           <CreditCard className="w-3 h-3 text-slate-400" />
           <span className="text-[10px] font-black text-brand uppercase tracking-wider">
-            {order.payment?.method  || 'Efectivo / En Entrega'}
+            {order.payment?.method || 'Efectivo / En Entrega'}
           </span>
         </div>
       </div>
@@ -171,19 +194,29 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] block">
             Artículos ({order.items.length})
           </span>
-          {!deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => onAddProduct?.(order.id)}
-              disabled={isModifyingThisOrder}
-              className="text-[9px] font-black uppercase tracking-widest text-brand hover:text-brand-dark bg-brand/5 hover:bg-brand/10 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-              title="Añadir nuevo producto"
+              onClick={handleCopyOrderInfo}
+              className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+              title="Copiar lista de productos"
             >
-              <Plus className="w-3 h-3" /> Añadir Producto
+              <Copy className="w-3 h-3" /> Copiar Lista
             </button>
-          )}
+            {!deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
+              <button
+                type="button"
+                onClick={() => onAddProduct?.(order.id)}
+                disabled={isModifyingThisOrder}
+                className="text-[9px] font-black uppercase tracking-widest text-brand hover:text-brand-dark bg-brand/5 hover:bg-brand/10 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                title="Añadir nuevo producto"
+              >
+                <Plus className="w-3 h-3" /> Añadir Producto
+              </button>
+            )}
+          </div>
         </div>
-        
+
         <div className="max-h-[280px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5">
           {order.items.map((item, idx) => {
             const canEdit = !deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
@@ -197,10 +230,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     <span className="text-slate-700 font-bold text-xs tracking-tight leading-snug">{item.name}</span>
                   </div>
                   <span className="text-slate-500 font-mono font-medium text-xs shrink-0">
-                    ${Number(item.price).toFixed(2)}
+                    Ref. {Number(item.price).toFixed(2)}
                   </span>
                 </div>
-                
+
                 {/* Picking and Substitution controls */}
                 {canEdit && (
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100/50 mt-1">
@@ -260,14 +293,17 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
         <div className="pt-6 border-t border-slate-100 flex justify-between items-center px-2">
           <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Total Facturado</span>
-          <span className="text-2xl font-black text-brand font-mono leading-none">${Number(order.total).toFixed(2)}</span>
+          <div className="flex flex-col items-end">
+            <span className="text-2xl font-black text-brand font-mono leading-none">Ref. {Number(order.total).toFixed(2)}</span>
+            <span className="text-sm font-bold text-slate-500 font-mono mt-1">Bs. {displayTotalBs.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
       {/* Action Buttons for Operating workflow */}
       <div className="flex flex-col gap-3">
         {order.status === OrderStatus.PENDING && !deliveryPersonId && (
-          <button 
+          <button
             type="button"
             onClick={() => onUpdateStatus(order.id, OrderStatus.PICKING)}
             className="w-full bg-brand text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-brand-dark transition-all flex items-center justify-center gap-3 shadow-lg shadow-brand/20 active:scale-95 cursor-pointer"
@@ -276,9 +312,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             Iniciar Preparación (Picking)
           </button>
         )}
-        
+
         {order.status === OrderStatus.PICKING && !deliveryPersonId && (
-          <button 
+          <button
             type="button"
             onClick={() => {
               const onlineMethods = ['PAGO_MOVIL', 'ZELLE', 'BINANCE'];
@@ -313,7 +349,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2">
               <Bike className="w-3 h-3" /> Requiere Asignación de Motorizado
             </span>
-            <button 
+            <button
               type="button"
               onClick={() => setAssigningId(order.id)}
               className="w-full bg-brand text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark transition-all cursor-pointer"
@@ -324,22 +360,22 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         )}
 
         {assigningId === order.id && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border-2 border-brand/20 rounded-2xl p-4 shadow-xl"
           >
             <div className="flex justify-between items-center mb-4">
               <span className="text-[10px] font-black text-brand uppercase tracking-widest">Motorizados Disponibles</span>
-              <button 
-                type="button" 
-                onClick={() => setAssigningId(null)} 
+              <button
+                type="button"
+                onClick={() => setAssigningId(null)}
                 className="text-[9px] font-bold text-slate-400 hover:text-brand underline cursor-pointer"
               >
                 Cerrar
               </button>
             </div>
-            
+
             <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
               {availableMotorizados.length === 0 ? (
                 <div className="text-center py-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
