@@ -13,6 +13,13 @@ export const createOrderSchema = z.object({
     paymentMethod: z.enum(["PAGO_MOVIL", "ZELLE", "BINANCE", "EFECTIVO_DELIVERY", "PUNTO_DELIVERY"]),
     paymentReference: z.string().optional(),
 
+    // Datos del cliente para cuando el personal crea una orden
+    customerData: z.object({
+      name: z.string(),
+      cedula: z.string(),
+      phone: z.string(),
+    }).optional(),
+
     // Carrito de compras limpio (Sin precios ni datos de identidad)
     items: z
       .array(

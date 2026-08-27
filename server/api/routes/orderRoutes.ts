@@ -19,7 +19,7 @@ router.get("/my-orders", catchAsync(orderController.getMyOrders));
 // 2. Crear una nueva orden (Permitido para Clientes y Administradores)
 router.post(
   "/",
-  authorizeRoles(Role.CLIENTE, Role.ADMINISTRADOR),
+  authorizeRoles(Role.CLIENTE, Role.ADMINISTRADOR, Role.STAFF_PICKER),
   validateResource(createOrderSchema),
   catchAsync(orderController.create),
 );

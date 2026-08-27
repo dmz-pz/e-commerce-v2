@@ -128,13 +128,39 @@ export class OrderService {
    * 3. Crea una orden garantizando datos del usuario seguros, precios reales y reserva de stock
    */
   async createOrder(userId: string, orderData: CreateOrderInput["body"]) {
-    const customer = await userRepository.getById(userId);
+    let customer = await userRepository.getById(userId);
 
     if (!customer) {
       throw new AppError(
         "El usuario especificado no existe en el sistema.",
         404,
       );
+    }
+
+    // Si el usuario es STAFF o ADMIN y proporciona datos de cliente, creamos/buscamos al cliente
+    if ((customer.role === "STAFF_PICKER" || customer.role === "ADMINISTRADOR") && orderData.customerData) {
+      const { name, cedula, phone } = orderData.customerData;
+      let existingCustomer = await prisma.user.findUnique({
+        where: { cedula }
+      });
+      if (!existingCustomer) {
+        existingCustomer = await prisma.user.findUnique({
+          where: { phone }
+        });
+      }
+      if (!existingCustomer) {
+        // Crear cliente invitado
+        existingCustomer = await prisma.user.create({
+          data: {
+            name,
+            cedula,
+            phone,
+            email: `guest_${cedula}@minegocio.local`, 
+            role: "CLIENTE"
+          }
+        });
+      }
+      customer = existingCustomer;
     }
 
     // B. Obtener los IDs de los productos solicitados
