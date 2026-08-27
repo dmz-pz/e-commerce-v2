@@ -20,6 +20,9 @@ export const useStaffDashboard = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modifyingOrderId, setModifyingOrderId] = useState<string | null>(null);
   const [dirtyOrders, setDirtyOrders] = useState<Record<string, boolean>>({});
+  
+  // Nueva Orden Modal State
+  const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState(false);
 
   const dirtyOrdersRef = useRef(dirtyOrders);
   useEffect(() => {
@@ -380,6 +383,9 @@ export const useStaffDashboard = () => {
     paginatedOrders,
     filteredOrders,
     totalPages,
+    isCreateOrderModalOpen,
+    setIsCreateOrderModalOpen,
+    fetchOrders,
     handleUpdateItemQuantity,
     handleRemoveItem,
     handleConfirmCancelOrder,

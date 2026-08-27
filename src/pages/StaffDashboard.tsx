@@ -10,6 +10,7 @@ import { SubstitutionModal } from '../components/staff/SubstitutionModal.tsx';
 import { CancelOrderModal } from '../components/staff/CancelOrderModal.tsx';
 import { PaginationBar } from '../components/catalog/PaginationBar.tsx';
 import { PaymentReferenceModal } from '../components/staff/PaymentReferenceModal.tsx';
+import { CreateOrderModal } from '../components/staff/CreateOrderModal.tsx';
 
 export const StaffDashboard: React.FC = () => {
   const {
@@ -38,6 +39,9 @@ export const StaffDashboard: React.FC = () => {
     paginatedOrders,
     filteredOrders,
     totalPages,
+    isCreateOrderModalOpen,
+    setIsCreateOrderModalOpen,
+    fetchOrders,
     handleUpdateItemQuantity,
     handleRemoveItem,
     handleConfirmCancelOrder,
@@ -62,7 +66,11 @@ export const StaffDashboard: React.FC = () => {
     <main className="bg-slate-50 min-h-screen">
       <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-6 md:py-12">
         {/* Modular Header */}
-        <StaffHeader filter={filter} setFilter={setFilter} />
+        <StaffHeader 
+          filter={filter} 
+          setFilter={setFilter} 
+          onOpenCreateOrder={() => setIsCreateOrderModalOpen(true)}
+        />
 
         {/* Orders Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
@@ -155,6 +163,13 @@ export const StaffDashboard: React.FC = () => {
           : null}
         onClose={() => setValidatingPaymentOrderId(null)}
         onSubmit={(ref, file) => handleConfirmPaymentAndFinish(validatingPaymentOrderId!, ref, file)}
+      />
+
+      {/* Create Order Modal */}
+      <CreateOrderModal 
+        isOpen={isCreateOrderModalOpen}
+        onClose={() => setIsCreateOrderModalOpen(false)}
+        onOrderCreated={fetchOrders}
       />
     </main>
   );

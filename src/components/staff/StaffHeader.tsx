@@ -2,12 +2,15 @@ import React from 'react';
 import { Logo } from '../Logo.tsx';
 import { OrderStatus } from '../../types/index.ts';
 
+import { Plus } from 'lucide-react';
+
 interface StaffHeaderProps {
   filter: OrderStatus | 'all';
   setFilter: (filter: OrderStatus | 'all') => void;
+  onOpenCreateOrder: () => void;
 }
 
-export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter }) => {
+export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter, onOpenCreateOrder }) => {
   return (
     <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-6 md:mb-10 gap-6">
       <div>
@@ -15,9 +18,18 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter }) =
           <Logo className="w-8 h-8" />
           Nodo de Control Operativo
         </div>
-        <h1 className="text-3xl font-light text-slate-900 tracking-tight">
-          Lista de <span className="font-bold text-brand">Pedidos Activos</span>
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-light text-slate-900 tracking-tight">
+            Lista de <span className="font-bold text-brand">Pedidos Activos</span>
+          </h1>
+          <button
+            onClick={onOpenCreateOrder}
+            className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-brand-dark transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Nueva Orden
+          </button>
+        </div>
       </div>
       
       <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1 self-start md:self-auto shrink-0">
