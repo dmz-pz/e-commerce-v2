@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Search, Plus, Minus, User, CreditCard, ShoppingBag, Loader2, AlertCircle } from 'lucide-react';
 import { Product } from '../../types/index.ts';
 import { productService } from '../../services/productService.ts';
+import { userService } from '../../services/userService.ts';
+import { CedulaInput } from '../ui/CedulaInput.tsx';
+import { PhoneInput } from '../ui/PhoneInput.tsx';
+import { Input } from '../ui/Input.tsx';
+import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
@@ -11,25 +16,63 @@ interface CreateOrderModalProps {
 }
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onClose, onOrderCreated }) => {
+  const { exchangeRate } = useGlobalCatalog();
   const [step, setStep] = useState<1 | 2>(1); // 1: Datos Cliente & Productos, 2: Pago
-  
+
   // Datos Cliente
   const [customerName, setCustomerName] = useState('');
   const [customerCedula, setCustomerCedula] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
   // Búsqueda y Productos
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleBlur = async (field: 'cedula' | 'phone', value: string) => {
+    if (!value) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+      return;
+    }
+    try {
+      const check = await userService.checkAvailability({ [field]: value });
+      if (check.status !== 'success') {
+        setErrors(prev => ({ ...prev, [field]: check.message || `Este ${field} ya está registrado` }));
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    } catch (err: any) {
+      if (err.data?.issues) {
+        err.data.issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0] === field) {
+            setErrors(prev => ({ ...prev, [field]: issue.message }));
+          }
+        });
+      } else if (err.response?.data?.message) {
+        setErrors(prev => ({ ...prev, [field]: err.response.data.message }));
+      } else if (err.message) {
+        setErrors(prev => ({ ...prev, [field]: err.message }));
+      }
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  
+
   // Carrito Local
   const [cartItems, setCartItems] = useState<Array<{ product: Product, quantity: number }>>([]);
 
   // Pago
   const [paymentMethod, setPaymentMethod] = useState<'PAGO_MOVIL' | 'ZELLE' | 'BINANCE' | 'EFECTIVO_DELIVERY' | 'PUNTO_DELIVERY'>('PUNTO_DELIVERY');
   const [paymentReference, setPaymentReference] = useState('');
-  
+
   // Envío al servidor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -51,7 +94,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
         setLoadingSearch(false);
       }
     };
-    
+
     const timeoutId = setTimeout(fetchProducts, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
@@ -60,7 +103,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
     setCartItems(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
-        return prev.map(item => item.product.id === product.id 
+        return prev.map(item => item.product.id === product.id
           ? { ...item, quantity: item.quantity + 1 }
           : item
         );
@@ -86,10 +129,28 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.product.price) * item.quantity), 0);
+  const subtotalBs = subtotal * exchangeRate;
+
+  const totalIvaBs = cartItems.reduce((acc, item) => {
+    const rawPercentage = item.product.taxRate?.percentage;
+    const percentage = rawPercentage !== undefined ? Number(rawPercentage) : undefined;
+    
+    if (percentage !== undefined && !isNaN(percentage) && percentage > 0) {
+      const numPrice = Number(String(item.product.price));
+      const bsPrice = numPrice * exchangeRate;
+      const itemIva = bsPrice * (percentage / (100 + percentage));
+      return acc + (itemIva * item.quantity);
+    }
+    return acc;
+  }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
+      if (Object.values(errors).some(Boolean)) {
+        setErrorMessage('Por favor, corrige los errores de Cédula o Teléfono antes de continuar.');
+        return;
+      }
       if (!customerName || !customerCedula || !customerPhone) {
         setErrorMessage('Todos los datos del cliente son requeridos.');
         return;
@@ -197,7 +258,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
           <div className="flex flex-1 overflow-hidden">
             {/* Left Column - Form */}
             <form id="create-order-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 border-r border-slate-100 flex flex-col gap-6">
-              
+
               {step === 1 && (
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   {/* Datos del Cliente */}
@@ -207,36 +268,40 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Cédula</label>
-                        <input
-                          type="text"
-                          required
-                          value={customerCedula}
-                          onChange={e => setCustomerCedula(e.target.value)}
-                          placeholder="V-12345678"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
-                        />
+                        <div onBlur={() => handleBlur('cedula', customerCedula)}>
+                          <CedulaInput
+                            label="Cédula"
+                            value={customerCedula}
+                            onChange={val => { setCustomerCedula(val); setErrors(prev => ({ ...prev, cedula: '' })); }}
+                          />
+                        </div>
+                        {errors.cedula && (
+                          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                            {errors.cedula}
+                          </motion.p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Teléfono</label>
-                        <input
-                          type="text"
-                          required
-                          value={customerPhone}
-                          onChange={e => setCustomerPhone(e.target.value)}
-                          placeholder="0414-0000000"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
-                        />
+                        <div onBlur={() => handleBlur('phone', customerPhone)}>
+                          <PhoneInput
+                            label="Teléfono"
+                            value={customerPhone}
+                            onChange={val => { setCustomerPhone(val); setErrors(prev => ({ ...prev, phone: '' })); }}
+                          />
+                        </div>
+                        {errors.phone && (
+                          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                            {errors.phone}
+                          </motion.p>
+                        )}
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Nombre Completo</label>
-                        <input
-                          type="text"
+                        <Input
+                          label="Nombre Completo"
                           required
                           value={customerName}
                           onChange={e => setCustomerName(e.target.value)}
                           placeholder="Juan Pérez"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
                         />
                       </div>
                     </div>
@@ -257,7 +322,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-xs font-bold focus:border-brand outline-none"
                       />
                       {loadingSearch && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand animate-spin" />}
-                      
+
                       {/* Resultados de Búsqueda */}
                       {products.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-20">
@@ -288,7 +353,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
                       <CreditCard className="w-3 h-3" /> Información de Pago
                     </h4>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Método de Pago</label>
@@ -305,19 +370,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                         </select>
                       </div>
 
-                      {['PAGO_MOVIL', 'ZELLE', 'BINANCE'].includes(paymentMethod) && (
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Referencia</label>
-                          <input
-                            type="text"
-                            required
-                            value={paymentReference}
-                            onChange={e => setPaymentReference(e.target.value)}
-                            placeholder="Número de referencia..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
-                          />
-                        </div>
-                      )}
+
                     </div>
                   </div>
                 </motion.div>
@@ -358,7 +411,13 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
               </div>
               <div className="pt-4 mt-4 border-t border-slate-200 flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Estimado</span>
-                <span className="text-xl font-black text-slate-900">${subtotal.toFixed(2)}</span>
+                <div className="text-right">
+                  <div className="text-xl font-black text-slate-900">${subtotal.toFixed(2)}</div>
+                  <div className="text-[11px] font-bold text-slate-500">Bs. {subtotalBs.toFixed(2)}</div>
+                  <div className="text-[9px] font-medium text-slate-400 mt-0.5">
+                    {totalIvaBs > 0 ? `I.V.A Bs: (${totalIvaBs.toFixed(2)})` : 'Exento de I.V.A'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -376,7 +435,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
             ) : (
               <div /> // Spacer
             )}
-            
+
             <button
               type="submit"
               form="create-order-form"
