@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Search, Plus, Minus, User, CreditCard, ShoppingBag, Loader2, AlertCircle } from 'lucide-react';
 import { Product } from '../../types/index.ts';
 import { productService } from '../../services/productService.ts';
+import { CedulaInput } from '../ui/CedulaInput.tsx';
+import { PhoneInput } from '../ui/PhoneInput.tsx';
+import { Input } from '../ui/Input.tsx';
+import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
@@ -11,6 +15,7 @@ interface CreateOrderModalProps {
 }
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onClose, onOrderCreated }) => {
+  const { exchangeRate } = useGlobalCatalog();
   const [step, setStep] = useState<1 | 2>(1); // 1: Datos Cliente & Productos, 2: Pago
 
   // Datos Cliente
@@ -19,6 +24,8 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   const [customerPhone, setCustomerPhone] = useState('');
 
   // Búsqueda y Productos
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -28,7 +35,6 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
 
   // Pago
   const [paymentMethod, setPaymentMethod] = useState<'PAGO_MOVIL' | 'ZELLE' | 'BINANCE' | 'EFECTIVO_DELIVERY' | 'PUNTO_DELIVERY'>('PUNTO_DELIVERY');
-  const [paymentReference, setPaymentReference] = useState('');
 
   // Envío al servidor
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,10 +92,28 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.product.price) * item.quantity), 0);
+  const subtotalBs = subtotal * exchangeRate;
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const totalIvaBs = cartItems.reduce((acc, item) => {
+    const rawPercentage = item.product.taxRate?.percentage;
+    const percentage = rawPercentage !== undefined ? Number(rawPercentage) : undefined;
+
+    if (percentage !== undefined && !isNaN(percentage) && percentage > 0) {
+      const numPrice = Number(String(item.product.price));
+      const bsPrice = numPrice * exchangeRate;
+      const itemIva = bsPrice * (percentage / (100 + percentage));
+      return acc + (itemIva * item.quantity);
+    }
+    return acc;
+  }, 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
+      if (Object.values(errors).some(Boolean)) {
+        setErrorMessage('Por favor, corrige los errores de Cédula o Teléfono antes de continuar.');
+        return;
+      }
       if (!customerName || !customerCedula || !customerPhone) {
         setErrorMessage('Todos los datos del cliente son requeridos.');
         return;
@@ -109,7 +133,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
     try {
       const payload = {
         paymentMethod,
-        paymentReference: paymentReference || undefined,
+        paymentReference: undefined,
         customerData: {
           name: customerName,
           cedula: customerCedula,
@@ -207,36 +231,36 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Cédula</label>
-                        <input
-                          type="text"
-                          required
+                        <CedulaInput
+                          label="Cédula"
                           value={customerCedula}
-                          onChange={e => setCustomerCedula(e.target.value)}
-                          placeholder="V-12345678"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
+                          onChange={val => { setCustomerCedula(val); setErrors(prev => ({ ...prev, cedula: '' })); }}
                         />
+                        {errors.cedula && (
+                          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                            {errors.cedula}
+                          </motion.p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Teléfono</label>
-                        <input
-                          type="text"
-                          required
+                        <PhoneInput
+                          label="Teléfono"
                           value={customerPhone}
-                          onChange={e => setCustomerPhone(e.target.value)}
-                          placeholder="0414-0000000"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
+                          onChange={val => { setCustomerPhone(val); setErrors(prev => ({ ...prev, phone: '' })); }}
                         />
+                        {errors.phone && (
+                          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
+                            {errors.phone}
+                          </motion.p>
+                        )}
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Nombre Completo</label>
-                        <input
-                          type="text"
+                        <Input
+                          label="Nombre Completo"
                           required
                           value={customerName}
                           onChange={e => setCustomerName(e.target.value)}
                           placeholder="Juan Pérez"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
                         />
                       </div>
                     </div>
@@ -305,19 +329,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                         </select>
                       </div>
 
-                      {['PAGO_MOVIL', 'ZELLE', 'BINANCE'].includes(paymentMethod) && (
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Referencia</label>
-                          <input
-                            type="text"
-                            required
-                            value={paymentReference}
-                            onChange={e => setPaymentReference(e.target.value)}
-                            placeholder="Número de referencia..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:border-brand outline-none"
-                          />
-                        </div>
-                      )}
+
                     </div>
                   </div>
                 </motion.div>
@@ -358,7 +370,13 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
               </div>
               <div className="pt-4 mt-4 border-t border-slate-200 flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Estimado</span>
-                <span className="text-xl font-black text-slate-900">${subtotal.toFixed(2)}</span>
+                <div className="text-right">
+                  <div className="text-xl font-black text-slate-900">${subtotal.toFixed(2)}</div>
+                  <div className="text-[11px] font-bold text-slate-500">Bs. {subtotalBs.toFixed(2)}</div>
+                  <div className="text-[9px] font-medium text-slate-400 mt-0.5">
+                    {totalIvaBs > 0 ? `I.V.A Bs: (${totalIvaBs.toFixed(2)})` : 'Exento de I.V.A'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
