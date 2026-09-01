@@ -583,6 +583,27 @@ export class OrderService {
   }
 
   /**
+   * Finaliza la preparación, añade cargos extra (delivery, bolsas) y pasa a READY_TO_PAY.
+   */
+  async finalizePreparation(orderId: string, deliveryCost: number, bagsQuantity: number, bagPrice: number, actionUserId?: string) {
+    const bagsTotal = bagsQuantity * bagPrice;
+
+    const updatedOrder = await orderRepository.finalizePreparation(orderId, deliveryCost, bagsTotal);
+
+    if (actionUserId) {
+      await auditLogRepository.create({
+        action: 'ORDER_PREPARATION_FINALIZED',
+        performedById: actionUserId,
+        orderId,
+        previousState: { status: 'PICKING' },
+        newState: { status: 'READY_TO_PAY', deliveryCost, bagsQuantity, bagPrice }
+      });
+    }
+
+    return updatedOrder;
+  }
+
+  /**
    * 6. Asigna el repartidor a la orden.
    */
   async assignDelivery(id: string, deliveryPersonId: string, actionUserId?: string) {

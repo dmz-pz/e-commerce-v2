@@ -9,7 +9,7 @@ export class OrderController {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
     const search = req.query.search as string | undefined;
     const status = req.query.status as any | undefined;
-    
+
     const orders = await orderService.getAllOrders({
       todayOnly,
       page,
@@ -149,6 +149,29 @@ export class OrderController {
       orderId || "",
       pickerId,
       items,
+    );
+    res.json(updatedOrder);
+  }
+
+  async finalizePreparation(req: Request, res: Response) {
+    const { id: orderId } = req.params;
+    const { deliveryCost, bagsQuantity, bagPrice } = req.body;
+    const userId = req.user?.id;
+
+    if (!orderId) {
+      throw new AppError("El ID de la orden es requerido.", 400);
+    }
+
+    if (deliveryCost === undefined || bagsQuantity === undefined || bagPrice === undefined) {
+      throw new AppError("Faltan datos requeridos (deliveryCost, bagsQuantity, bagPrice)", 400);
+    }
+
+    const updatedOrder = await orderService.finalizePreparation(
+      orderId || "",
+      Number(deliveryCost),
+      Number(bagsQuantity),
+      Number(bagPrice),
+      userId
     );
     res.json(updatedOrder);
   }

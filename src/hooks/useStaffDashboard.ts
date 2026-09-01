@@ -15,6 +15,7 @@ export const useStaffDashboard = () => {
 
   const [substitutingItem, setSubstitutingItem] = useState<{ orderId: string, productId: string, name: string } | null>(null);
   const [addingToOrderId, setAddingToOrderId] = useState<string | null>(null);
+  const [addingChargesOrderId, setAddingChargesOrderId] = useState<string | null>(null);
   const [validatingPaymentOrderId, setValidatingPaymentOrderId] = useState<string | null>(null);
   const [cancelingOrder, setCancelingOrder] = useState<{ id: string; customerName: string; isLastItem?: boolean } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -231,6 +232,16 @@ export const useStaffDashboard = () => {
     setAddingToOrderId(null);
   };
 
+  const handleAddCharges = async (orderId: string, deliveryCost: number, bagsQuantity: number, bagPrice: number) => {
+    try {
+      const updatedOrder = await orderService.finalizePreparation(orderId, deliveryCost, bagsQuantity, bagPrice);
+      setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder as any : o));
+      setAddingChargesOrderId(null);
+    } catch (error) {
+      throw error; // El modal maneja el error visualmente
+    }
+  };
+
   const handleSaveOrderItems = async (orderId: string) => {
     setModifyingOrderId(orderId);
     setErrorMessage(null);
@@ -292,7 +303,7 @@ export const useStaffDashboard = () => {
 
       // 3. Confirmar la referencia de pago y avanzar estado
       const formData = new FormData();
-      formData.append('status', OrderStatus.READY_TO_PAY);
+      formData.append('status', OrderStatus.PAID);
       formData.append('paymentReference', reference);
       if (receiptFile) {
         formData.append('receiptImage', receiptFile);
@@ -371,6 +382,8 @@ export const useStaffDashboard = () => {
     setSubstitutingItem,
     addingToOrderId,
     setAddingToOrderId,
+    addingChargesOrderId,
+    setAddingChargesOrderId,
     validatingPaymentOrderId,
     setValidatingPaymentOrderId,
     cancelingOrder,
@@ -391,6 +404,7 @@ export const useStaffDashboard = () => {
     handleConfirmCancelOrder,
     handlePerformSubstitution,
     handleAddProduct,
+    handleAddCharges,
     handleSaveOrderItems,
     handleDiscardOrderChanges,
     handleUpdateStatus,
