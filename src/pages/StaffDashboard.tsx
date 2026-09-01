@@ -11,6 +11,7 @@ import { CancelOrderModal } from '../components/staff/CancelOrderModal.tsx';
 import { PaginationBar } from '../components/catalog/PaginationBar.tsx';
 import { PaymentReferenceModal } from '../components/staff/PaymentReferenceModal.tsx';
 import { CreateOrderModal } from '../components/staff/CreateOrderModal.tsx';
+import { AddChargesModal } from '../components/staff/AddChargesModal.tsx';
 
 export const StaffDashboard: React.FC = () => {
   const {
@@ -27,6 +28,8 @@ export const StaffDashboard: React.FC = () => {
     setSubstitutingItem,
     addingToOrderId,
     setAddingToOrderId,
+    addingChargesOrderId,
+    setAddingChargesOrderId,
     validatingPaymentOrderId,
     setValidatingPaymentOrderId,
     cancelingOrder,
@@ -47,6 +50,7 @@ export const StaffDashboard: React.FC = () => {
     handleConfirmCancelOrder,
     handlePerformSubstitution,
     handleAddProduct,
+    handleAddCharges,
     handleSaveOrderItems,
     handleDiscardOrderChanges,
     handleUpdateStatus,
@@ -102,6 +106,7 @@ export const StaffDashboard: React.FC = () => {
                   onSetSubstitutingItem={setSubstitutingItem}
                   onAddProduct={() => setAddingToOrderId(order.id)}
                   onRequirePaymentReference={() => setValidatingPaymentOrderId(order.id)}
+                  onRequireAddCharges={() => setAddingChargesOrderId(order.id)}
                   onOpenCancelModal={(id, customerName) => setCancelingOrder({ id, customerName })}
                 />
               ))
@@ -147,6 +152,18 @@ export const StaffDashboard: React.FC = () => {
         onClose={() => { setCancelingOrder(null); setErrorMessage(null); }}
         onConfirmCancel={handleConfirmCancelOrder}
         errorMessage={errorMessage}
+      />
+
+      {/* Add Charges Modal */}
+      <AddChargesModal
+        isOpen={!!addingChargesOrderId}
+        onClose={() => setAddingChargesOrderId(null)}
+        order={addingChargesOrderId ? filteredOrders.find((o) => o.id === addingChargesOrderId) : null}
+        onSubmit={async (delivery, bags, bagPrice) => {
+          if (addingChargesOrderId) {
+            await handleAddCharges(addingChargesOrderId, delivery, bags, bagPrice);
+          }
+        }}
       />
 
       {/* Payment Reference Validation Modal */}

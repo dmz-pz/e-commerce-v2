@@ -111,6 +111,13 @@ export const orderService = {
   },
 
   /**
+   * Finaliza la preparación, añade cargos extra (delivery, bolsas) y pasa a READY_TO_PAY.
+   */
+  finalizePreparation: async (orderId: string, deliveryCost: number, bagsQuantity: number, bagPrice: number): Promise<Order> => {
+    return apiClient.patch<Order>(`/api/orders/${orderId}/finalize-preparation`, { deliveryCost, bagsQuantity, bagPrice });
+  },
+
+  /**
    * Obtiene la lista de repartidores motorizados disponibles en el sistema.
    */
   getAvailableDeliveryPersons: async (): Promise<DeliveryPerson[]> => {
