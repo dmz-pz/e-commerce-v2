@@ -46,9 +46,23 @@ async function runBulkUpload() {
         return;
     }
 
-    const files = fs.readdirSync(LOCAL_FOLDER).filter(file => !file.startsWith("."));
+    // Si se pasan argumentos, procesar solo esos archivos. Si no, procesar todo el directorio.
+    const args = process.argv.slice(2);
+    let files: string[] = [];
+
+    if (args.length > 0) {
+        files = args;
+        console.log(`📦 Se van a subir ${files.length} archivos especificados manualmente.\n`);
+    } else {
+        files = fs.readdirSync(LOCAL_FOLDER).filter(file => !file.startsWith("."));
+        console.log(`📦 Se encontraron ${files.length} archivos para procesar en masa.\n`);
+    }
+
     const totalFiles = files.length;
-    console.log(`📦 Se encontraron ${totalFiles} archivos para procesar.\n`);
+    if (totalFiles === 0) {
+        console.log("No hay archivos para subir.");
+        return;
+    }
 
     // Subimos en lotes concurrentes de 25 en 25
     const BATCH_SIZE = 25;

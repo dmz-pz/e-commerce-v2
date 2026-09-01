@@ -23,20 +23,35 @@ services:
     ports:
       - "4000:4000"
     environment:
-      NODE_ENV: production
-      PORT: 4000
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-e-commerce-v2}?schema=public"
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-4000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-e-commerce-v2}?schema=public}
       
-      # --- Añadidas para Seguridad y CORS ---
+      # Base de datos externa
+      ODBC_DSN: ${ODBC_DSN}
+      ODBC_UID: ${ODBC_UID}
+      ODBC_PWD: ${ODBC_PWD}
+
+      # Aplicativo
       APP_URL: ${APP_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      USE_MOCK_DATABASE: ${USE_MOCK_DATABASE}
+      IMAGES_DIR: ${IMAGES_DIR}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      JWT_SECRET: ${JWT_SECRET}           # Obligatorio para JWT en producción
       
-      # --- Añadidas para Cloudflare R2 (Imágenes) ---
+      # Cloudflare R2 (Imágenes)
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_BUCKET_NAME: ${R2_BUCKET_NAME} 
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      SKIP_IMAGE_OPTIMIZATION: ${SKIP_IMAGE_OPTIMIZATION}
+      
+      # Better auth
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      
+      # Resend Email Provider
+      RESEND_API_KEY: ${RESEND_API_KEY}
       
     depends_on:
       - postgres
