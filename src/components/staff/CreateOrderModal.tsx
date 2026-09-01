@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Search, Plus, Minus, User, CreditCard, ShoppingBag, Loader2, AlertCircle } from 'lucide-react';
 import { Product } from '../../types/index.ts';
 import { productService } from '../../services/productService.ts';
-import { userService } from '../../services/userService.ts';
 import { CedulaInput } from '../ui/CedulaInput.tsx';
 import { PhoneInput } from '../ui/PhoneInput.tsx';
 import { Input } from '../ui/Input.tsx';
@@ -27,41 +26,6 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   // Búsqueda y Productos
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleBlur = async (field: 'cedula' | 'phone', value: string) => {
-    if (!value) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-      return;
-    }
-    try {
-      const check = await userService.checkAvailability({ [field]: value });
-      if (check.status !== 'success') {
-        setErrors(prev => ({ ...prev, [field]: check.message || `Este ${field} ya está registrado` }));
-      } else {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[field];
-          return newErrors;
-        });
-      }
-    } catch (err: any) {
-      if (err.data?.issues) {
-        err.data.issues.forEach((issue: any) => {
-          if (issue.path && issue.path[0] === field) {
-            setErrors(prev => ({ ...prev, [field]: issue.message }));
-          }
-        });
-      } else if (err.response?.data?.message) {
-        setErrors(prev => ({ ...prev, [field]: err.response.data.message }));
-      } else if (err.message) {
-        setErrors(prev => ({ ...prev, [field]: err.message }));
-      }
-    }
-  };
-
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -71,7 +35,6 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
 
   // Pago
   const [paymentMethod, setPaymentMethod] = useState<'PAGO_MOVIL' | 'ZELLE' | 'BINANCE' | 'EFECTIVO_DELIVERY' | 'PUNTO_DELIVERY'>('PUNTO_DELIVERY');
-  const [paymentReference, setPaymentReference] = useState('');
 
   // Envío al servidor
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,7 +97,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   const totalIvaBs = cartItems.reduce((acc, item) => {
     const rawPercentage = item.product.taxRate?.percentage;
     const percentage = rawPercentage !== undefined ? Number(rawPercentage) : undefined;
-    
+
     if (percentage !== undefined && !isNaN(percentage) && percentage > 0) {
       const numPrice = Number(String(item.product.price));
       const bsPrice = numPrice * exchangeRate;
@@ -170,7 +133,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
     try {
       const payload = {
         paymentMethod,
-        paymentReference: paymentReference || undefined,
+        paymentReference: undefined,
         customerData: {
           name: customerName,
           cedula: customerCedula,
@@ -268,13 +231,11 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <div onBlur={() => handleBlur('cedula', customerCedula)}>
-                          <CedulaInput
-                            label="Cédula"
-                            value={customerCedula}
-                            onChange={val => { setCustomerCedula(val); setErrors(prev => ({ ...prev, cedula: '' })); }}
-                          />
-                        </div>
+                        <CedulaInput
+                          label="Cédula"
+                          value={customerCedula}
+                          onChange={val => { setCustomerCedula(val); setErrors(prev => ({ ...prev, cedula: '' })); }}
+                        />
                         {errors.cedula && (
                           <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
                             {errors.cedula}
@@ -282,13 +243,11 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                         )}
                       </div>
                       <div>
-                        <div onBlur={() => handleBlur('phone', customerPhone)}>
-                          <PhoneInput
-                            label="Teléfono"
-                            value={customerPhone}
-                            onChange={val => { setCustomerPhone(val); setErrors(prev => ({ ...prev, phone: '' })); }}
-                          />
-                        </div>
+                        <PhoneInput
+                          label="Teléfono"
+                          value={customerPhone}
+                          onChange={val => { setCustomerPhone(val); setErrors(prev => ({ ...prev, phone: '' })); }}
+                        />
                         {errors.phone && (
                           <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-[10px] font-bold mt-1 px-1">
                             {errors.phone}

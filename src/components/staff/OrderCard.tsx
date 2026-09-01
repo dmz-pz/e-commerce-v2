@@ -25,6 +25,7 @@ interface OrderCardProps {
   onOpenCancelModal?: (orderId: string, customerName: string) => void;
   onAddProduct?: (orderId: string) => void;
   onRequirePaymentReference?: (orderId: string) => void;
+  onRequireAddCharges?: (orderId: string) => void;
 }
 
 const getStatusStyles = (status: OrderStatus) => {
@@ -82,6 +83,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onOpenCancelModal,
   onAddProduct,
   onRequirePaymentReference,
+  onRequireAddCharges,
 }) => {
   const { exchangeRate } = useGlobalCatalog();
   const isModifyingThisOrder = modifyingOrderId === order.id;
@@ -317,18 +319,33 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           <button
             type="button"
             onClick={() => {
-              const onlineMethods = ['PAGO_MOVIL', 'ZELLE', 'BINANCE'];
-              if (order.payment?.method && onlineMethods.includes(order.payment.method)) {
-                onRequirePaymentReference?.(order.id);
-              } else {
-                onUpdateStatus(order.id, OrderStatus.READY_TO_PAY);
-              }
+              onRequireAddCharges?.(order.id);
             }}
             className="w-full bg-accent text-brand py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent-dark transition-all flex items-center justify-center gap-3 shadow-lg shadow-accent/20 active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Terminar y Marcar Listo p/ Pagar
+            Terminar Preparación y Añadir Cargos
           </button>
+        )}
+
+        {order.status === OrderStatus.READY_TO_PAY && !deliveryPersonId && (
+          (() => {
+            const onlineMethods = ['PAGO_MOVIL', 'ZELLE', 'BINANCE'];
+            const isOnlineMethod = order.payment?.method && onlineMethods.includes(order.payment.method);
+            
+            if (!isOnlineMethod) return null;
+
+            return (
+              <button
+                type="button"
+                onClick={() => onRequirePaymentReference?.(order.id)}
+                className="w-full bg-emerald-500 text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Validar Pago
+              </button>
+            );
+          })()
         )}
 
         {/* Cancel Order Trigger Button for active editable orders */}
