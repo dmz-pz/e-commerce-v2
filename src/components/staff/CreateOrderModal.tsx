@@ -12,7 +12,7 @@ interface CreateOrderModalProps {
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onClose, onOrderCreated }) => {
   const [step, setStep] = useState<1 | 2>(1); // 1: Datos Cliente & Productos, 2: Pago
-  
+
   // Datos Cliente
   const [customerName, setCustomerName] = useState('');
   const [customerCedula, setCustomerCedula] = useState('');
@@ -22,14 +22,14 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  
+
   // Carrito Local
   const [cartItems, setCartItems] = useState<Array<{ product: Product, quantity: number }>>([]);
 
   // Pago
   const [paymentMethod, setPaymentMethod] = useState<'PAGO_MOVIL' | 'ZELLE' | 'BINANCE' | 'EFECTIVO_DELIVERY' | 'PUNTO_DELIVERY'>('PUNTO_DELIVERY');
   const [paymentReference, setPaymentReference] = useState('');
-  
+
   // Envío al servidor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -51,7 +51,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
         setLoadingSearch(false);
       }
     };
-    
+
     const timeoutId = setTimeout(fetchProducts, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
@@ -60,7 +60,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
     setCartItems(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
-        return prev.map(item => item.product.id === product.id 
+        return prev.map(item => item.product.id === product.id
           ? { ...item, quantity: item.quantity + 1 }
           : item
         );
@@ -87,7 +87,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
 
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.product.price) * item.quantity), 0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (step === 1) {
       if (!customerName || !customerCedula || !customerPhone) {
@@ -197,7 +197,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
           <div className="flex flex-1 overflow-hidden">
             {/* Left Column - Form */}
             <form id="create-order-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 border-r border-slate-100 flex flex-col gap-6">
-              
+
               {step === 1 && (
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   {/* Datos del Cliente */}
@@ -257,7 +257,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-xs font-bold focus:border-brand outline-none"
                       />
                       {loadingSearch && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand animate-spin" />}
-                      
+
                       {/* Resultados de Búsqueda */}
                       {products.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-20">
@@ -288,7 +288,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
                       <CreditCard className="w-3 h-3" /> Información de Pago
                     </h4>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Método de Pago</label>
@@ -376,7 +376,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
             ) : (
               <div /> // Spacer
             )}
-            
+
             <button
               type="submit"
               form="create-order-form"

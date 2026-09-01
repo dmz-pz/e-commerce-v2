@@ -8,7 +8,7 @@ const PROMO_SLIDES = [
     id: 1,
     title: "Semana de la Frescura",
     subtitle: "Hasta 20% de descuento en frutas y verduras seleccionadas.",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop",
+    image: "https://images.minegociosup.com/assets/ImagenPromo1.webp",
     cta: "Ver Frutas",
     category: "Frutas y Verduras",
     color: "bg-brand"
@@ -17,7 +17,7 @@ const PROMO_SLIDES = [
     id: 2,
     title: "Desayuno Perfecto",
     subtitle: "Lleva 2 yogures griegos y el tercero va por nuestra cuenta.",
-    image: "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1600&auto=format&fit=crop",
+    image: "https://images.minegociosup.com/assets/ImagenPromo2.webp",
     cta: "Ver Lácteos",
     category: "Lácteos",
     color: "bg-accent"
@@ -26,7 +26,7 @@ const PROMO_SLIDES = [
     id: 3,
     title: "Masa Madre Real",
     subtitle: "Pan artesanal horneado cada mañana con fermentación natural.",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1600&auto=format&fit=crop",
+    image: "https://images.minegociosup.com/assets/ImagenPromo3.webp",
     cta: "Ver Panadería",
     category: "Panadería",
     color: "bg-brand-dark"
