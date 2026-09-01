@@ -63,6 +63,13 @@ router.patch(
   catchAsync(orderController.processPicking),
 );
 
+// 7.5 Finalizar preparación (Añadir Cargos y Notificar)
+router.patch(
+  "/:id/finalize-preparation",
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  catchAsync(orderController.finalizePreparation),
+);
+
 // 8. Asignar repartidor motorizado (Staff, Delivery y Administradores)
 router.patch(
   "/:id/assign-delivery",

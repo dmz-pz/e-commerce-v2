@@ -238,6 +238,44 @@ export class OrderRepository {
   }
 
   /**
+   * Finaliza la preparación, guarda costos extra y pasa a READY_TO_PAY.
+   */
+  async finalizePreparation(
+    orderId: string, 
+    deliveryCost: number, 
+    bagsTotal: number
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id: orderId } });
+      if (!order) throw new Error("Order not found");
+
+      const newTotal = Number(order.subtotal) + deliveryCost + bagsTotal;
+      const newTotalBs = newTotal * Number(order.exchangeRate);
+
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          shippingCost: deliveryCost,
+          total: newTotal,
+          totalBs: newTotalBs,
+          status: "READY_TO_PAY"
+        },
+        include: {
+          items: true,
+          payment: true,
+          deliveryJobs: { 
+            orderBy: { assignedAt: "desc" }, 
+            take: 1,
+            include: { deliveryPerson: true }
+          },
+        },
+      });
+
+      return updatedOrder;
+    });
+  }
+
+  /**
    * 5. Actualiza los productos y montos de una orden de forma atómica (Reemplazo total de items).
    */
   async updateItems(
