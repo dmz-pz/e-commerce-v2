@@ -117,7 +117,7 @@ export class AdminService {
         phone: userData.phone,
         birthdate: userData.birthdate as any,
         role: userData.role, // El hook lo forzará a CLIENTE
-        callbackURL: `${process.env.APP_URLL || 'http://localhost:4000'}/email-verified`,
+        callbackURL: `${process.env.APP_URL || 'http://localhost:4000'}/email-verified`,
       },
     });
 
