@@ -17,6 +17,7 @@ import userRoutes from "./server/api/routes/userRoutes.ts";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./server/api/lib/auth.ts";
 import { globalErrorHandler } from "./server/api/middlewares/errorMiddleware.ts";
+import { globalLimiter, authLimiter } from "./server/api/middlewares/rateLimiter.ts";
 
 async function startServer() {
   const app = express();
@@ -76,6 +77,12 @@ async function startServer() {
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     maxAge: 86400,
   }));
+
+  // Aplicar el Rate Limiter global a todas las rutas a partir de aquí
+  app.use(globalLimiter);
+
+  // Aplicar el Rate Limiter estricto exclusivamente a las rutas de auth
+  app.use("/api/auth", authLimiter);
   app.all("/api/auth/*", toNodeHandler(auth));
   app.use(express.json());
   app.use(cookieParser());
