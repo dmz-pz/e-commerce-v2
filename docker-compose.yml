@@ -14,6 +14,17 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: app_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
   app:
     build:
       context: .
@@ -26,6 +37,9 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-4000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-e-commerce-v2}?schema=public}
+      
+      # Redis
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       
       # Base de datos externa
       ODBC_DSN: ${ODBC_DSN}
@@ -55,11 +69,13 @@ services:
       
     depends_on:
       - postgres
+      - redis
     networks:
       - app-network
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   app-network:

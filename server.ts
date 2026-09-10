@@ -19,6 +19,8 @@ import { auth } from "./server/api/lib/auth.ts";
 import { globalErrorHandler } from "./server/api/middlewares/errorMiddleware.ts";
 import { globalLimiter, authLimiter } from "./server/api/middlewares/rateLimiter.ts";
 
+import { redisClient } from "./server/api/lib/redis.ts";
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -126,6 +128,9 @@ async function startServer() {
       if (err) {
         console.error("Error closing server:", err);
         process.exit(1);
+      }
+      if (redisClient) {
+        await redisClient.quit().catch(() => {});
       }
       await shutdownDatabase();
       process.exit(0);
