@@ -25,7 +25,7 @@ const getRealClientIp = (req: Request): string => {
   return req.ip || req.socket.remoteAddress || "127.0.0.1";
 };
 
-// Generador de tienda (Redis o MemoryStore como fallback si no hay Redis)
+// Generador de tienda Redis
 const getStore = (prefix: string) => {
   if (!redisClient) return undefined;
 
@@ -33,7 +33,7 @@ const getStore = (prefix: string) => {
   return new RedisStore({
     sendCommand: async (...args: string[]): Promise<any> => {
       const command = args[0];
-      if (!command) return null;
+      if (!command) throw new Error("No command provided to Redis");
       return client.call(command, ...args.slice(1));
     },
     prefix: `rl:${prefix}:`,
@@ -50,6 +50,8 @@ export const globalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true, // Si Redis falla o está offline, permite que las peticiones continúen sin romper el servidor
+  validate: false, // Deshabilita advertencias de validaciones en consola para IP personalizadas
   keyGenerator: getRealClientIp,
   store: getStore("global"),
 });
@@ -64,6 +66,8 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true, // Si Redis falla o está offline, permite que la autenticación continúe en modo seguro
+  validate: false, // Deshabilita advertencias de validaciones en consola para IP personalizadas
   keyGenerator: getRealClientIp,
   store: getStore("auth"),
 });

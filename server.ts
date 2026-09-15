@@ -80,8 +80,8 @@ async function startServer() {
     maxAge: 86400,
   }));
 
-  // Aplicar el Rate Limiter global a todas las rutas a partir de aquí
-  app.use(globalLimiter);
+  // Aplicar el Rate Limiter global únicamente a las rutas de la API (/api)
+  app.use("/api", globalLimiter);
 
   // Aplicar el Rate Limiter estricto exclusivamente a las rutas de auth
   app.use("/api/auth", authLimiter);

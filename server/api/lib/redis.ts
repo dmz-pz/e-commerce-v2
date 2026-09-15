@@ -8,11 +8,11 @@ let isRedisConnected = false;
 try {
   redisClient = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 3,
-    enableOfflineQueue: true,
+    enableOfflineQueue: true, // Permite amortiguar comandos durante los milisegundos de establecimiento del socket TCP
     retryStrategy(times) {
       if (times > 5) {
-        console.warn("[Redis] Reintentos agotados. Operando en modo degrada/memoria si corresponde.");
-        return null; // Detener reintentos automáticos tras 5 intentos si Redis no existe
+        console.warn("[Redis] Reintentos agotados. Operando en modo degradado/memoria.");
+        return null; // Detener reintentos si Redis no responde tras 5 intentos
       }
       return Math.min(times * 200, 2000);
     },
@@ -25,7 +25,6 @@ try {
 
   redisClient.on("error", (err) => {
     isRedisConnected = false;
-    // Log suave para no saturar consola si Redis no está activo en dev local
     console.warn(`[Redis Error]: ${err.message}`);
   });
 } catch (error) {
