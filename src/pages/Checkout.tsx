@@ -217,6 +217,22 @@ export const Checkout: React.FC = () => {
 
                 {/* Lista de Productos */}
                 <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                  {/* Aviso si hay productos pesables en el carrito */}
+                  {items.some((item) => {
+                    const prd = products.find((p) => p.id === item.productId);
+                    return prd?.unit === "KG" || prd?.unit === "GR";
+                  }) && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs leading-relaxed flex items-start gap-3 shadow-sm">
+                      <CheckCircle2 className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="font-bold block text-amber-950 mb-0.5">
+                          Aviso sobre productos por peso:
+                        </strong>
+                        Tu pedido contiene productos pesables. El precio de estos ítems es un estimado preliminar; el monto definitivo se confirmará según el peso real en balanza al preparar tu compra en tienda.
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
                       Productos en el carrito

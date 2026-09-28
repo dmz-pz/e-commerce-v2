@@ -348,7 +348,81 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             <div className="space-y-4 md:space-y-6">
-              {currentQuantity > 0 ? (
+              {/* Selector de cantidad para productos por PESO (KG / GR) vs UNIDAD (UNID) */}
+              {(product.unit === "KG" || product.unit === "GR") ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Seleccionar Peso ({product.unit}):
+                    </span>
+                    <span className="text-xs font-black text-brand">
+                      ${parseAndFormatPrice((product.discountPrice || product.price) * (currentQuantity || 0.5))}
+                    </span>
+                  </div>
+
+                  {/* Botones de pesos rápidos */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[0.25, 0.5, 0.75, 1.0].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          if (currentQuantity > 0) {
+                            updateQuantity(product.id, preset);
+                          } else {
+                            addItem(product, preset);
+                          }
+                        }}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                          currentQuantity === preset
+                            ? "border-brand bg-brand text-white shadow-md shadow-brand/20"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-brand/40"
+                        }`}
+                      >
+                        {preset < 1 ? `${preset * 1000}g` : `${preset} kg`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Stepper decimal para personalizar */}
+                  <div className="flex items-center bg-slate-100 rounded-xl overflow-hidden border border-slate-200 h-12">
+                    <button
+                      onClick={() => updateQuantity(product.id, Math.max(0.1, Number((currentQuantity - 0.1).toFixed(2))))}
+                      disabled={currentQuantity <= 0.1}
+                      className="px-4 h-full text-slate-600 hover:bg-slate-200 transition-colors border-r border-slate-200 flex items-center justify-center disabled:opacity-30 cursor-pointer"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <div className="flex-1 text-center flex flex-col items-center justify-center">
+                      <span className="font-black text-slate-900 text-sm">
+                        {currentQuantity > 0 ? `${currentQuantity} ${product.unit}` : `0 ${product.unit}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const nextQty = Number((currentQuantity + 0.1).toFixed(2));
+                        if (currentQuantity > 0) {
+                          updateQuantity(product.id, nextQty);
+                        } else {
+                          addItem(product, 0.5);
+                        }
+                      }}
+                      className="px-4 h-full text-slate-600 hover:bg-slate-200 transition-colors border-l border-slate-200 flex items-center justify-center cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Aviso Informativo para Productos Pesables */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold block text-amber-950 mb-0.5">Nota sobre productos pesables:</strong>
+                      El peso y precio mostrado es un estimado. El monto final exacto se calculará según el peso real en balanza al preparar tu pedido.
+                    </div>
+                  </div>
+                </div>
+              ) : currentQuantity > 0 ? (
                 <div className="flex items-center bg-brand rounded-xl md:rounded-2xl overflow-hidden shadow-xl shadow-brand/20 h-14 md:h-16">
                   <button
                     onClick={() => updateQuantity(product.id, currentQuantity - 1)}

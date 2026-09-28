@@ -101,34 +101,45 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {currentQuantity > 0 ? (
             <div className="flex items-center bg-brand rounded-lg md:rounded-xl overflow-hidden shadow-lg shadow-brand/10">
               <button
-                onClick={() => updateQuantity(product.id, currentQuantity - 1)}
-                className="px-3 py-2 md:py-2.5 text-white hover:bg-brand-dark transition-colors border-r border-white/10"
+                onClick={() => {
+                  const step = (product.unit === "KG" || product.unit === "GR") ? 0.25 : 1;
+                  const newQty = Number((currentQuantity - step).toFixed(2));
+                  updateQuantity(product.id, Math.max(0, newQty));
+                }}
+                className="px-2.5 md:px-3 py-2 md:py-2.5 text-white hover:bg-brand-dark transition-colors border-r border-white/10"
               >
                 <Minus className="w-3 h-3 md:w-4 md:h-4" />
               </button>
-              <span className="flex-1 text-center font-black text-white text-xs md:text-sm">
-                {currentQuantity}
+              <span className="flex-1 text-center font-black text-white text-[11px] md:text-xs tracking-tighter truncate px-1">
+                {currentQuantity} {(product.unit === "KG" || product.unit === "GR") ? product.unit : ""}
               </span>
               <button
-                onClick={() =>
+                onClick={() => {
+                  const step = (product.unit === "KG" || product.unit === "GR") ? 0.25 : 1;
+                  const newQty = Number((currentQuantity + step).toFixed(2));
                   updateQuantity(
                     product.id,
-                    Math.min(product.stock, currentQuantity + 1),
-                  )
-                }
-                className="px-3 py-2 md:py-2.5 text-white hover:bg-brand-dark transition-colors border-l border-white/10"
-                disabled={currentQuantity >= product.stock}
+                    Math.min(product.stock || 999, newQty),
+                  );
+                }}
+                className="px-2.5 md:px-3 py-2 md:py-2.5 text-white hover:bg-brand-dark transition-colors border-l border-white/10"
+                disabled={currentQuantity >= (product.stock || 999)}
               >
                 <Plus className="w-3 h-3 md:w-4 md:h-4" />
               </button>
             </div>
           ) : (
             <button
-              onClick={() => addItem(product, 1)}
+              onClick={() => {
+                const initialQty = (product.unit === "KG" || product.unit === "GR") ? 0.5 : 1;
+                addItem(product, initialQty);
+              }}
               className="w-full py-2 md:py-2.5 bg-brand text-white rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold hover:bg-brand-dark transition-all active:scale-95 flex items-center justify-center gap-1.5 md:gap-2 shadow-lg shadow-brand/10"
             >
               <Plus className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden xs:inline">Agregar</span>
+              <span className="hidden xs:inline">
+                {(product.unit === "KG" || product.unit === "GR") ? "Agregar (0.5 kg)" : "Agregar"}
+              </span>
               <span className="xs:hidden">Añadir</span>
             </button>
           )}
