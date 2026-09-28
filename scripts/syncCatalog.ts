@@ -20,6 +20,7 @@ const SKIP_OPTIMIZATION = process.env.SKIP_IMAGE_OPTIMIZATION === 'true';
 const SYNC_QUERY = `
 SELECT 
     p.cod_interno,
+    p.cod_departamento,
     b.cod_barra,
     p.txt_descripcion_corta,
     p.txt_descripcion_larga,
@@ -30,7 +31,7 @@ SELECT
     pre.mto_moneda AS precio_usd,
     mon.tasa_vig
 FROM DBA.tv_producto AS p
-INNER JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
+LEFT JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
 INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
 CROSS APPLY (
     SELECT TOP 1 mto_precio, mto_moneda 
@@ -124,7 +125,8 @@ async function syncCatalog() {
 
     // 2. Manejo del Producto
     const isActive = row.ind_inactivo === 'A';
-    const unit = (row.ind_pesado === 1 || row.ind_pesado === '1') ? UnitType.KG : UnitType.UNID;
+    const isWeightedDept = ['04', '06', '08'].includes(String(row.cod_departamento));
+    const unit = (row.ind_pesado === 4 || row.ind_pesado === '4' || isWeightedDept) ? UnitType.KG : UnitType.UNID;
     const price = row.precio_usd ? Number(row.precio_usd) : 0;
 
     const externalId = String(row.cod_interno);
