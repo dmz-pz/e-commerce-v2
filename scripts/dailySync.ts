@@ -9,7 +9,7 @@ const connectionString = `DSN=${DSN};UID=${UID};PWD=${PWD}`;
 
 async function dailySync() {
   console.log(`[+] Iniciando sincronización DIARIA (Delta) con base de datos externa...`);
-  
+
   // 1. Calcular la fecha de ayer para el filtro
   const ayer = new Date();
   ayer.setDate(ayer.getDate() - 1);
@@ -21,6 +21,7 @@ async function dailySync() {
   const SYNC_QUERY = `
   SELECT 
       p.cod_interno,
+      p.cod_departamento,
       b.cod_barra,
       p.txt_descripcion_corta,
       p.txt_descripcion_larga,
@@ -28,14 +29,15 @@ async function dailySync() {
       p.ind_pesado, 
       imp.cod_impuesto,
       imp.porc_impuesto,
-      pre.mto_moneda AS precio_usd
+      pre.mto_moneda,
+      pre.mto_precio
   FROM DBA.tv_producto AS p
-  INNER JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
+  LEFT JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
   INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
   CROSS APPLY (
       SELECT TOP 1 mto_precio, mto_moneda, fecha_cambio 
       FROM DBA.ta_precio_producto 
-      WHERE cod_interno = p.cod_interno AND mto_moneda > 0
+      WHERE cod_interno = p.cod_interno AND (mto_moneda > 0 OR mto_precio > 0)
       ORDER BY fecha_cambio DESC
   ) AS pre
   WHERE p.ind_inactivo = 'A' AND pre.fecha_cambio >= '${fechaFiltro}'
@@ -53,12 +55,12 @@ async function dailySync() {
   try {
     console.log('[+] Obteniendo Tasa de Cambio actual...');
     const rateRows = await connection.query(RATE_QUERY);
-    
+
     if (rateRows.length > 0 && rateRows[0].tasa_vig) {
       const tasaVig = Number(rateRows[0].tasa_vig);
       console.log(`[+] Sincronizando Tasa de Cambio actual en BD local: ${tasaVig}`);
       const exchangeRate = await prisma.exchangeRate.findFirst();
-      
+
       if (exchangeRate) {
         await prisma.exchangeRate.update({
           where: { id: exchangeRate.id },
@@ -78,6 +80,10 @@ async function dailySync() {
   }
 
   // --- PASO B: ACTUALIZAR EL CATÁLOGO (DELTA) ---
+  let localRate = 1;
+  const currentExchange = await prisma.exchangeRate.findFirst();
+  if (currentExchange) localRate = currentExchange.rate;
+
   let rows;
   try {
     console.log('[+] Ejecutando consulta Delta de Productos en ODBC...');
@@ -128,10 +134,18 @@ async function dailySync() {
     }
 
     const isActive = row.ind_inactivo === 'A';
-    const unit = (row.ind_pesado === 1 || row.ind_pesado === '1') ? UnitType.KG : UnitType.UNID;
-    const price = row.precio_usd ? Number(row.precio_usd) : 0;
-    const externalId = String(row.cod_interno);
-    const barcode = row.cod_barra ? String(row.cod_barra) : null;
+    const deptStr = String(row.cod_departamento || '').trim();
+    const deptNum = parseInt(deptStr, 10);
+    const isWeightedDept = [4, 6, 8].includes(deptNum);
+    const unit = (row.ind_pesado === 4 || row.ind_pesado === '4' || row.ind_pesado === 1 || row.ind_pesado === '1' || isWeightedDept) ? UnitType.KG : UnitType.UNID;
+
+    const priceUSD = row.mto_moneda ? Number(row.mto_moneda) : 0;
+    const priceLocal = row.mto_precio ? Number(row.mto_precio) : 0;
+    const price = priceUSD > 0 ? priceUSD : (priceLocal > 0 ? priceLocal / localRate : 0);
+
+    const externalId = String(row.cod_interno).trim();
+    const barcodeRaw = String(row.cod_barra || '').trim();
+    const barcode = barcodeRaw !== '' ? barcodeRaw : null;
 
     try {
       await prisma.product.upsert({

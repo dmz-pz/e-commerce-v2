@@ -28,7 +28,8 @@ SELECT
     p.ind_pesado, 
     imp.cod_impuesto,
     imp.porc_impuesto,
-    pre.mto_moneda AS precio_usd,
+    pre.mto_moneda,
+    pre.mto_precio,
     mon.tasa_vig
 FROM DBA.tv_producto AS p
 LEFT JOIN DBA.tv_barra AS b ON p.cod_interno = b.cod_interno
@@ -36,7 +37,7 @@ INNER JOIN DBA.td_tipo_impuesto AS imp ON p.cod_impuesto = imp.cod_impuesto
 CROSS APPLY (
     SELECT TOP 1 mto_precio, mto_moneda 
     FROM DBA.ta_precio_producto 
-    WHERE cod_interno = p.cod_interno AND mto_moneda > 0
+    WHERE cod_interno = p.cod_interno AND (mto_moneda > 0 OR mto_precio > 0)
     ORDER BY fecha_cambio DESC
 ) AS pre
 CROSS JOIN (
@@ -125,12 +126,21 @@ async function syncCatalog() {
 
     // 2. Manejo del Producto
     const isActive = row.ind_inactivo === 'A';
-    const isWeightedDept = ['04', '06', '08'].includes(String(row.cod_departamento));
-    const unit = (row.ind_pesado === 4 || row.ind_pesado === '4' || isWeightedDept) ? UnitType.KG : UnitType.UNID;
-    const price = row.precio_usd ? Number(row.precio_usd) : 0;
+    const deptStr = String(row.cod_departamento || '').trim();
+    const deptNum = parseInt(deptStr, 10);
 
-    const externalId = String(row.cod_interno);
-    const barcode = row.cod_barra ? String(row.cod_barra) : null;
+    const isWeightedDept = [4, 6, 8].includes(deptNum);
+    const isKg = (row.ind_pesado === 4 || row.ind_pesado === '4' || row.ind_pesado === 1 || row.ind_pesado === '1' || isWeightedDept);
+    const unit = isKg ? UnitType.KG : UnitType.UNID;
+
+    const priceUSD = row.mto_moneda ? Number(row.mto_moneda) : 0;
+    const priceLocal = row.mto_precio ? Number(row.mto_precio) : 0;
+    const rate = row.tasa_vig ? Number(row.tasa_vig) : 1;
+    const price = priceUSD > 0 ? priceUSD : (priceLocal > 0 ? priceLocal / rate : 0);
+
+    const externalId = String(row.cod_interno).trim();
+    const barcodeRaw = String(row.cod_barra || '').trim();
+    const barcode = barcodeRaw !== '' ? barcodeRaw : null;
 
     try {
       await prisma.product.upsert({
