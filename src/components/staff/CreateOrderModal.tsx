@@ -218,9 +218,9 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
             </div>
           )}
 
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Left Column - Form */}
-            <form id="create-order-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 border-r border-slate-100 flex flex-col gap-6">
+            <form id="create-order-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-6 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-6">
 
               {step === 1 && (
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
@@ -229,7 +229,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                     <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
                       <User className="w-3 h-3" /> Datos del Cliente
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <CedulaInput
                           label="Cédula"
@@ -254,7 +254,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                           </motion.p>
                         )}
                       </div>
-                      <div className="md:col-span-2">
+                      <div>
                         <Input
                           label="Nombre Completo"
                           required
@@ -337,7 +337,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
             </form>
 
             {/* Right Column - Cart Summary */}
-            <div className="w-1/3 bg-slate-50 flex flex-col p-6">
+            <div className="w-full md:w-1/3 md:min-w-[280px] bg-slate-50 flex flex-col p-4 md:p-6 h-64 md:h-auto border-t md:border-t-0 border-slate-100 shrink-0">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Resumen del Pedido</h4>
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {cartItems.length === 0 ? (

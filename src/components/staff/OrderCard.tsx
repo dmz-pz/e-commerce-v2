@@ -209,9 +209,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               <button
                 type="button"
                 onClick={() => onAddProduct?.(order.id)}
-                disabled={isModifyingThisOrder}
-                className="text-[9px] font-black uppercase tracking-widest text-brand hover:text-brand-dark bg-brand/5 hover:bg-brand/10 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                title="Añadir nuevo producto"
+                disabled={isModifyingThisOrder || order.status === OrderStatus.PENDING}
+                className="text-[9px] font-black uppercase tracking-widest text-brand hover:text-brand-dark bg-brand/5 hover:bg-brand/10 px-2 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand/5 disabled:hover:text-brand"
+                title={order.status === OrderStatus.PENDING ? "Inicia preparación para editar" : "Añadir nuevo producto"}
               >
                 <Plus className="w-3 h-3" /> Añadir Producto
               </button>
@@ -244,9 +244,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onUpdateItemQuantity(order.id, item.productId, -1)}
-                        disabled={isModifyingThisOrder}
-                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
-                        title="Reducir cantidad"
+                        disabled={isModifyingThisOrder || order.status === OrderStatus.PENDING}
+                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-colors cursor-pointer"
+                        title={order.status === OrderStatus.PENDING ? "Inicia preparación para editar" : "Reducir cantidad"}
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -256,9 +256,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onUpdateItemQuantity(order.id, item.productId, 1)}
-                        disabled={isModifyingThisOrder}
-                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 transition-colors cursor-pointer"
-                        title="Aumentar cantidad"
+                        disabled={isModifyingThisOrder || order.status === OrderStatus.PENDING}
+                        className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-colors cursor-pointer"
+                        title={order.status === OrderStatus.PENDING ? "Inicia preparación para editar" : "Aumentar cantidad"}
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -269,9 +269,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onSetSubstitutingItem({ orderId: order.id, productId: item.productId, name: item.name })}
-                        disabled={isModifyingThisOrder}
-                        className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-brand bg-white border border-slate-200 hover:border-brand/20 rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-                        title="Sustituir producto"
+                        disabled={isModifyingThisOrder || order.status === OrderStatus.PENDING}
+                        className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-brand bg-white border border-slate-200 hover:border-brand/20 rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:border-slate-200 cursor-pointer"
+                        title={order.status === OrderStatus.PENDING ? "Inicia preparación para editar" : "Sustituir producto"}
                       >
                         <RefreshCw className="w-2.5 h-2.5" />
                         Sustituir
@@ -279,9 +279,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveItem(order.id, item.productId)}
-                        disabled={isModifyingThisOrder}
-                        className="p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 border border-red-100/50 flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
-                        title="Eliminar producto"
+                        disabled={isModifyingThisOrder || order.status === OrderStatus.PENDING}
+                        className="p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 border border-red-100/50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-50 cursor-pointer"
+                        title={order.status === OrderStatus.PENDING ? "Inicia preparación para editar" : "Eliminar producto"}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
