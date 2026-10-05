@@ -27,8 +27,12 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reference.trim()) {
-      setError('El número de referencia es obligatorio.');
+    if (!reference.trim() && !file) {
+      setError('Debes ingresar el número de referencia o subir un comprobante.');
+      return;
+    }
+    if (reference.trim() && reference.trim().length < 4) {
+      setError('El número de referencia debe tener al menos 4 dígitos.');
       return;
     }
 
@@ -104,7 +108,7 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
             {/* Reference Input */}
             <div>
               <label htmlFor="refInput" className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-widest">
-                N° de Referencia <span className="text-red-500">*</span>
+                N° de Referencia {file ? "(Opcional si subes imagen)" : <span className="text-red-500">*</span>}
               </label>
               <input
                 id="refInput"
@@ -162,7 +166,7 @@ export const PaymentReferenceModal: React.FC<PaymentReferenceModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || !reference.trim()}
+                disabled={isSubmitting || (!reference.trim() && !file)}
                 className="w-full py-3.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center cursor-pointer"
               >
                 {isSubmitting ? 'Validando...' : 'Confirmar'}

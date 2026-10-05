@@ -286,14 +286,22 @@ export class OrderService {
 
     const updatedOrder = await orderRepository.updateStatus(id, status, pickerId);
 
-    // Guardar referencia de pago si aplica
-    if (status === OrderStatus.READY_TO_PAY && paymentReference) {
-      const updatedPayment = await paymentRepository.updateReference(id, paymentReference, paymentReceiptUrl);
+    // Guardar referencia de pago y aprobar automáticamente si aplica
+    if ((status === OrderStatus.READY_TO_PAY || status === OrderStatus.PAID) && (paymentReference || paymentReceiptUrl)) {
+      const updatedPayment = await paymentRepository.updateReference(id, paymentReference || "SIN REFERENCIA", paymentReceiptUrl);
+      
+      if (updatedPayment) {
+        // Auto-aprobación del pago
+        await paymentRepository.updateStatus(updatedPayment.id, PaymentStatus.APPROVED);
+        updatedPayment.status = PaymentStatus.APPROVED;
+      }
+
       if (updatedOrder.payment && updatedPayment) {
         updatedOrder.payment = {
           ...updatedOrder.payment,
           reference: updatedPayment.reference || null,
           receiptUrl: updatedPayment.receiptUrl || null,
+          status: updatedPayment.status,
           updatedAt: updatedPayment.updatedAt as unknown as Date,
         };
       }
