@@ -437,11 +437,10 @@ export const ProductDetail: React.FC = () => {
                     onClick={() =>
                       updateQuantity(
                         product.id,
-                        Math.min(product.stock, currentQuantity + 1)
+                        currentQuantity + 1
                       )
                     }
-                    disabled={currentQuantity >= product.stock}
-                    className="px-6 h-full text-white hover:bg-brand-dark transition-colors border-l border-white/10 flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                    className="px-6 h-full text-white hover:bg-brand-dark transition-colors border-l border-white/10 flex items-center justify-center cursor-pointer"
                   >
                     <Plus className="w-5 h-5 md:w-6 md:h-6" />
                   </button>

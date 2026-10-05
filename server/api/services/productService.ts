@@ -125,13 +125,13 @@ export class ProductService {
   ): Promise<boolean> {
     const product = await productRepository.getById(id);
 
-    // Si el producto no existe o el stock actual es menor a lo solicitado, deniega la reserva
-    if (!product || product.stock < quantity) {
+    // Si el producto no existe, deniega la reserva
+    if (!product) {
       return false;
     }
 
-    // Actualiza disminuyendo la cantidad solicitada
-    await productRepository.updateStock(id, product.stock - quantity);
+    // Actualiza disminuyendo la cantidad solicitada (comentado para que funcione solo como estado Disponible/Agotado)
+    // await productRepository.updateStock(id, product.stock - quantity);
     return true;
   }
 
