@@ -321,7 +321,7 @@ export const SalesTab: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col items-start lg:items-end shrink-0 bg-slate-50 border border-slate-100 rounded-2xl p-3">
-                  <span className="text-xl font-black text-brand font-mono">${order.total.toFixed(2)}</span>
+                  <span className="text-xl font-black text-brand font-mono">${Number(order.total).toFixed(2)}</span>
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{order.payment?.method || 'PAGO_MOVIL'}</span>
                   <span className="text-[9px] font-mono font-bold text-slate-400 mt-0.5">
                     {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}
@@ -337,7 +337,7 @@ export const SalesTab: React.FC = () => {
                     <div key={idx} className="flex justify-between items-center text-xs bg-white p-3 rounded-xl border border-slate-150 shadow-sm">
                       <span className="font-bold text-slate-700 max-w-[170px] truncate">{item.name}</span>
                       <span className="font-mono font-bold text-brand bg-brand/5 px-2 py-0.5 rounded text-[10px] shrink-0">
-                        {item.requestedQuantity} x ${item.price.toFixed(2)}
+                        {item.requestedQuantity} x ${Number(item.price).toFixed(2)}
                       </span>
                     </div>
                   ))}

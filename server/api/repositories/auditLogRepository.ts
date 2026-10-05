@@ -26,6 +26,7 @@ export class AuditLogRepository {
         orderBy: { timestamp: "desc" },
         take: limit,
         skip,
+        include: { performedBy: { select: { name: true } } },
       }),
       prisma.auditLog.count(),
     ]);

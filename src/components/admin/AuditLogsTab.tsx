@@ -107,10 +107,10 @@ export const AuditLogsTab: React.FC = () => {
         </div>
       )}
 
-      <Pagination 
-        currentPage={page} 
-        totalPages={totalPages} 
-        onPageChange={setPage} 
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
       />
     </motion.div>
   );
