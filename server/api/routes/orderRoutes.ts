@@ -19,7 +19,7 @@ router.get("/my-orders", catchAsync(orderController.getMyOrders));
 // 2. Crear una nueva orden (Permitido para Clientes y Administradores)
 router.post(
   "/",
-  authorizeRoles(Role.CLIENTE, Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.CLIENTE, Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   validateResource(createOrderSchema),
   catchAsync(orderController.create),
 );
@@ -27,7 +27,7 @@ router.post(
 // 3. Obtener todas las órdenes de la tienda (Staff, Delivery y Administradores)
 router.get(
   "/",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY, Role.OPERADOR_INTEGRAL),
   catchAsync(orderController.getAll),
 );
 
@@ -44,7 +44,7 @@ router.get("/:orderId", catchAsync(orderController.getById));
 // 5. Actualizar el estado de una orden (Staff, Delivery y Administradores)
 router.patch(
   "/:orderId/status",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY, Role.OPERADOR_INTEGRAL),
   uploadPaymentReceipt.single("receiptImage"),
   catchAsync(orderController.updateStatus),
 );
@@ -52,28 +52,28 @@ router.patch(
 // 6. Actualizar items de una orden (Staff y Administradores)
 router.patch(
   "/:id/items",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   catchAsync(orderController.updateItems),
 );
 
 // 7. Procesar picking de una orden (Staff y Administradores)
 router.patch(
   "/:id/picking",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   catchAsync(orderController.processPicking),
 );
 
 // 7.5 Finalizar preparación (Añadir Cargos y Notificar)
 router.patch(
   "/:id/finalize-preparation",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   catchAsync(orderController.finalizePreparation),
 );
 
 // 8. Asignar repartidor motorizado (Staff, Delivery y Administradores)
 router.patch(
   "/:id/assign-delivery",
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.DELIVERY, Role.OPERADOR_INTEGRAL),
   catchAsync(orderController.assignDelivery),
 );
 

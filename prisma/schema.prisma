@@ -23,6 +23,7 @@ enum Role {
   ADMINISTRADOR
   STAFF_PICKER
   DELIVERY
+  OPERADOR_INTEGRAL
 }
 
 enum OrderStatus {

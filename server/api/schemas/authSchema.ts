@@ -6,6 +6,7 @@ const RoleEnum = z.enum([
   "ADMINISTRADOR",
   "DELIVERY",
   "STAFF_PICKER",
+  "OPERADOR_INTEGRAL",
 ]); // Ajusta los nombres exactos de tus roles
 
 

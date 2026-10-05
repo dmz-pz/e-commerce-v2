@@ -43,7 +43,7 @@ const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (user.role === Role.ADMINISTRADOR) {
       return <Navigate to="/admin" replace />;
     }
-    if (user.role === Role.STAFF_PICKER) {
+    if (user.role === Role.STAFF_PICKER || user.role === Role.OPERADOR_INTEGRAL) {
       return <Navigate to="/staff" replace />;
     }
     if (user.role === Role.DELIVERY) {
@@ -60,7 +60,7 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (user.role === Role.ADMINISTRADOR) {
       return <Navigate to="/admin" replace />;
     }
-    if (user.role === Role.STAFF_PICKER) {
+    if (user.role === Role.STAFF_PICKER || user.role === Role.OPERADOR_INTEGRAL) {
       return <Navigate to="/staff" replace />;
     }
     if (user.role === Role.DELIVERY) {
@@ -103,7 +103,7 @@ export default function App() {
                 </ClientRoute>
               } />
               <Route path="/staff" element={
-                <ProtectedRoute allowedRoles={[Role.STAFF_PICKER, Role.ADMINISTRADOR]}>
+                <ProtectedRoute allowedRoles={[Role.STAFF_PICKER, Role.ADMINISTRADOR, Role.OPERADOR_INTEGRAL]}>
                   <StaffDashboard />
                 </ProtectedRoute>
               } />
@@ -146,7 +146,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/delivery" element={
-                <ProtectedRoute allowedRoles={[Role.DELIVERY, Role.ADMINISTRADOR]}>
+                <ProtectedRoute allowedRoles={[Role.DELIVERY, Role.ADMINISTRADOR, Role.OPERADOR_INTEGRAL]}>
                   <DeliveryDashboard />
                 </ProtectedRoute>
               } />

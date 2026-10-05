@@ -108,20 +108,32 @@ export class AdminService {
       throw new AppError("La fecha de nacimiento es requerida", 400)
     }
 
-    const signUpResult = await auth.api.signUpEmail({
-      body: {
-        email: userData.email,
-        password: pass,
-        name: userData.name,
-        cedula: userData.cedula,
-        phone: userData.phone,
-        birthdate: userData.birthdate as any,
-        role: userData.role, // El hook lo forzará a CLIENTE
-        callbackURL: `${process.env.APP_URL || 'http://localhost:4000'}/email-verified`,
-      },
-    });
-
-    let newUser = signUpResult.user;
+    let newUser;
+    try {
+      const signUpResult = await auth.api.signUpEmail({
+        body: {
+          email: userData.email,
+          password: pass,
+          name: userData.name,
+          cedula: userData.cedula,
+          phone: userData.phone,
+          birthdate: userData.birthdate as any,
+          role: userData.role, // El hook lo forzará a CLIENTE
+          callbackURL: `${process.env.APP_URL || 'http://localhost:4000'}/email-verified`,
+        },
+      });
+      newUser = signUpResult.user;
+    } catch (error: any) {
+      // En modo desarrollo, Resend puede lanzar error si el email no está verificado en su plataforma.
+      // Sin embargo, better-auth ya creó al usuario en la base de datos antes de intentar enviar el correo.
+      const createdUser = await prisma.user.findUnique({ where: { email: userData.email } });
+      if (createdUser) {
+        newUser = createdUser;
+        console.warn("Usuario creado pero el envío del correo de verificación falló (posible restricción de Resend).", error.message);
+      } else {
+        throw error;
+      }
+    }
 
     // ACTUALIZACIÓN SEGURA: Como el hook de seguridad fuerza el rol a CLIENTE en el registro,
     // el admin (que está autorizado) actualiza el rol en la base de datos inmediatamente después.
@@ -132,7 +144,7 @@ export class AdminService {
       });
     }
 
-    if (userData.role === Role.DELIVERY) {
+    if (userData.role === Role.DELIVERY || userData.role === Role.OPERADOR_INTEGRAL) {
       await prisma.deliveryProfile.create({
         data: {
           userId: newUser.id,
@@ -156,7 +168,7 @@ export class AdminService {
 
     const updatedUser = await userRepository.updateRole(id, role);
 
-    if (role === Role.DELIVERY) {
+    if (role === Role.DELIVERY || role === Role.OPERADOR_INTEGRAL) {
       // Verificar si ya tiene perfil, de lo contrario crearlo
       const profile = await prisma.deliveryProfile.findUnique({ where: { userId: id } });
       if (!profile) {

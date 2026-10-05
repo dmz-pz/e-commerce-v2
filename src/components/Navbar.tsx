@@ -76,7 +76,8 @@ export const Navbar: React.FC = () => {
     user &&
     (user.role === Role.STAFF_PICKER ||
       user.role === Role.ADMINISTRADOR ||
-      user.role === Role.DELIVERY);
+      user.role === Role.DELIVERY ||
+      user.role === Role.OPERADOR_INTEGRAL);
 
   if (isStaffOrAdmin) {
     return (
@@ -101,6 +102,11 @@ export const Navbar: React.FC = () => {
                     <Bike className="w-3.5 h-3.5 text-blue-600" />
                     Módulo de Delivery (Motorizado)
                   </span>
+                ) : user.role === Role.OPERADOR_INTEGRAL ? (
+                  <span className="px-4 py-1.5 rounded-full bg-indigo-50 md:bg-indigo-500/10 text-indigo-600 md:text-indigo-700 font-extrabold uppercase tracking-widest text-[9px] md:text-[10px] border border-indigo-200/50 flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-indigo-600" />
+                    Operador Integral
+                  </span>
                 ) : (
                   <span className="px-4 py-1.5 rounded-full bg-emerald-50 md:bg-emerald-500/10 text-emerald-600 md:text-emerald-700 font-extrabold uppercase tracking-widest text-[9px] md:text-[10px] border border-emerald-200/50 flex items-center gap-1.5">
                     <Package className="w-3.5 h-3.5 text-emerald-600" />
@@ -111,17 +117,19 @@ export const Navbar: React.FC = () => {
 
               {/* Acciones derecha */}
               <div className="flex items-center gap-3">
-                {user.role === Role.ADMINISTRADOR && (
+                {(user.role === Role.ADMINISTRADOR || user.role === Role.OPERADOR_INTEGRAL) && (
                   <div className="flex items-center gap-2">
-                    <Link
-                      to="/admin"
-                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/admin"
-                        ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
-                        : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
-                        }`}
-                    >
-                      Admin
-                    </Link>
+                    {user.role === Role.ADMINISTRADOR && (
+                      <Link
+                        to="/admin"
+                        className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/admin"
+                          ? "bg-white/20 text-white md:bg-brand/10 md:text-brand"
+                          : "text-white/75 md:text-slate-500 hover:text-white md:hover:text-brand"
+                          }`}
+                      >
+                        Admin
+                      </Link>
+                    )}
                     <Link
                       to="/staff"
                       className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${location.pathname === "/staff"
@@ -253,7 +261,7 @@ export const Navbar: React.FC = () => {
                 <div className="hidden lg:flex items-center gap-6 mr-4">
                   {user &&
                     (user.role === Role.STAFF_PICKER ||
-                      user.role === Role.ADMINISTRADOR) && (
+                      user.role === Role.ADMINISTRADOR || user.role === Role.OPERADOR_INTEGRAL) && (
                       <Link
                         to="/staff"
                         className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"
@@ -264,7 +272,7 @@ export const Navbar: React.FC = () => {
                     )}
                   {user &&
                     (user.role === Role.DELIVERY ||
-                      user.role === Role.ADMINISTRADOR) && (
+                      user.role === Role.ADMINISTRADOR || user.role === Role.OPERADOR_INTEGRAL) && (
                       <Link
                         to="/delivery"
                         className="text-[10px] font-black text-slate-400 hover:text-brand transition-colors uppercase tracking-widest flex items-center gap-2"

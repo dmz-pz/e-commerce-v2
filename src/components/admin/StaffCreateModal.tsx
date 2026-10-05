@@ -180,6 +180,7 @@ export function StaffCreateModal({ isOpen, onClose, onSuccess }: StaffCreateModa
           >
             <option value={Role.STAFF_PICKER}>Armador (Picker)</option>
             <option value={Role.DELIVERY}>Repartidor (Motorizado)</option>
+            <option value={Role.OPERADOR_INTEGRAL}>Operador Integral (Ambos)</option>
           </Select>
         </div>
 

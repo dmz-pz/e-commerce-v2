@@ -22,7 +22,7 @@ export function StaffTab() {
       // Filtrar en cliente solo para no mostrar a CLIENTE ni ADMINISTRADOR por defecto
       // (a menos que se quiera administrar administradores, pero nos enfocamos en STAFF)
       const staffMembers = Array.isArray(data) 
-        ? data.filter(u => u.role === Role.STAFF_PICKER || u.role === Role.DELIVERY)
+        ? data.filter(u => u.role === Role.STAFF_PICKER || u.role === Role.DELIVERY || u.role === Role.OPERADOR_INTEGRAL)
         : [];
       setUsers(staffMembers);
     } catch (err) {
@@ -81,6 +81,13 @@ export function StaffTab() {
         </span>
       );
     }
+    if (role === Role.OPERADOR_INTEGRAL) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <Shield className="w-3.5 h-3.5" /> Operador Integral
+        </span>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
         <Users className="w-3.5 h-3.5" /> Armador
@@ -135,6 +142,7 @@ export function StaffTab() {
               <option value="ALL">Todos los Roles</option>
               <option value={Role.STAFF_PICKER}>Armadores (Pickers)</option>
               <option value={Role.DELIVERY}>Repartidores</option>
+              <option value={Role.OPERADOR_INTEGRAL}>Operador Integral</option>
             </select>
           </div>
         </div>

@@ -15,7 +15,7 @@ export const BottomNav: React.FC = () => {
 
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  if (user && (user.role === Role.STAFF_PICKER || user.role === Role.ADMINISTRADOR || user.role === Role.DELIVERY)) {
+  if (user && (user.role === Role.STAFF_PICKER || user.role === Role.ADMINISTRADOR || user.role === Role.DELIVERY || user.role === Role.OPERADOR_INTEGRAL)) {
     return null;
   }
 

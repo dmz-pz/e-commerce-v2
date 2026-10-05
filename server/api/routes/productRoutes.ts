@@ -51,7 +51,7 @@ router.get("/:id", catchAsync(productController.getById));
 router.post(
   "/",
   verifyToken,
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   uploadImage.single("image"), // 1. Lee el formulario multipart y monta req.file
   requireProductImage,
   validateResource(createProductRequestSchema), // 2. Valida la existencia física del archivo binario
@@ -62,7 +62,7 @@ router.post(
 router.patch(
   "/:id",
   verifyToken,
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   uploadImage.single("image"),
   validateResource(updateProductRequestSchema),
   parseRouteImage,
@@ -72,7 +72,7 @@ router.patch(
 router.patch(
   "/:id/activity",
   verifyToken,
-  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER),
+  authorizeRoles(Role.ADMINISTRADOR, Role.STAFF_PICKER, Role.OPERADOR_INTEGRAL),
   validateResource(updateProductActivitySchema),
   catchAsync(productController.updateActivity),
 );
