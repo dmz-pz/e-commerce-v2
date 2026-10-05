@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { orderService } from "../services/orderService.ts";
+import { storageService } from "../services/storage.service.ts";
 import { AppError } from "../utils/appErrors.ts";
 
 export class OrderController {
@@ -86,7 +87,12 @@ export class OrderController {
     }
 
     if (req.file) {
-      paymentReceiptUrl = `/uploads/payments/${req.file.filename}`;
+      if (req.file.mimetype === 'application/pdf') {
+        paymentReceiptUrl = await storageService.uploadFile(req.file.buffer, req.file.mimetype, '.pdf', 'payments');
+      } else {
+        const uploadResult = await storageService.uploadImage(req.file.buffer, 'payments');
+        paymentReceiptUrl = uploadResult.fullUrl;
+      }
     }
 
     const user = req.user;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
-import { X, Save, DollarSign, Image as ImageIcon, Barcode, Package } from "lucide-react";
+import { X, Save, DollarSign, Image as ImageIcon, Barcode, Package, Percent } from "lucide-react";
 import { Category, Subcategory, Product } from "../../types/index.ts";
 import { categoryService } from "../../services/categoryService.ts";
 import { productService } from "../../services/productService.ts";
@@ -34,7 +34,7 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
     name: "",
     description: "",
     price: "",
-    discountPrice: "",
+    discountPercentage: "",
     stock: "",
     subcategoryId: "",
     brand: "",
@@ -59,11 +59,20 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
   // Load product data when opened or product changes
   useEffect(() => {
     if (isOpen && product) {
+      let initialDiscountPct = "";
+      if (product.discountPrice && product.price) {
+        const p = Number(product.price);
+        const dp = Number(product.discountPrice);
+        if (p > 0 && dp > 0 && dp < p) {
+          initialDiscountPct = Math.round((1 - dp / p) * 100).toString();
+        }
+      }
+
       setEditProduct({
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
-        discountPrice: product.discountPrice ? product.discountPrice.toString() : "",
+        discountPercentage: initialDiscountPct,
         stock: product.stock.toString(),
         subcategoryId: product.subcategoryId,
         brand: product.brand || "",
@@ -132,13 +141,10 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
       }
     }
 
-    if (editProduct.discountPrice) {
-      const d = parseFloat(editProduct.discountPrice);
-      const p = parseFloat(editProduct.price);
-      if (isNaN(d) || d <= 0) {
-        newErrors.discountPrice = "El precio de descuento debe ser mayor a cero";
-      } else if (!isNaN(p) && d >= p) {
-        newErrors.discountPrice = "El descuento debe ser menor al precio regular";
+    if (editProduct.discountPercentage) {
+      const pct = parseFloat(editProduct.discountPercentage);
+      if (isNaN(pct) || pct <= 0 || pct >= 100) {
+        newErrors.discountPercentage = "El porcentaje debe estar entre 1 y 99";
       }
     }
 
@@ -173,8 +179,10 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
       formData.append("name", editProduct.name.trim());
       formData.append("description", editProduct.description.trim());
       formData.append("price", parseFloat(editProduct.price).toString());
-      if (editProduct.discountPrice) {
-        formData.append("discountPrice", parseFloat(editProduct.discountPrice).toString());
+      const parsedPct = Number(editProduct.discountPercentage);
+      if (parsedPct > 0 && parsedPct < 100) {
+        const finalDiscountPrice = Number(editProduct.price) * (1 - parsedPct / 100);
+        formData.append("discountPrice", String(finalDiscountPrice));
       }
       formData.append("stock", parseInt(editProduct.stock).toString());
       formData.append("subcategoryId", editProduct.subcategoryId);
@@ -366,32 +374,40 @@ export const ProductEditDrawer: React.FC<ProductEditDrawerProps> = ({
                     <Input
                       type="number"
                       step="0.01"
-                      label="Precio Regular *"
+                      label="Precio Regular (Sincronizado)"
                       required
-                      leftIcon={<DollarSign className="w-4 h-4" />}
+                      disabled
+                      leftIcon={<DollarSign className="w-4 h-4 text-slate-300" />}
                       value={editProduct.price}
                       onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
                       error={errors.price}
                     />
                     <Input
                       type="number"
-                      step="0.01"
-                      label="Precio Descuento"
-                      leftIcon={<DollarSign className="w-4 h-4" />}
-                      value={editProduct.discountPrice}
-                      onChange={(e) => setEditProduct({ ...editProduct, discountPrice: e.target.value })}
-                      error={errors.discountPrice}
+                      step="1"
+                      min="0"
+                      max="99"
+                      label="Descuento (%)"
+                      leftIcon={<Percent className="w-4 h-4" />}
+                      value={editProduct.discountPercentage}
+                      onChange={(e) => setEditProduct({ ...editProduct, discountPercentage: e.target.value })}
+                      error={errors.discountPercentage}
                     />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Input
-                      type="number"
-                      label="Stock *"
-                      required
-                      value={editProduct.stock}
-                      onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
-                      error={errors.stock}
-                    />
+                    <div className="flex flex-col justify-center pt-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-4.5 h-4.5 accent-brand rounded border-slate-300 focus:ring-brand cursor-pointer"
+                          checked={editProduct.stock !== "0" && editProduct.stock !== ""}
+                          onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.checked ? "1" : "0" })}
+                        />
+                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider select-none">
+                          ¿Disponible?
+                        </span>
+                      </label>
+                    </div>
                     <Select
                       label="Unidad"
                       value={editProduct.unit}

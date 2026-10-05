@@ -286,7 +286,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                 </td>
                 <td className="py-4.5 px-6 text-center">
                   <button
-                    onClick={() => toggleMutation.mutate({ id: p.id, isActive: p.isActive === false })}
+                    onClick={(e) => { e.stopPropagation(); toggleMutation.mutate({ id: p.id, isActive: p.isActive === false }); }}
                     disabled={toggleMutation.isPending}
                     className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all border disabled:opacity-50 ${p.isActive !== false
                       ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100/50'

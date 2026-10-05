@@ -30,7 +30,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     name: "",
     description: "",
     price: "",
-    discountPrice: "",
+    discountPercentage: "",
     stock: "",
     subcategoryId: "",
     brand: "",
@@ -110,9 +110,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       formData.append("description", newProduct.description);
       formData.append("price", String(newProduct.price));
       
-      const parsedDiscount = Number(newProduct.discountPrice);
-      if (parsedDiscount > 0) {
-        formData.append("discountPrice", String(parsedDiscount));
+      const parsedPct = Number(newProduct.discountPercentage);
+      if (parsedPct > 0 && parsedPct < 100) {
+        const finalDiscountPrice = Number(newProduct.price) * (1 - parsedPct / 100);
+        formData.append("discountPrice", String(finalDiscountPrice));
       }
       
       formData.append("stock", String(newProduct.stock));
@@ -133,7 +134,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
         name: "",
         description: "",
         price: "",
-        discountPrice: "",
+        discountPercentage: "",
         stock: "",
         subcategoryId: "",
         brand: "",
@@ -215,29 +216,34 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
           />
         </div>
 
-        {/* Precio Descuento */}
+        {/* Porcentaje Descuento */}
         <div>
           <Input
             type="number"
-            step="0.01"
-            label="Precio Oferta (Opcional)"
-            placeholder="0.00"
-            leftIcon={<DollarSign className="w-4 h-4" />}
-            value={newProduct.discountPrice}
-            onChange={(e) => setNewProduct({ ...newProduct, discountPrice: e.target.value })}
+            step="1"
+            min="0"
+            max="99"
+            label="Descuento (%) (Opcional)"
+            placeholder="0"
+            leftIcon={<Percent className="w-4 h-4" />}
+            value={newProduct.discountPercentage}
+            onChange={(e) => setNewProduct({ ...newProduct, discountPercentage: e.target.value })}
           />
         </div>
 
-        {/* Stock */}
-        <div>
-          <Input
-            type="number"
-            label="Stock Disponible *"
-            placeholder="0"
-            required
-            value={newProduct.stock}
-            onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-          />
+        {/* Disponibilidad */}
+        <div className="flex flex-col justify-center gap-1.5 pt-4 sm:pt-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-4.5 h-4.5 accent-brand rounded border-slate-300 focus:ring-brand cursor-pointer"
+              checked={newProduct.stock !== "0" && newProduct.stock !== ""}
+              onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.checked ? "1" : "0" })}
+            />
+            <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider select-none">
+              ¿Producto Disponible?
+            </span>
+          </label>
         </div>
 
         {/* Categoría Principal */}
