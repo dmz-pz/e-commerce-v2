@@ -60,6 +60,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [isAppending, setIsAppending] = useState(false);
   const isAppendingRef = React.useRef(false);
@@ -84,11 +85,19 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
   const { items, clearCart } = useCart();
   const { user } = useUser();
 
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   // Resetear a página 1 al cambiar filtros principales
   useEffect(() => {
     isAppendingRef.current = false;
     setPage(1);
-  }, [selectedCategory, selectedSubcategory, searchQuery, limit, sortBy]);
+  }, [selectedCategory, selectedSubcategory, debouncedSearchQuery, limit, sortBy]);
 
   // Resetear la subcategoría seleccionada al cambiar de categoría principal
   useEffect(() => {
@@ -163,7 +172,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
         limit,
         categoryId: catId,
         subcategoryId: subCatId,
-        search: searchQuery.trim() || undefined,
+        search: debouncedSearchQuery.trim() || undefined,
         sortBy,
       });
 
@@ -186,7 +195,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
       setIsAppending(false);
     }
-  }, [page, limit, selectedCategory, selectedSubcategory, searchQuery, sortBy, categories]);
+  }, [page, limit, selectedCategory, selectedSubcategory, debouncedSearchQuery, sortBy, categories]);
 
   useEffect(() => {
     fetchProducts();
