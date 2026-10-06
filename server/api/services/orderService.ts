@@ -255,6 +255,28 @@ export class OrderService {
       });
     }
 
+    // H. Enviar notificación a Telegram (sin bloquear la creación si falla)
+    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+    const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+    
+    if (telegramBotToken && telegramChatId) {
+      try {
+        const message = `🚨 *¡NUEVO PEDIDO RECIBIDO!* 🚨\n\n👤 *Cliente:* ${fullCustomerName}\n📱 *Teléfono:* ${customer.phone}\n💰 *Total:* $${calculatedTotal.toFixed(2)}\n📦 *Artículos:* ${enrichedItems.length}\n\n🔗 [Ingresa al panel de operaciones aquí](https://www.minegociosup.com/staff)`;
+        
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegramChatId,
+            text: message,
+            parse_mode: "Markdown"
+          })
+        });
+      } catch (error) {
+        console.error("Error enviando notificación a Telegram:", error);
+      }
+    }
+
     return newOrder;
   }
 
@@ -270,6 +292,14 @@ export class OrderService {
     paymentReceiptUrl?: string
   ) {
     const order = await orderRepository.getById(id);
+    if (!order) {
+      throw new AppError("Orden no encontrada", 404);
+    }
+
+    // Bloqueo de concurrencia: Evitar que dos armadores tomen la misma orden
+    if (status === OrderStatus.PICKING && pickerId && order.pickerId && order.pickerId !== pickerId) {
+      throw new AppError("Este pedido ya fue tomado y está siendo preparado por otro compañero.", 409);
+    }
     
     // Si la orden se cancela, devolvemos todo el stock reservado al inventario
     if (status === OrderStatus.CANCELLED) {
