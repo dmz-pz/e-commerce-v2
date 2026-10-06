@@ -108,7 +108,10 @@ export class OrderController {
       }
     }
 
-    const order = await orderService.updateStatus(orderId, status, pickerId, user?.id, paymentReference, paymentReceiptUrl);
+    // Si el estado es PICKING y no se envió pickerId, asignamos automáticamente el del usuario en sesión
+    const finalPickerId = status === "PICKING" ? (pickerId || user?.id) : pickerId;
+
+    const order = await orderService.updateStatus(orderId, status, finalPickerId, user?.id, paymentReference, paymentReceiptUrl);
     if (!order) {
       throw new AppError("La orden solicitada no fue encontrada", 404);
     }
