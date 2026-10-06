@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus, DeliveryPerson, Product, OrderItem } from '../types/index.ts';
 import { orderService } from '../services/orderService.ts';
+import { useUser } from '../context/UserContext.tsx';
 
 
 export const useStaffDashboard = () => {
+  const { user } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
   const [availableMotorizados, setAvailableMotorizados] = useState<DeliveryPerson[]>([]);
-  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const [filter, setFilter] = useState<OrderStatus>(OrderStatus.PENDING);
   const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
@@ -352,11 +354,20 @@ export const useStaffDashboard = () => {
     }
   };
 
-  const filteredOrders = filter === 'all'
-    ? orders
-    : filter === OrderStatus.READY_TO_PAY
-      ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
-      : orders.filter(o => o.status === filter);
+  const baseFilteredOrders = filter === OrderStatus.READY_TO_PAY
+    ? orders.filter(o => o.status === OrderStatus.READY_TO_PAY || o.status === OrderStatus.PAID)
+    : orders.filter(o => o.status === filter);
+
+  const filteredOrders = baseFilteredOrders.filter(o => {
+    // Si es administrador, ve todo
+    if (user?.role === 'ADMINISTRADOR') return true;
+    
+    // Si la pestaña es PENDIENTES, todos los armadores pueden ver las órdenes huérfanas
+    if (filter === OrderStatus.PENDING) return true;
+    
+    // Para cualquier otro estado (En Curso, Listas, Canceladas), solo ven sus propias órdenes
+    return o.pickerId === user?.id;
+  });
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / limit));
 

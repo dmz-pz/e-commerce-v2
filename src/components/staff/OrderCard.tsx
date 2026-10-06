@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus, DeliveryPerson, ItemStatus } from '../../types/index.ts';
 import { useGlobalCatalog } from '../../context/CatalogContext.tsx';
+import { useUser } from '../../context/UserContext.tsx';
 
 interface OrderCardProps {
   order: Order;
@@ -86,7 +87,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onRequireAddCharges,
 }) => {
   const { exchangeRate } = useGlobalCatalog();
+  const { user } = useUser();
   const isModifyingThisOrder = modifyingOrderId === order.id;
+  const isBeingPickedByOther = order.status === OrderStatus.PICKING && order.pickerId && order.pickerId !== user?.id;
   const styles = getStatusStyles(order.status);
 
   // Fallback para órdenes antiguas que no tienen la tasa guardada
@@ -205,7 +208,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             >
               <Copy className="w-3 h-3" /> Copiar Lista
             </button>
-            {!deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
+            {!deliveryPersonId && !isBeingPickedByOther && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING) && (
               <button
                 type="button"
                 onClick={() => onAddProduct?.(order.id)}
@@ -221,7 +224,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
         <div className="max-h-[280px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5">
           {order.items.map((item, idx) => {
-            const canEdit = !deliveryPersonId && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
+            const canEdit = !deliveryPersonId && !isBeingPickedByOther && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PICKING);
             return (
               <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 hover:border-brand/10 transition-all shadow-sm">
                 <div className="flex justify-between items-start gap-3">
@@ -315,7 +318,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
 
-        {order.status === OrderStatus.PICKING && !deliveryPersonId && (
+        {order.status === OrderStatus.PICKING && !deliveryPersonId && !isBeingPickedByOther && (
           <button
             type="button"
             onClick={() => {
@@ -328,11 +331,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </button>
         )}
 
+        {isBeingPickedByOther && (
+          <div className="w-full bg-slate-100 text-slate-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-inner">
+            <Clock className="w-4 h-4 text-slate-400" />
+            Siendo armado por otro compañero
+          </div>
+        )}
+
         {order.status === OrderStatus.READY_TO_PAY && !deliveryPersonId && (
           (() => {
             const onlineMethods = ['PAGO_MOVIL', 'ZELLE', 'BINANCE'];
             const isOnlineMethod = order.payment?.method && onlineMethods.includes(order.payment.method);
-            
+
             if (!isOnlineMethod) return null;
 
             return (

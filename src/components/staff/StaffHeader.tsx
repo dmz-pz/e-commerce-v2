@@ -5,8 +5,8 @@ import { OrderStatus } from '../../types/index.ts';
 import { Plus } from 'lucide-react';
 
 interface StaffHeaderProps {
-  filter: OrderStatus | 'all';
-  setFilter: (filter: OrderStatus | 'all') => void;
+  filter: OrderStatus;
+  setFilter: (filter: OrderStatus) => void;
   onOpenCreateOrder: () => void;
 }
 
@@ -33,7 +33,7 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter, onO
       </div>
       
       <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar whitespace-nowrap gap-1 self-start md:self-auto shrink-0">
-        {(['all', OrderStatus.PENDING, OrderStatus.PICKING, OrderStatus.READY_TO_PAY, OrderStatus.CANCELLED] as const).map((s) => (
+        {([OrderStatus.PENDING, OrderStatus.PICKING, OrderStatus.READY_TO_PAY, OrderStatus.CANCELLED] as const).map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
@@ -43,9 +43,7 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({ filter, setFilter, onO
                 : 'text-slate-400 hover:text-brand hover:bg-slate-50'
             }`}
           >
-            {s === 'all'
-              ? 'Todas'
-              : s === OrderStatus.PENDING
+            {s === OrderStatus.PENDING
               ? 'Pendientes'
               : s === OrderStatus.PICKING
               ? 'En Curso'
