@@ -24,15 +24,6 @@ export const PaymentsTab: React.FC = () => {
     refetchInterval: 15000,
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'APPROVED' | 'REJECTED' }) => 
-      adminService.reviewPayment(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-audit-logs'] });
-    },
-  });
-
   const filteredPayments = data?.items || [];
 
   const totalPages = data?.totalPages || 1;
@@ -176,31 +167,10 @@ export const PaymentsTab: React.FC = () => {
                   </div>
                 </div>
 
-                {pay.status === 'PENDING' ? (
-                  <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-100">
-                    <button
-                      onClick={() => reviewMutation.mutate({ id: pay.id, status: 'APPROVED' })}
-                      disabled={reviewMutation.isPending}
-                      className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      Aprobar Pago
-                    </button>
-                    <button
-                      onClick={() => reviewMutation.mutate({ id: pay.id, status: 'REJECTED' })}
-                      disabled={reviewMutation.isPending}
-                      className="flex-1 bg-rose-50 text-rose-500 hover:bg-rose-100 text-[10px] h-10 px-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors border border-rose-100 disabled:opacity-50"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Rechazar
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
-                    <span>Auditoría procesada con éxito</span>
-                    <span className={`w-2 h-2 rounded-full ${pay.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                  </div>
-                )}
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
+                  <span>Pago Validado por Armador</span>
+                  <span className={`w-2 h-2 rounded-full ${pay.status === 'APPROVED' ? 'bg-emerald-500' : pay.status === 'PENDING' ? 'bg-orange-500' : 'bg-rose-500'}`} />
+                </div>
               </div>
             </div>
           ))
