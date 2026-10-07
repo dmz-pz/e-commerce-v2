@@ -33,6 +33,10 @@ export class UserService {
 
     return issues;
   }
+
+  async getUserByCedula(cedula: string) {
+    return await userRepository.getByCedula(cedula);
+  }
 }
 
 export const userService = new UserService();

@@ -22,6 +22,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   const [customerName, setCustomerName] = useState('');
   const [customerCedula, setCustomerCedula] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   // Búsqueda y Productos
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,6 +40,31 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
   // Envío al servidor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Autocompletado de cliente por cédula
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      const cleanCedula = customerCedula.replace(/[^0-9]/g, '');
+      if (cleanCedula.length >= 6) {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`/api/users/by-cedula/${customerCedula}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCustomerName(data.name);
+            setCustomerPhone(data.phone);
+          }
+        } catch (err) {
+          // Si falla, no hacemos nada para no interrumpir al usuario
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(fetchCustomer, 600);
+    return () => clearTimeout(timeoutId);
+  }, [customerCedula]);
 
   // Debounce para búsqueda
   useEffect(() => {
@@ -114,8 +140,8 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
         setErrorMessage('Por favor, corrige los errores de Cédula o Teléfono antes de continuar.');
         return;
       }
-      if (!customerName || !customerCedula || !customerPhone) {
-        setErrorMessage('Todos los datos del cliente son requeridos.');
+      if (!customerName || !customerCedula || !customerPhone || !deliveryAddress) {
+        setErrorMessage('Todos los datos del cliente y la dirección son requeridos.');
         return;
       }
       if (cartItems.length === 0) {
@@ -134,6 +160,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
       const payload = {
         paymentMethod,
         paymentReference: undefined,
+        deliveryAddress: deliveryAddress,
         customerData: {
           name: customerName,
           cedula: customerCedula,
@@ -261,6 +288,15 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                           value={customerName}
                           onChange={e => setCustomerName(e.target.value)}
                           placeholder="Juan Pérez"
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          label="Dirección de Entrega"
+                          required
+                          value={deliveryAddress}
+                          onChange={e => setDeliveryAddress(e.target.value)}
+                          placeholder="Av. Principal, Edificio B, Apto 4"
                         />
                       </div>
                     </div>

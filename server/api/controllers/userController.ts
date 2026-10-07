@@ -24,3 +24,21 @@ export const checkAvailability = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+export const getUserByCedula = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const cedula = req.params.cedula;
+    if (!cedula) {
+      res.status(400).json({ error: "La cédula es requerida." });
+      return;
+    }
+    const user = await userService.getUserByCedula(cedula);
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado." });
+      return;
+    }
+    res.json({ name: user.name, phone: user.phone, cedula: user.cedula });
+  } catch (error) {
+    next(error);
+  }
+};

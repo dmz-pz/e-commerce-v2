@@ -23,7 +23,8 @@ export class UserRepository {
       return await prisma.user.findUnique({
         where: { id },
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       throw new AppError(`Error al buscar usuario por ID: ${error.message}`, 500);
     }
   }
@@ -37,7 +38,8 @@ export class UserRepository {
         },
         orderBy: { createdAt: "desc" },
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       throw new AppError(`Error al listar usuarios: ${error.message}`, 500);
     }
   }
@@ -48,7 +50,8 @@ export class UserRepository {
         where: { id },
         data: { role },
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       throw new AppError(`Error al actualizar rol del usuario: ${error.message}`, 500);
     }
   }
@@ -59,7 +62,8 @@ export class UserRepository {
         where: { id },
         data: { deletedAt: new Date() },
       });
-    } catch (e: unknown) { const error = e as Error;
+    } catch (e: unknown) {
+      const error = e as Error;
       throw new AppError(`Error al dar de baja al usuario: ${error.message}`, 500);
     }
   }
@@ -68,7 +72,7 @@ export class UserRepository {
     try {
       return await prisma.user.findUnique({
         where: { cedula },
-        select: { id: true, createdAt: true, emailVerified: true },
+        select: { id: true, name: true, phone: true, createdAt: true, emailVerified: true, cedula: true },
       });
     } catch (e: unknown) {
       const error = e as Error;
