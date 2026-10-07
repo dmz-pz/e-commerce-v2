@@ -271,6 +271,12 @@ export class OrderRepository {
         },
       });
 
+      // Asegurar la actualización del pago usando orderId directo
+      await tx.payment.updateMany({
+        where: { orderId: orderId },
+        data: { amount: newTotal }
+      });
+
       return updatedOrder;
     });
   }
