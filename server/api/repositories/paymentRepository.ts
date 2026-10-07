@@ -8,7 +8,10 @@ export class PaymentRepository {
     const limit = options?.limit ? Math.max(1, options.limit) : undefined;
     const skip = limit ? (page - 1) * limit : undefined;
 
-    const where: any = {};
+    const where: any = {
+      method: { in: ['ZELLE', 'PAGO_MOVIL', 'BINANCE'] },
+      order: { status: { notIn: ['PENDING', 'PICKING'] } }
+    };
     if (options?.status) {
       where.status = options.status;
     }
