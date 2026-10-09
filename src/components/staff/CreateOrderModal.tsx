@@ -16,7 +16,7 @@ interface CreateOrderModalProps {
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onClose, onOrderCreated }) => {
   const { exchangeRate } = useGlobalCatalog();
-  const [step, setStep] = useState<1 | 2>(1); // 1: Datos Cliente & Productos, 2: Pago
+  const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Cliente, 2: Productos, 3: Pago
 
   // Datos Cliente
   const [customerName, setCustomerName] = useState('');
@@ -144,16 +144,22 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
         setErrorMessage('Todos los datos del cliente y la dirección son requeridos.');
         return;
       }
-      if (cartItems.length === 0) {
-        setErrorMessage('Debe agregar al menos un producto.');
-        return;
-      }
       setErrorMessage('');
       setStep(2);
       return;
     }
 
-    // Step 2: Submit al servidor
+    if (step === 2) {
+      if (cartItems.length === 0) {
+        setErrorMessage('Debe agregar al menos un producto.');
+        return;
+      }
+      setErrorMessage('');
+      setStep(3);
+      return;
+    }
+
+    // Step 3: Submit al servidor
     setIsSubmitting(true);
     setErrorMessage('');
     try {
@@ -301,7 +307,11 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                       </div>
                     </div>
                   </div>
+                </motion.div>
+              )}
 
+              {step === 2 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   {/* Búsqueda de Productos */}
                   <div>
                     <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
@@ -342,7 +352,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                 </motion.div>
               )}
 
-              {step === 2 && (
+              {step === 3 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <div>
                     <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
@@ -372,8 +382,9 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
               )}
             </form>
 
-            {/* Right Column - Cart Summary */}
-            <div className="w-full md:w-1/3 md:min-w-[280px] bg-slate-50 flex flex-col p-4 md:p-6 h-64 md:h-auto border-t md:border-t-0 border-slate-100 shrink-0">
+            {/* Right Column - Cart Summary (Visible solo en paso 2 y 3) */}
+            {step > 1 && (
+              <div className="w-full md:w-1/3 md:min-w-[280px] bg-slate-50 flex flex-col p-4 md:p-6 md:h-auto border-t md:border-t-0 border-slate-100 shrink-0" style={{ minHeight: '300px' }}>
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Resumen del Pedido</h4>
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {cartItems.length === 0 ? (
@@ -415,14 +426,15 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                 </div>
               </div>
             </div>
+            )}
           </div>
 
           {/* Footer Actions */}
           <div className="p-6 border-t border-slate-100 bg-white flex justify-between items-center">
-            {step === 2 ? (
+            {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => setStep(step === 2 ? 1 : 2)}
                 className="px-5 py-3 text-slate-500 hover:text-slate-800 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
               >
                 Volver
@@ -443,7 +455,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                   <span>Procesando...</span>
                 </>
               ) : (
-                <span>{step === 1 ? 'Continuar al Pago' : 'Crear Orden'}</span>
+                <span>{step === 1 ? 'Continuar a Productos' : step === 2 ? 'Continuar al Pago' : 'Crear Orden'}</span>
               )}
             </button>
           </div>

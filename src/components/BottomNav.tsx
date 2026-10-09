@@ -15,7 +15,7 @@ export const BottomNav: React.FC = () => {
 
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  if (user && (user.role === Role.STAFF_PICKER || user.role === Role.ADMINISTRADOR || user.role === Role.DELIVERY || user.role === Role.OPERADOR_INTEGRAL)) {
+  if (user && (user.role === Role.STAFF_PICKER || user.role === Role.ADMINISTRADOR || user.role === Role.DELIVERY)) {
     return null;
   }
 
@@ -36,7 +36,7 @@ export const BottomNav: React.FC = () => {
   const navItems = [
     { icon: <Home className="w-5 h-5" />, label: 'Home', onClick: handleHomeClick },
     { icon: <Grid className="w-5 h-5" />, label: 'Categorías', onClick: handleCategoriesClick },
-    { 
+    {
       icon: (
         <div className="relative">
           <ShoppingCart className="w-5 h-5" />
@@ -46,23 +46,23 @@ export const BottomNav: React.FC = () => {
             </span>
           )}
         </div>
-      ), 
-      label: 'Carrito', 
-      onClick: () => setShowCart(true) 
+      ),
+      label: 'Carrito',
+      onClick: () => setShowCart(true)
     },
-    { 
-      icon: <User className="w-5 h-5" />, 
-      label: 'Mi Perfil', 
-      onClick: () => navigate(user ? '/profile' : '/login') 
+    {
+      icon: <User className="w-5 h-5" />,
+      label: 'Mi Perfil',
+      onClick: () => navigate(user ? '/profile' : '/login')
     },
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-brand border-t border-white/10 flex justify-around items-center h-16 px-4 z-[100] shadow-[0_-4px_20px_rgba(0,0,0,0.2)]">
       {navItems.map((item, index) => (
-        <button 
-          key={index} 
-          onClick={item.onClick} 
+        <button
+          key={index}
+          onClick={item.onClick}
           className="flex-1 py-1 flex flex-col items-center gap-1 group active:scale-95 transition-transform"
         >
           <div className="text-white/60 group-active:text-accent transition-colors">

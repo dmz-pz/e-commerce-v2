@@ -7,6 +7,7 @@ import { prisma } from "../db";
 import { sendPasswordResetEmail, sendVerificationEmailService } from "./email"
 
 export const auth = betterAuth({
+    trustedOrigins: process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()),
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
@@ -98,7 +99,7 @@ export const auth = betterAuth({
                             }
                         });
                         console.log(`[AUTH] Cuenta invitada renombrada para ceder datos legítimos (${fieldName}: ${user[fieldName]}).`);
-                        return true; 
+                        return true;
                     }
 
                     // 2. Caso: Registro Abandonado (No verificado y expirado > 1 hr)
