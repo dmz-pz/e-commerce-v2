@@ -117,6 +117,23 @@ export const useDeliveryDashboard = () => {
     }
   };
 
+  // Iniciar ruta para un pedido (Transición a OUT_FOR_DELIVERY)
+  const executeStartRoute = async (orderId: string) => {
+    setIsSubmitting(true);
+    try {
+      setActionError(null);
+      await orderService.updateOrderStatus(orderId, OrderStatus.OUT_FOR_DELIVERY);
+      await handleStatusChange('busy');
+      await Promise.all([loadOrders(), loadDriverProfile()]);
+    } catch (error) {
+      const err = error as Error;
+      console.error("Error al iniciar ruta:", err);
+      setActionError("No se pudo iniciar la ruta de este pedido.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Cancelar o reportar pedido en ruta (Retornar a READY_TO_PAY)
   const executeCancelDelivery = async () => {
     if (!orderToCancel || !cancelReason.trim()) return;
@@ -221,6 +238,7 @@ export const useDeliveryDashboard = () => {
     loadOrders,
     handleStatusChange,
     handleTakeOrder,
+    executeStartRoute,
     executeCompleteDelivery,
     executeCancelDelivery,
     

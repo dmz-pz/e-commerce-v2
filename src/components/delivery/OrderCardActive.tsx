@@ -1,15 +1,16 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Smartphone, MapPin, CreditCard, MessageCircle, Navigation, AlertTriangle, Check } from 'lucide-react';
+import { Smartphone, MapPin, CreditCard, MessageCircle, Navigation, AlertTriangle, Check, Bike } from 'lucide-react';
 import { Order } from '../../types/index.ts';
 
 interface OrderCardActiveProps {
   order: Order;
+  onStartRoute: (orderId: string) => void;
   onSetCancel: (order: Order) => void;
   onSetComplete: (order: Order) => void;
 }
 
-export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onSetCancel, onSetComplete }) => {
+export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onStartRoute, onSetCancel, onSetComplete }) => {
   const clientAddress = order.deliveryAddress || 'Dirección de envío del cliente';
   const paymentMethod = order.payment?.method || (order as unknown as { paymentMethod?: string }).paymentMethod;
   const isOnlinePayment = paymentMethod && paymentMethod !== 'EFECTIVO_DELIVERY' && paymentMethod !== 'PUNTO_DELIVERY';
@@ -34,8 +35,12 @@ export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onSetCa
               {order.customerName}
             </h3>
           </div>
-          <div className="px-3.5 py-1 rounded-full bg-brand/5 border border-brand/10 text-brand text-[8px] font-black uppercase tracking-widest">
-            En Tránsito
+          <div className={`px-3.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+            order.status === 'OUT_FOR_DELIVERY' 
+              ? 'bg-brand/5 border-brand/10 text-brand' 
+              : 'bg-amber-500/10 border-amber-500/20 text-amber-600'
+          }`}>
+            {order.status === 'OUT_FOR_DELIVERY' ? 'En Tránsito' : 'Asignado (Tienda)'}
           </div>
         </div>
 
@@ -117,23 +122,35 @@ export const OrderCardActive: React.FC<OrderCardActiveProps> = ({ order, onSetCa
           </a>
 
           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 mt-2">
-            {/* Reportar Devolución */}
-            <button
-              onClick={() => onSetCancel(order)}
-              className="py-3 px-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200/50 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              Problema
-            </button>
+            {order.status !== 'OUT_FOR_DELIVERY' ? (
+              <button
+                onClick={() => onStartRoute(order.id)}
+                className="col-span-2 py-3 px-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-md shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]"
+              >
+                <Bike className="w-4 h-4" />
+                Comenzar Ruta Hacia Destino
+              </button>
+            ) : (
+              <>
+                {/* Reportar Devolución */}
+                <button
+                  onClick={() => onSetCancel(order)}
+                  className="py-3 px-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200/50 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Problema
+                </button>
 
-            {/* Entregado Exitosamente */}
-            <button
-              onClick={() => onSetComplete(order)}
-              className="py-3 px-3 bg-brand hover:bg-brand-dark text-white shadow-md shadow-brand/10 font-black rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]"
-            >
-              <Check className="w-4 h-4 stroke-[3]" />
-              Entregado
-            </button>
+                {/* Entregado Exitosamente */}
+                <button
+                  onClick={() => onSetComplete(order)}
+                  className="py-3 px-3 bg-brand hover:bg-brand-dark text-white shadow-md shadow-brand/10 font-black rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  Entregado
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

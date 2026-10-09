@@ -72,6 +72,7 @@ export const DeliveryDashboard: React.FC = () => {
                   <OrderCardActive 
                     key={order.id}
                     order={order}
+                    onStartRoute={dashboard.executeStartRoute}
                     onSetCancel={dashboard.setOrderToCancel}
                     onSetComplete={dashboard.setOrderToComplete}
                   />

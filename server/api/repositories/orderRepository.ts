@@ -233,6 +233,17 @@ export class OrderRepository {
         }
       }
 
+      // 3. If it's a delivery action (OUT_FOR_DELIVERY), handle the active DeliveryJob
+      if (status === "OUT_FOR_DELIVERY") {
+        const activeJob = updatedOrder.deliveryJobs[0];
+        if (activeJob && activeJob.status === "ASSIGNED") {
+          await tx.deliveryJob.update({
+            where: { id: activeJob.id },
+            data: { status: "IN_TRANSIT" }
+          });
+        }
+      }
+
       return updatedOrder;
     });
   }
