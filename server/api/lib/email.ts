@@ -11,25 +11,50 @@ export const sendPasswordResetEmail = async (email: string, name: string, url: s
 
     try {
         await resend.emails.send({
-            from: "Minegocio OS <onboarding@resend.dev>",
+            from: "Minegocio OS <no-reply@minegociosup.com>",
             to: email,
             subject: "Recuperación de Contraseña - Minegocio OS",
             html: `
-                <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-                    <h1>
-                    <span style = "font-family: sans-serif; color: #eaee19ff">MI
-                    <span style = "font-family: sans-serif; color: #153cebff">NEGOCIO</span>
-                    </span>
-                    </h1>
-                    <h2>Hola ${name},</h2>
-                    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
-                    <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #0066FF; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-                        Restablecer Contraseña
-                    </a>
-                    <p style="font-size: 12px; color: #666;">Si no solicitaste esto, puedes ignorar este correo.</p>
-                    <p style="font-size: 10px; color: #aaa; margin-top: 20px;">Link válido temporalmente.</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="color-scheme" content="light">
+                    <meta name="supported-color-schemes" content="light">                 
+                </head>
+                <body style="margin: 0; padding: 0; background-color: #ffffff;">
+                    <div style="font-family: sans-serif; text-align: center; padding: 20px; background-color: #ffffff; color: #333333;">
+                        <h1>
+                            <img src="https://images.minegociosup.com/Logos/logo.png" alt="MINEGOCIO" style="max-width: 200px; height: auto; border: 0;" />
+                        </h1>
+                        <h2>¡Bienvenido, ${name}!</h2>
+                        <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
+                        <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #2547df; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+                            Restablecer Contraseña
+                        </a>
+                        <p style="font-size: 12px; color: #666666;">Si no solicitaste esto, puedes ignorar este correo.</p>
+                        <p style="font-size: 12px; color: #666666;">Link valido temporalmente.</p>
+                    </div>
+                </body>
+                </html>
             `
+
+            // `
+            // <div style="font-family: sans-serif; text-align: center; padding: 20px;">
+            // <h1>
+            // <span style = "font-family: sans-serif; color: #eaee19ff">MI
+            // <span style = "font-family: sans-serif; color: #153cebff">NEGOCIO</span>
+            // </span>
+            // </h1>
+            // <h2>Hola ${name},</h2>
+            // <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
+            // <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #0066FF; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+            // Restablecer Contraseña
+            // </a>
+            // <p style="font-size: 12px; color: #666;">Si no solicitaste esto, puedes ignorar este correo.</p>
+            // <p style="font-size: 10px; color: #aaa; margin-top: 20px;">Link válido temporalmente.</p>
+            // </div>
+            // `
         });
     } catch (error) {
         console.error("Error al enviar el correo de recuperación:", error);
@@ -44,7 +69,7 @@ export const sendVerificationEmailService = async (email: string, name: string, 
 
     try {
         await resend.emails.send({
-            from: "Minegocio OS <onboarding@resend.dev>",
+            from: "Minegocio OS <no-reply@minegociosup.com>",
             to: email,
             subject: "Verifica tu Correo Electrónico - Minegocio OS",
             html: `
