@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, ShieldAlert, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Coins, ShieldAlert, XCircle, RefreshCw } from 'lucide-react';
 import { adminService } from '../../services/adminService.ts';
 import { OptimizedImage } from '../ui/OptimizedImage.tsx';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Pagination } from '../ui/Pagination.tsx';
 
 export const PaymentsTab: React.FC = () => {
-  const queryClient = useQueryClient();
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [page, setPage] = useState(1);

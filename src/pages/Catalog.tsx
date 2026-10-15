@@ -123,10 +123,10 @@ export const Catalog: React.FC = () => {
               <div className="w-px h-10 bg-slate-100" />
               <div className="text-right">
                 <span className="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">
-                  Costo de Envío
+                  Horario de Atención
                 </span>
                 <span className="block text-xl font-bold text-accent tracking-tight">
-                  ¡Gratis!
+                  8:00 AM - 8:00 PM
                 </span>
               </div>
             </>

@@ -121,7 +121,7 @@ export class ProductService {
    */
   async validateAndReserveStock(
     id: string,
-    quantity: number,
+    _quantity: number,
   ): Promise<boolean> {
     const product = await productRepository.getById(id);
 
