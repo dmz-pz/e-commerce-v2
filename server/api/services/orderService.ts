@@ -321,8 +321,9 @@ export class OrderService {
       const updatedPayment = await paymentRepository.updateReference(id, paymentReference || "SIN REFERENCIA", paymentReceiptUrl);
       
       if (updatedPayment) {
-        // Auto-aprobación del pago
-        await paymentRepository.updateStatus(updatedPayment.id, PaymentStatus.APPROVED);
+        // Auto-aprobación del pago en línea: lo valida el armador que preparó la orden
+        const reviewerId = updatedOrder.pickerId ?? actionUserId;
+        await paymentRepository.updateStatus(updatedPayment.id, PaymentStatus.APPROVED, reviewerId ?? undefined);
         updatedPayment.status = PaymentStatus.APPROVED;
       }
 

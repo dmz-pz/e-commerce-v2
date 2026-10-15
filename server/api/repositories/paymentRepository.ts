@@ -76,10 +76,13 @@ export class PaymentRepository {
     } as Payment;
   }
 
-  async updateStatus(id: string, status: PaymentStatus): Promise<Payment | undefined> {
+  async updateStatus(id: string, status: PaymentStatus, reviewedById?: string): Promise<Payment | undefined> {
     const updated = await prisma.payment.update({
       where: { id },
-      data: { status }
+      data: {
+        status,
+        ...(reviewedById && { reviewedById })
+      }
     });
     return {
       ...updated,

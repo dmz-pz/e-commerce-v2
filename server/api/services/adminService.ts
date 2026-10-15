@@ -36,7 +36,7 @@ export class AdminService {
       throw new AppError("Pago no encontrado.", 404);
     }
 
-    const updated = await paymentRepository.updateStatus(id, status);
+    const updated = await paymentRepository.updateStatus(id, status, performedById);
 
     if (updated) {
       const order = await orderRepository.getById(updated.orderId);

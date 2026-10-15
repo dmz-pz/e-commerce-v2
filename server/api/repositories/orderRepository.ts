@@ -173,7 +173,7 @@ export class OrderRepository {
     });
   }
 
-  async updateStatus(id: string, status: OrderStatus, pickerId?: string, _actionUserId?: string) {
+  async updateStatus(id: string, status: OrderStatus, pickerId?: string) {
     return await prisma.$transaction(async (tx) => {
       // 1. Update the order status
       const updatedOrder = await tx.order.update({
@@ -208,27 +208,33 @@ export class OrderRepository {
             }
           });
 
-          // B. Cash in hand reconciliation for EFECTIVO_DELIVERY
-          if (status === "DELIVERED" && updatedOrder.payment?.method === "EFECTIVO_DELIVERY") {
+          // B. Conciliación de pagos al entregar (EFECTIVO_DELIVERY / PUNTO_DELIVERY)
+          const paymentMethod = updatedOrder.payment?.method;
+          const isPayOnDelivery = paymentMethod === "EFECTIVO_DELIVERY" || paymentMethod === "PUNTO_DELIVERY";
+
+          if (status === "DELIVERED" && updatedOrder.payment && isPayOnDelivery) {
             const driverId = activeJob.deliveryPersonId;
-            // Mark payment as APPROVED
+
+            // El delivery que recibió el pago queda registrado como revisor
             await tx.payment.update({
               where: { id: updatedOrder.payment.id },
-              data: { status: "APPROVED" }
+              data: { status: "APPROVED", reviewedById: driverId }
             });
 
-            // Upsert the delivery profile and add cash
-            await tx.deliveryProfile.upsert({
-              where: { userId: driverId },
-              create: {
-                userId: driverId,
-                status: "AVAILABLE",
-                cashInHand: updatedOrder.total
-              },
-              update: {
-                cashInHand: { increment: updatedOrder.total }
-              }
-            });
+            // Solo el efectivo queda en manos del repartidor
+            if (paymentMethod === "EFECTIVO_DELIVERY") {
+              await tx.deliveryProfile.upsert({
+                where: { userId: driverId },
+                create: {
+                  userId: driverId,
+                  status: "AVAILABLE",
+                  cashInHand: updatedOrder.total
+                },
+                update: {
+                  cashInHand: { increment: updatedOrder.total }
+                }
+              });
+            }
           }
         }
       }
