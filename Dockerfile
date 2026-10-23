@@ -17,7 +17,7 @@ RUN pnpm install --no-frozen-lockfile --ignore-scripts
 COPY . .
 
 # Generar cliente de Prisma y compilar la app
-RUN npx prisma generate
+RUN pnpm prisma generate
 RUN pnpm run build
 
 EXPOSE 4000
