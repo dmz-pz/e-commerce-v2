@@ -24,17 +24,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="group bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 md:gap-4 shadow-sm hover:border-brand hover:shadow-xl hover:shadow-brand/5 transition-all duration-300 w-full lg:h-[360px] h-full"
+        className="group bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 md:gap-4 shadow-sm hover:border-brand hover:shadow-xl hover:shadow-brand/5 transition-all duration-300 w-full h-full"
       >
         <Link
           to={`/product/${product.id}`}
           className="flex flex-col flex-1 min-h-0"
         >
-          <div className="relative w-full aspect-square lg:aspect-video overflow-hidden bg-slate-50 rounded-xl flex items-center justify-center shrink-0">
+          <div className="relative w-full aspect-square overflow-hidden bg-slate-50/80 rounded-xl flex items-center justify-center shrink-0">
             <OptimizedImage
               src={imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
               containerClassName="absolute inset-0"
               fallbackIcon={<ShoppingBasket className="w-12 h-12 opacity-50" />}
               referrerPolicy="no-referrer"

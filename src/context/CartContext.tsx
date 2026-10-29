@@ -32,13 +32,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = (product: Product, quantity: number) => {
     const effectivePrice = Number(product.discountPrice || product.price);
+    const imageUrl = product.images?.[0]?.thumbUrl || product.images?.[0]?.url;
 
     setItems(current => {
       const existing = current.find(item => item.productId === product.id);
       if (existing) {
         return current.map(item =>
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity, price: effectivePrice }
+            ? { ...item, quantity: item.quantity + quantity, price: effectivePrice, imageUrl: item.imageUrl || imageUrl }
             : item
         ).filter(item => item.quantity > 0);
       }
@@ -47,7 +48,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         productId: product.id,
         name: product.name,
         price: effectivePrice,
-        quantity
+        quantity,
+        imageUrl
       }];
     });
   };

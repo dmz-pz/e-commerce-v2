@@ -10,6 +10,7 @@ import {
   CreditCard, Banknote, Smartphone, ChevronRight, CheckCircle2
 } from 'lucide-react';
 import { OrderSuccessModal } from '../components/checkout/OrderSuccessModal.tsx';
+import { OptimizedImage } from '../components/ui/OptimizedImage.tsx';
 
 type Step = 1 | 2;
 type DeliveryMethod = 'DELIVERY' | 'PICK_UP';
@@ -246,11 +247,22 @@ export const Checkout: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {items.map((item) => (
+                    {items.map((item) => {
+                      const product = products.find((p) => p.id === item.productId);
+                      const imageUrl = product?.images?.[0]?.thumbUrl || product?.images?.[0]?.url || item.imageUrl;
+
+                      return (
                       <div key={item.productId} className="flex gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                        {/* Img Placeholder - Minimalist */}
-                        <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-                          <ShoppingBasket className="w-6 h-6 text-slate-300" />
+
+                        <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center shrink-0 relative">
+                          <OptimizedImage
+                            src={imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-contain p-1"
+                            containerClassName="w-full h-full"
+                            fallbackIcon={<ShoppingBasket className="w-6 h-6 text-slate-300" />}
+                            referrerPolicy="no-referrer"
+                          />
                         </div>
 
                         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
@@ -291,7 +303,8 @@ export const Checkout: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               </motion.div>
@@ -445,7 +458,7 @@ export const Checkout: React.FC = () => {
       <OrderSuccessModal
         isOpen={showSuccessModal}
         orderId={generatedOrderId}
-        total={finalTotal}
+
         paymentMethod={paymentMethod}
         deliveryMethod={deliveryMethod}
         deliveryAddress={selectedAddress}
