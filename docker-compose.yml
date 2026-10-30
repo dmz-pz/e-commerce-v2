@@ -4,11 +4,11 @@ services:
     container_name: app_postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
-      POSTGRES_DB: ${POSTGRES_DB:-e-commerce-v2}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,7 +19,7 @@ services:
     container_name: app_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -31,16 +31,18 @@ services:
       dockerfile: Dockerfile
     container_name: app_web
     restart: always
+    env_file:
+      - .env
     ports:
       - "4000:4000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-4000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-e-commerce-v2}?schema=public}
-      
+
       # Redis
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      
+
       # Base de datos externa
       ODBC_DSN: ${ODBC_DSN}
       ODBC_UID: ${ODBC_UID}
@@ -52,21 +54,25 @@ services:
       USE_MOCK_DATABASE: ${USE_MOCK_DATABASE}
       IMAGES_DIR: ${IMAGES_DIR}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      
+
       # Cloudflare R2 (Imágenes)
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
       SKIP_IMAGE_OPTIMIZATION: ${SKIP_IMAGE_OPTIMIZATION}
-      
+
       # Better auth
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL}
-      
+
       # Resend Email Provider
       RESEND_API_KEY: ${RESEND_API_KEY}
-      
+
+      # Bot de Telegram
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+
     depends_on:
       - postgres
       - redis
